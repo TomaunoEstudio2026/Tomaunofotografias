@@ -67,16 +67,16 @@
     .download-item a { background: var(--verde); color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 9px; }
 
 
-    .notes-soft::placeholder { color: #555; font-size: 12px; font-weight: 400; }
-    .admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:15px 0; }
-    .admin-card { background:#000; border:1px solid #222; border-radius:16px; padding:14px; text-align:center; }
+    .notes-soft::placeholder { color:#555; font-size:12px; font-weight:400; }
+    .selected::after{ content:'✔ SELECCIONADA'; position:absolute; bottom:0; left:0; width:100%; background:rgba(255,0,0,.92); color:white; text-align:center; font-size:10px; padding:5px 0; font-weight:bold; z-index:90; letter-spacing:1px; }
+    .admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:10px; margin:15px 0; }
+    .admin-card { background:#000; border:1px solid #222; border-radius:16px; padding:13px; text-align:center; }
     .admin-card b { color:var(--rojo); font-size:20px; display:block; margin-bottom:4px; }
     .admin-card span { color:#aaa; font-size:9px; text-transform:uppercase; letter-spacing:1px; }
     .admin-tools { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 15px; }
     .admin-tools input { flex:1; min-width:190px; margin:0; }
+    #adminOrders { max-height:58vh; overflow:auto; padding-right:4px; }
     .order-row { background:#030303; border:1px solid #222; border-radius:14px; padding:12px; margin:10px 0; text-align:left; }
-    .order-row.paid { border-color:rgba(37,211,102,.35); }
-    .order-row.done { opacity:.78; }
     .order-head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
     .order-head b { color:#fff; font-size:13px; }
     .order-meta { color:#999; font-size:10px; line-height:1.55; margin-top:6px; }
@@ -86,7 +86,6 @@
     .order-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
     .order-actions button, .mini-btn { background:#151515; color:#fff; border:1px solid #333; padding:7px 10px; border-radius:999px; font-size:9px; cursor:pointer; }
     .order-actions button:hover, .mini-btn:hover { border-color:var(--rojo); }
-    #adminOrders { max-height:58vh; overflow:auto; padding-right:4px; }
 
     #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--negro); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; }
   </style>
@@ -121,7 +120,7 @@
 
 <div class="container" id="view-events">
   <div style="text-align:center; margin-bottom:20px">
-    <button class="btn-order" style="background:#111; border:1px solid #333; color:var(--oro)" onclick="document.getElementById('modalContact').style.display='flex'" ondblclick="event.preventDefault(); event.stopPropagation(); openAdminPin();"><i class="fa fa-id-badge"></i> CONTACTO Y UBICACIÓN</button>
+    <button class="btn-order" style="background:#111; border:1px solid #333; color:var(--oro)" onclick="document.getElementById('modalContact').style.display='flex'" ondblclick="event.preventDefault(); event.stopPropagation(); openAdminPin();" ><i class="fa fa-id-badge"></i> CONTACTO Y UBICACIÓN</button>
   </div>
   <h2>Álbumes Disponibles</h2>
   <div id="eventList" class="event-grid"></div>
@@ -450,6 +449,7 @@
     var total = isFullAlbumMode ? activeEvent.pFull : (selectedPhotos.length * unit);
     var listNames = isFullAlbumMode ? ["TODO EL ALBUM COMPLETO"] : selectedPhotos.map(function(x){return x.name;});
     var cantidad = isFullAlbumMode ? allPhotos.length : selectedPhotos.length;
+    var photoIds = isFullAlbumMode ? allPhotos.map(function(x){return x.id;}) : selectedPhotos.map(function(x){return x.id;});
 
     toggleL(true, "REGISTRANDO...");
     apiPost({
@@ -459,7 +459,7 @@
       notes: notes,
       orderType: type,
       eventName: activeEvent.displayName,
-      photos: isFullAlbumMode ? allPhotos.map(function(x){return x.id;}) : selectedPhotos.map(function(x){return x.id;}),
+      photos: photoIds,
       photoNames: listNames,
       total: total
     }).then(function(res) {
@@ -480,8 +480,7 @@
         msg += "✅ Las impresiones incluyen copia digital sin costo adicional.%0A%0A";
       }
 
-      msg +=
-        "━━━━━━━━━━━━━━━%0A" +
+      msg += "━━━━━━━━━━━━━━━%0A" +
         "💰 *TOTAL:* " + (total==0 ? "GRATIS" : "$" + total.toLocaleString());
 
       document.getElementById('modalCheckout').style.display = 'none';
@@ -511,7 +510,8 @@
   var adminOrdersData = [];
 
   function openAdminPin() {
-    document.getElementById('modalContact').style.display = 'none';
+    var c = document.getElementById('modalContact');
+    if(c) c.style.display = 'none';
     document.getElementById('modalAdminPin').style.display = 'flex';
     document.getElementById('adminPinInput').value = "";
     setTimeout(function(){ document.getElementById('adminPinInput').focus(); }, 100);
@@ -544,7 +544,7 @@
   }
 
   function renderAdminOrders() {
-    var q = (document.getElementById('adminSearch').value || "").toLowerCase();
+    var q = ((document.getElementById('adminSearch') || {}).value || "").toLowerCase();
     var filtered = adminOrdersData.filter(function(o){
       var hay = [o.cliente,o.whatsapp,o.evento,o.tipo,o.pago,o.entrega,o.observaciones].join(" ").toLowerCase();
       return hay.indexOf(q) > -1;
@@ -563,12 +563,13 @@
     document.getElementById('admTotalPendiente').innerText = money(totalPend);
     document.getElementById('admTotalCobrado').innerText = money(totalCob);
 
-    var html = filtered.map(function(o){
+    var htmlRows = filtered.map(function(o){
       var pagoOk = (o.pago || "") === "PAGADO";
       var entregaOk = (o.entrega || "") === "ENTREGADO";
       var phoneClean = String(o.whatsapp || "").replace(/\D/g,'');
-      var waPhone = phoneClean.startsWith("54") ? phoneClean : "54" + phoneClean;
-      return '<div class="order-row '+(pagoOk?'paid':'')+' '+(entregaOk?'done':'')+'">'+
+      var waPhone = phoneClean.indexOf("54") === 0 ? phoneClean : "54" + phoneClean;
+
+      return '<div class="order-row">'+
         '<div class="order-head"><b>'+escapeHtml(o.cliente || "Sin nombre")+'</b><b style="color:var(--rojo)">'+money(o.total)+'</b></div>'+
         '<div class="order-meta">'+
           '📱 '+escapeHtml(o.whatsapp || "")+' · 🎉 '+escapeHtml(o.evento || "")+'<br>'+
@@ -578,20 +579,31 @@
           '<span class="status-pill '+(entregaOk?'status-ok':'status-pending')+'">Entrega: '+escapeHtml(o.entrega || "PENDIENTE")+'</span>'+
         '</div>'+
         '<div class="order-actions">'+
-          '<button onclick="window.open(\\'https://wa.me/'+waPhone+'\\',\\'_blank\\')">💬 WhatsApp</button>'+
-          '<button onclick="copyText(\\''+jsStr(o.whatsapp || "")+'\\')">📋 Copiar cel</button>'+
-          '<button onclick="copyText(\\''+jsStr(o.fotos || "")+'\\')">📋 Copiar fotos</button>'+
-          '<button onclick="setOrderStatus('+o.row+',\\'pago\\',\\''+(pagoOk?'PENDIENTE':'PAGADO')+'\\')">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+
-          '<button onclick="setOrderStatus('+o.row+',\\'entrega\\',\\''+(entregaOk?'PENDIENTE':'ENTREGADO')+'\\')">'+(entregaOk?'↩ Entrega pend.':'📦 Entregado')+'</button>'+
+          '<button data-wa="'+waPhone+'">💬 WhatsApp</button>'+
+          '<button data-copy="'+attr(o.whatsapp || "")+'">📋 Copiar cel</button>'+
+          '<button data-copy="'+attr(o.fotos || "")+'">📋 Copiar fotos</button>'+
+          '<button data-row="'+o.row+'" data-field="pago" data-value="'+(pagoOk?'PENDIENTE':'PAGADO')+'">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+
+          '<button data-row="'+o.row+'" data-field="entrega" data-value="'+(entregaOk?'PENDIENTE':'ENTREGADO')+'">'+(entregaOk?'↩ Entrega pend.':'📦 Entregado')+'</button>'+
         '</div>'+
       '</div>';
     }).join("");
 
-    document.getElementById('adminOrders').innerHTML = html || '<p style="color:#777;text-align:center">Sin pedidos para mostrar.</p>';
+    var cont = document.getElementById('adminOrders');
+    cont.innerHTML = htmlRows || '<p style="color:#777;text-align:center">Sin pedidos para mostrar.</p>';
+
+    cont.querySelectorAll('[data-wa]').forEach(function(btn){
+      btn.onclick = function(){ window.open('https://wa.me/' + btn.getAttribute('data-wa'), '_blank'); };
+    });
+    cont.querySelectorAll('[data-copy]').forEach(function(btn){
+      btn.onclick = function(){ copyText(btn.getAttribute('data-copy') || ''); };
+    });
+    cont.querySelectorAll('[data-row]').forEach(function(btn){
+      btn.onclick = function(){ setOrderStatus(btn.getAttribute('data-row'), btn.getAttribute('data-field'), btn.getAttribute('data-value')); };
+    });
   }
 
   async function setOrderStatus(row, field, value) {
-    var payload = { action:"updateOrder", pin:ADMIN_PIN, row:row };
+    var payload = { action:"updateOrder", pin:ADMIN_PIN, row:Number(row) };
     payload[field] = value;
     toggleL(true, "ACTUALIZANDO...");
     try {
@@ -618,8 +630,8 @@
     });
   }
 
-  function jsStr(s) {
-    return String(s == null ? "" : s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,'\\n');
+  function attr(s) {
+    return escapeHtml(String(s == null ? "" : s).replace(/\r?\n/g, "\\n"));
   }
 
   function luxAlert(t, b) { document.getElementById('alertTitle').innerText = t; document.getElementById('alertBody').innerText = b; document.getElementById('modalAlert').style.display = 'flex'; document.getElementById('alertBtn').focus(); }
