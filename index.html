@@ -103,6 +103,29 @@
     }
     #secretAdminBtn:hover { opacity: 0.12; }
 
+
+    #miniToast {
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      transform: translateX(-50%);
+      background: rgba(10,10,10,.96);
+      color: #fff;
+      border: 1px solid var(--rojo);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 12px;
+      z-index: 20000;
+      display: none;
+      box-shadow: 0 0 20px rgba(255,0,0,.25);
+    }
+    button.is-loading, .btn-order.is-loading, .mini-btn.is-loading {
+      opacity: .65 !important;
+      pointer-events: none !important;
+      transform: translateY(1px);
+      filter: grayscale(.15);
+    }
+
     #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--negro); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; }
   </style>
 </head>
@@ -240,7 +263,7 @@
 
     <div class="admin-tools">
       <input id="adminSearch" placeholder="Buscar por cliente, celular, evento o estado..." oninput="renderAdminOrders()">
-      <button class="btn-order" onclick="loadAdminOrders()">ACTUALIZAR</button>
+      <button class="btn-order" onclick="loadAdminOrders(this)">ACTUALIZAR</button>
     </div>
 
     <div id="adminOrders"></div>
@@ -254,13 +277,15 @@
     <h3 style="color:var(--rojo); margin-top:0">DESCARGAR PEDIDO</h3>
     <p style="font-size:11px;color:#aaa;line-height:1.5">Ingresá la clave de 4 dígitos que te enviamos por WhatsApp después del pago.</p>
     <input type="text" id="downloadCodeInput" placeholder="Clave de descarga" maxlength="4">
-    <button class="btn-order" style="width:100%" onclick="redeemDownloadCode()">BUSCAR DESCARGAS</button>
+    <button id="btnRedeemCode" class="btn-order" style="width:100%" onclick="redeemDownloadCode()">BUSCAR DESCARGAS</button>
     <button onclick="document.getElementById('modalDownloadCode').style.display='none'" style="background:none; border:none; color:#555; margin-top:12px; cursor:pointer">Cerrar</button>
   </div>
 </div>
 
 
 <button id="secretAdminBtn" ondblclick="event.preventDefault(); event.stopPropagation(); openAdminPin();" title=""></button>
+
+<div id="miniToast"></div>
 
 <script>
   // PEGAR ACÁ LA URL DEL DEPLOY DE APPS SCRIPT, terminada en /exec
@@ -304,6 +329,7 @@
     if(document.getElementById('modalPass').style.display === 'flex' && e.key === "Enter") checkPass();
     if(document.getElementById('modalAdminPin') && document.getElementById('modalAdminPin').style.display === 'flex' && e.key === "Enter") checkAdminPin();
     if(document.getElementById('modalDownloadCode') && document.getElementById('modalDownloadCode').style.display === 'flex' && e.key === "Enter") redeemDownloadCode();
+    if(e.key === "Escape") { document.querySelectorAll(".modal").forEach(function(m){ m.style.display = "none"; }); }
     if(document.getElementById('modalCheckout').style.display === 'flex' && e.key === "Enter") sendOrder();
     if(document.getElementById('lightbox').style.display === 'flex') {
       if(e.key === "ArrowRight") nextPhoto();
@@ -605,6 +631,30 @@ function sendOrder() {
 
 
 
+
+  function showToast(msg) {
+    var t = document.getElementById('miniToast');
+    if(!t) return;
+    t.innerText = msg;
+    t.style.display = 'block';
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(function(){ t.style.display = 'none'; }, 2000);
+  }
+
+  function setBtnLoading(btn, isLoading, text) {
+    if(!btn) return;
+    if(isLoading) {
+      btn.dataset.oldText = btn.innerText;
+      btn.innerText = text || "Procesando...";
+      btn.classList.add("is-loading");
+      btn.disabled = true;
+    } else {
+      btn.innerText = btn.dataset.oldText || btn.innerText;
+      btn.classList.remove("is-loading");
+      btn.disabled = false;
+    }
+  }
+
   function openDownloadCodeModal() {
     document.getElementById('modalDownloadCode').style.display = 'flex';
     document.getElementById('downloadCodeInput').value = "";
@@ -615,26 +665,35 @@ function sendOrder() {
     var code = document.getElementById('downloadCodeInput').value.trim();
     if(!code) return luxAlert("AVISO", "Ingresá tu clave de descarga.");
 
-    toggleL(true, "BUSCANDO DESCARGAS...");
+    var btn = document.getElementById('btnRedeemCode');
+    setBtnLoading(btn, true, "REVISANDO CONTRASEÑA...");
+    toggleL(true, "REVISANDO CONTRASEÑA...");
     try {
-      var res = await apiGet({ action:"download", folderId: activeEvent.id, code: code });
-      toggleL(false);
+      apiGet({ action:"download", folderId: activeEvent.id, code: code }).then(function(res){
+        toggleL(false);
+        setBtnLoading(btn, false);
 
-      var files = res.files || [];
-      if(!files.length) return luxAlert("AVISO", "No encontramos fotos para esta clave.");
+        var files = res.files || [];
+        if(!files.length) return luxAlert("AVISO", "No encontramos fotos para esta clave.");
 
-      document.getElementById('modalDownloadCode').style.display = 'none';
-      document.getElementById('view-gallery').style.display = 'none';
-      document.getElementById('view-success').style.display = 'block';
-      document.getElementById('downloadSection').style.display = 'block';
+        document.getElementById('modalDownloadCode').style.display = 'none';
+        document.getElementById('view-gallery').style.display = 'none';
+        document.getElementById('view-success').style.display = 'block';
+        document.getElementById('downloadSection').style.display = 'block';
 
-      var listHtml = files.map(function(p){
-        return '<div class="download-item"><span>'+escapeHtml(p.name)+'</span> <a href="'+p.urlFull+'" target="_blank">BAJAR HQ</a></div>';
-      }).join("");
-      document.getElementById('downloadList').innerHTML = listHtml;
-
+        var listHtml = files.map(function(p){
+          return '<div class="download-item"><span>'+escapeHtml(p.name)+'</span> <a href="'+p.urlFull+'" target="_blank">BAJAR HQ</a></div>';
+        }).join("");
+        document.getElementById('downloadList').innerHTML = listHtml;
+        showToast("Descargas habilitadas");
+      }).catch(function(err){
+        toggleL(false);
+        setBtnLoading(btn, false);
+        luxAlert("ERROR", "No se pudo validar la clave: " + err.message);
+      });
     } catch(err) {
       toggleL(false);
+      setBtnLoading(btn, false);
       luxAlert("ERROR", "No se pudo validar la clave: " + err.message);
     }
   }
@@ -658,15 +717,18 @@ function sendOrder() {
     loadAdminOrders();
   }
 
-  async function loadAdminOrders() {
+  async function loadAdminOrders(btn) {
+    setBtnLoading(btn, true, "ACTUALIZANDO...");
     toggleL(true, "CARGANDO PEDIDOS...");
     try {
       var res = await apiGet({ action: "orders", pin: ADMIN_PIN });
       toggleL(false);
+      setBtnLoading(btn, false);
       adminOrdersData = res.orders || [];
       renderAdminOrders();
     } catch(err) {
       toggleL(false);
+      setBtnLoading(btn, false);
       luxAlert("ERROR", "No se pudieron cargar los pedidos: " + err.message);
     }
   }
@@ -736,38 +798,54 @@ function sendOrder() {
       btn.onclick = function(){ copyText(btn.getAttribute('data-msg') || ''); };
     });
     cont.querySelectorAll('[data-row]').forEach(function(btn){
-      btn.onclick = function(){ setOrderStatus(btn.getAttribute('data-row'), btn.getAttribute('data-field'), btn.getAttribute('data-value')); };
+      btn.onclick = function(){ setOrderStatus(btn.getAttribute('data-row'), btn.getAttribute('data-field'), btn.getAttribute('data-value'), btn); };
     });
   }
 
-  async function setOrderStatus(row, field, value) {
+  async function setOrderStatus(row, field, value, btn) {
     var payload = { action:"updateOrder", pin:ADMIN_PIN, row:Number(row) };
     payload[field] = value;
+
+    setBtnLoading(btn, true, "GUARDANDO...");
     toggleL(true, "ACTUALIZANDO...");
     try {
       await apiPost(payload);
       toggleL(false);
+      showToast("Pedido actualizado");
       await loadAdminOrders();
     } catch(err) {
       toggleL(false);
+      setBtnLoading(btn, false);
       luxAlert("ERROR", "No se pudo actualizar: " + err.message);
     }
   }
 
 
-  function buildClientDownloadMsg(o) {
+function buildClientDownloadMsg(o) {
     var clave = o.clave || "";
+    var sitio = "https://tomaunofotografias.vercel.app/";
     if(!clave || clave === "Sin clave") {
-      return "Hola " + (o.cliente || "") + ", recibimos tu pedido de Tomauno. Cuando esté pagado te enviamos la clave de descarga.";
+      return "📸 *Tomauno Fotografías*%0A%0AHola " + (o.cliente || "") + ", recibimos tu pedido.%0A%0AApenas confirmemos el pago, te enviamos la clave para descargar tus fotos.%0A%0AGracias por confiar en Tomauno ❤️";
     }
-    return "Hola " + (o.cliente || "") + ". Tu pedido de Tomauno ya está habilitado para descargar.%0A%0AEntrá nuevamente al álbum, tocá el botón 🔒 DESCARGAR y escribí esta clave:%0A%0A" + clave + "%0A%0ASi tenés algún problema, escribime por acá.";
+
+    return "📸 *Tomauno Fotografías*%0A%0A" +
+      "Hola " + (o.cliente || "") + " 😊%0A%0A" +
+      "¡Tu pedido ya está listo para descargar!%0A%0A" +
+      "🔐 *Clave de descarga:* " + clave + "%0A%0A" +
+      "👉 Entrá a la web:%0A" + sitio + "%0A%0A" +
+      "Pasos:%0A" +
+      "1️⃣ Abrí tu álbum.%0A" +
+      "2️⃣ Tocá el botón *🔒 DESCARGAR*.%0A" +
+      "3️⃣ Escribí tu clave.%0A" +
+      "4️⃣ Descargá tus fotos en calidad completa.%0A%0A" +
+      "Cualquier problema, escribime por acá. Gracias ❤️";
   }
 
-  function copyText(txt) {
+function copyText(txt) {
     navigator.clipboard.writeText(txt || "").then(function(){
-      luxAlert("COPIADO", "Dato copiado al portapapeles.");
+      showToast("Copiado al portapapeles");
     }).catch(function(){
-      luxAlert("AVISO", "No se pudo copiar automáticamente.");
+      showToast("No se pudo copiar");
     });
   }
 
