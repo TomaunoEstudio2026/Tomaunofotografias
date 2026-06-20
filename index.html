@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+  <style>
+    :root { --rojo: #ff0000; --negro: #000; --gris: #0d0d0d; --blanco: #fff; --oro: #d4af37; --verde: #25d366; }
+    * { box-sizing: border-box; }
+    body { background: var(--negro); color: var(--blanco); font-family: 'Montserrat', sans-serif; margin: 0; padding-bottom: 120px; overflow-x: hidden; }
+    
+    header { background: #000; border-bottom: 2px solid var(--rojo); padding: 20px; text-align: center; position: sticky; top: 0; z-index: 1000; }
+    .logo-txt { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: bold; color: #fff; cursor: pointer; }
+    .logo-txt span { color: var(--rojo); font-style: italic; }
+    .signature { font-size: 8px; font-style: italic; color: #555; margin-top: -5px; }
+
+    .container { max-width: 1200px; margin: auto; padding: 20px; }
+    h2 { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--rojo); text-align: center; margin-bottom: 30px; }
+
+    /* Cards Eventos - REPARADAS */
+    .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .event-card { 
+      background: linear-gradient(145deg, #1a1a1a, #000); 
+      padding: 50px 20px; border-radius: 25px; text-align: center; cursor: pointer; 
+      border: 1px solid #222; transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      position: relative; pointer-events: auto; /* Forzamos clics */
+    }
+    .event-card:hover { border-color: var(--rojo); transform: translateY(-5px); }
+    .event-card i { font-size: 50px; color: var(--rojo); margin-bottom: 15px; display: block; }
+
+    /* Galería */
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .photo-box { position: relative; border-radius: 12px; overflow: hidden; background: #050505; aspect-ratio: 1/1; border: 1px solid #222; }
+    .photo-box img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8); cursor: zoom-in; }
+    
+    .check-mark { position: absolute; top: 8px; right: 8px; z-index: 50; color: white; background: rgba(0,0,0,0.6); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; cursor: pointer; }
+    .selected { border: 4px solid var(--rojo) !important; }
+    .selected .check-mark { background: var(--rojo); border-color: var(--rojo); }
+
+    /* Lightbox */
+    #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,1); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+    #lightbox img { max-width: 95%; max-height: 80vh; border: 1px solid #333; }
+    .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); font-size: 45px; color: var(--rojo); cursor: pointer; padding: 25px; z-index: 10000; text-shadow: 0 0 15px #000; }
+    
+    /* Marca de agua fija en Zoom */
+    .zoom-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); color: rgba(255,255,255,0.1); font-size: 40px; font-weight: bold; pointer-events: none; z-index: 9995; white-space: nowrap; text-transform: uppercase; border: 2px solid rgba(255,255,255,0.05); padding: 10px 20px; }
+
+    /* Footer */
+    .footer-bar { position: fixed; bottom: 0; width: 100%; background: rgba(0,0,0,0.96); border-top: 2px solid var(--rojo); padding: 15px; display: none; justify-content: center; align-items: center; gap: 15px; z-index: 2000; backdrop-filter: blur(10px); }
+    .price-tag { font-size: 9px; border-left: 1px solid #333; padding-left: 10px; line-height: 1.1; }
+    .price-tag b { color: var(--rojo); font-size: 14px; display: block; }
+
+    /* Modales */
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 8000; display: none; align-items: center; justify-content: center; }
+    .modal-box { background: #0a0a0a; padding: 30px; border-radius: 25px; border: 1px solid var(--rojo); width: 95%; max-width: 450px; text-align: center; }
+    input, textarea, select { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #222; background: #000; color: white; font-size: 14px; outline: none; }
+    .btn-order { background: var(--rojo); color: white; border: none; padding: 12px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 10px; }
+
+    #downloadList { margin-top: 20px; text-align: left; max-height: 200px; overflow-y: auto; background: #000; padding: 10px; border: 1px solid #222; border-radius: 10px; }
+    .download-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 11px; align-items: center; }
+    .download-item a { background: var(--verde); color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 9px; }
+
+    #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--negro); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="loading"><i class="fa fa-camera-retro fa-spin fa-3x" style="color:var(--rojo)"></i><p id="loadingTxt" style="margin-top:15px; font-size:10px">CARGANDO...</p></div>
+
+<!-- MODAL ALERTA -->
+<div id="modalAlert" class="modal" style="z-index:11000"><div class="modal-box"><h3 id="alertTitle" style="color:var(--rojo)">AVISO</h3><p id="alertBody"></p><button class="btn-order" onclick="closeAlert()" id="alertBtn">ACEPTAR</button></div></div>
+
+<!-- MODAL CONTACTO -->
+<div id="modalContact" class="modal">
+  <div class="modal-box" style="max-width:500px">
+    <h3 style="color:var(--rojo); font-family:'Playfair Display', serif">CONTACTO Y UBICACIÓN</h3>
+    <p style="font-size:12px; text-align:left; line-height:1.6">
+      <b>WhatsApp:</b> <a href="https://wa.me/5493764354522" target="_blank" style="color:var(--verde); text-decoration:none">+54 9 3764 354522</a><br>
+      <b>Estudio:</b> Pedro Méndez 2069 - Posadas, Misiones.<br>
+      <b>Instagram:</b> <a href="https://instagram.com/tomaunoestudio" target="_blank" style="color:var(--oro); text-decoration:none">@tomaunoestudio</a>
+    </p>
+    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3542.868784408643!2d-55.9015!3d-27.3758!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjfCsDIyJzMzLjAiUyA1NcKwNTQnMDUuNCJX!5e0!3m2!1ses!2sar!4v1700000000000" width="100%" height="150" style="border-radius:15px; border:1px solid #333; margin-bottom:15px" allowfullscreen="" loading="lazy"></iframe>
+    <button class="btn-order" style="background:#4285F4; width:100%" onclick="window.open('https://maps.app.goo.gl/3KNXZ3oeknREZwM8A')">ABRIR EN GOOGLE MAPS</button><br>
+    <button onclick="document.getElementById('modalContact').style.display='none'" style="background:none; border:none; color:#444; margin-top:20px; cursor:pointer">CERRAR VENTANA</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo-txt" onclick="location.reload()">Estudio Toma<span>uno</span></div>
+  <div class="signature">Desarrollado por Javier Móttola ®</div>
+</header>
+
+<div class="container" id="view-events">
+  <div style="text-align:center; margin-bottom:20px">
+    <button class="btn-order" style="background:#111; border:1px solid #333; color:var(--oro)" onclick="document.getElementById('modalContact').style.display='flex'"><i class="fa fa-id-badge"></i> CONTACTO Y UBICACIÓN</button>
+  </div>
+  <h2>Álbumes Disponibles</h2>
+  <div id="eventList" class="event-grid"></div>
+</div>
+
+<div class="container" id="view-gallery" style="display:none">
+  <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center">
+    <button onclick="location.reload()" style="background:#222; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer">VOLVER</button>
+    <span id="currentEventTitle" style="color:var(--rojo); font-weight:bold; font-size:12px"></span>
+  </div>
+  <div class="gallery" id="photoList"></div>
+</div>
+
+<div class="container" id="view-success" style="display:none">
+    <div class="modal-box" style="margin:auto">
+      <i class="fa fa-check-circle" style="font-size:60px; color:var(--verde)"></i>
+      <h3>¡PEDIDO REGISTRADO!</h3>
+      <div id="downloadSection" style="display:none">
+        <h4 style="color:var(--oro)">DESCARGA HQ LISTA:</h4>
+        <div id="downloadList"></div>
+      </div>
+      <button class="btn-order" style="margin-top:20px" onclick="location.reload()">VOLVER AL INICIO</button>
+    </div>
+</div>
+
+<div id="modalPass" class="modal">
+  <div class="modal-box"><h3 style="color:var(--rojo)">ÁLBUM PRIVADO</h3><input type="password" id="inputPass" placeholder="Clave de acceso"><button class="btn-order" style="width:100%" onclick="checkPass()">ENTRAR</button></div>
+</div>
+
+<div id="lightbox">
+  <span onclick="closeZoom()" style="position:absolute; top:20px; right:30px; font-size:45px; cursor:pointer; z-index:10000">&times;</span>
+  <i id="arrow-l" class="fa fa-chevron-left nav-arrow" style="left:10px" onclick="prevPhoto()"></i>
+  <div style="position:relative">
+      <div class="zoom-watermark">TOMAUNO ®</div>
+      <img id="zoomImg" src="">
+  </div>
+  <i id="arrow-r" class="fa fa-chevron-right nav-arrow" style="right:10px" onclick="nextPhoto()"></i>
+  <div style="margin-top:20px; display:flex; gap:10px; z-index:10000">
+    <button id="zoomSelectBtn" class="btn-order" style="background:#fff; color:#000">SELECCIONAR</button>
+    <button class="btn-order" style="background:#222" onclick="closeZoom()">CERRAR</button>
+  </div>
+</div>
+
+<div class="footer-bar" id="footer">
+  <div class="price-tag">Digital<b id="pDigTotal">0</b></div>
+  <div class="price-tag">Impresa<b id="pImpTotal">0</b></div>
+  <button class="btn-order" style="background:var(--oro); color:black; font-size:9px" onclick="buyFullAlbum()">PACK ÁLBUM</button>
+  <button class="btn-order" id="btnConfirm" onclick="startReview()">CONFIRMAR (0)</button>
+</div>
+
+<div id="modalCheckout" class="modal">
+  <div class="modal-box">
+    <h3 style="color:var(--rojo); margin-top:0">DATOS DEL PEDIDO</h3>
+    <select id="orderType" onchange="updateFinalPrice()">
+      <option value="Descargas Digitales">Descargas Digitales</option>
+      <option value="Impresiones 15x21">Impresiones 15x21</option>
+      <option value="PACK ALBUM COMPLETO">¡PACK ÁLBUM COMPLETO!</option>
+    </select>
+    <div style="background:#000; padding:15px; border-radius:15px; margin:10px 0"><b id="finalTotalDisplay" style="color:var(--rojo); font-size:24px">$0</b></div>
+    <input type="text" id="userName" placeholder="Nombre completo">
+    <input type="text" id="userPhone" placeholder="Tu WhatsApp">
+    <button class="btn-order" id="btnSubmit" style="width:100%" onclick="sendOrder()">ENVIAR PEDIDO</button>
+    <button onclick="closeCheckout()" style="background:none; border:none; color:#444; margin-top:10px; cursor:pointer">Volver</button>
+  </div>
+</div>
+
+<script>
+  // PEGAR ACÁ LA URL DEL DEPLOY DE APPS SCRIPT, terminada en /exec
+  var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznf-yPUwLZADidp01088eRXnJ4KRvV5wm_bb1cd72DObX9jcmpa7thI2VMhl1DQjZ9/exec";
+
+  async function apiGet(params) {
+    if (!SCRIPT_URL || SCRIPT_URL.indexOf("PEGAR_URL") === 0) throw new Error("Falta configurar SCRIPT_URL en index.html");
+    var url = SCRIPT_URL + "?" + new URLSearchParams(params).toString();
+    var res = await fetch(url, { method: "GET" });
+    var data = await res.json();
+    if (data && data.success === false) throw new Error(data.msg || data.error || "Error del servidor");
+    return data;
+  }
+
+  async function apiPost(payload) {
+    if (!SCRIPT_URL || SCRIPT_URL.indexOf("PEGAR_URL") === 0) throw new Error("Falta configurar SCRIPT_URL en index.html");
+    var res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    if (data && data.success === false) throw new Error(data.msg || data.error || "Error del servidor");
+    return data;
+  }
+
+  var selectedPhotos = []; 
+  var allPhotos = []; 
+  var activeEvent = null;
+  var eventsData = [];
+  var currentZoomIdx = 0;
+  var isFullAlbumMode = false;
+
+  window.onload = function() { loadEvents(); };
+
+  document.onkeydown = function(e) {
+    if(document.getElementById('modalPass').style.display === 'flex' && e.key === "Enter") checkPass();
+    if(document.getElementById('modalCheckout').style.display === 'flex' && e.key === "Enter") sendOrder();
+    if(document.getElementById('lightbox').style.display === 'flex') {
+      if(e.key === "ArrowRight") nextPhoto();
+      if(e.key === "ArrowLeft") prevPhoto();
+      if(e.key === "Escape") closeZoom();
+    }
+  };
+
+  async function loadEvents() {
+    toggleL(true);
+    try {
+      var events = await apiGet({ action: "events" });
+      toggleL(false);
+      eventsData = Array.isArray(events) ? events : (events.events || []);
+      var html = eventsData.map(function(ev){ return '<div class="event-card" onclick="askPass(\''+ev.id+'\')"><i class="fa fa-camera-retro"></i><h3>'+ev.displayName+'</h3></div>'; }).join("");
+      document.getElementById('eventList').innerHTML = html || "<p>Sin eventos disponibles.</p>";
+    } catch(err) {
+      toggleL(false);
+      luxAlert("ERROR", "No se pudieron cargar los álbumes: " + err.message);
+      document.getElementById('eventList').innerHTML = "<p>No se pudieron cargar los álbumes.</p>";
+    }
+  }
+
+  function askPass(id) {
+    activeEvent = eventsData.find(function(e){ return e.id === id; });
+    if(!activeEvent.pass) { loadPhotos(activeEvent.id, activeEvent.displayName); } 
+    else { document.getElementById('modalPass').style.display = 'flex'; document.getElementById('inputPass').value = ""; setTimeout(function(){ document.getElementById('inputPass').focus(); }, 100); }
+  }
+
+  function checkPass() {
+    if (document.getElementById('inputPass').value === activeEvent.pass) {
+      document.getElementById('modalPass').style.display = 'none';
+      loadPhotos(activeEvent.id, activeEvent.displayName);
+    } else { luxAlert("ERROR", "Clave incorrecta."); }
+  }
+
+  async function loadPhotos(id, name) {
+    toggleL(true, "CARGANDO FOTOS...");
+    try {
+      var res = await apiGet({ action: "photos", folderId: id });
+      var photos = Array.isArray(res) ? res : (res.photos || []);
+      toggleL(false);
+      allPhotos = photos; 
+      selectedPhotos = [];
+      isFullAlbumMode = false;
+      document.getElementById('view-events').style.display = 'none';
+      document.getElementById('view-gallery').style.display = 'block';
+      document.getElementById('currentEventTitle').innerText = name + " · " + photos.length + " fotos";
+      
+      var photoHtml = "";
+      for(var i=0; i<photos.length; i++) {
+        photoHtml += '<div class="photo-box" id="p-'+photos[i].id+'" onclick="openZoom('+i+')">' +
+          '<div class="check-mark" onclick="event.stopPropagation(); togglePhoto(\''+photos[i].id+'\')"><i class="fa fa-check"></i></div>' +
+          '<img src="'+photos[i].urlWeb+'" loading="lazy" referrerpolicy="no-referrer">' +
+        '</div>';
+      }
+      document.getElementById('photoList').innerHTML = photoHtml || "<p>No hay fotos en este álbum.</p>";
+      document.getElementById('footer').style.display = 'flex';
+      updateFooter();
+      window.scrollTo(0,0);
+    } catch(err) {
+      toggleL(false);
+      luxAlert("ERROR", "No se pudieron cargar las fotos: " + err.message);
+    }
+  }
+
+  function togglePhoto(id) {
+    var photo = allPhotos.find(function(x){ return x.id === id; });
+    var idx = selectedPhotos.findIndex(function(x){ return x.id === id; });
+    if(idx > -1) {
+      selectedPhotos.splice(idx, 1);
+      document.getElementById('p-'+id).classList.remove('selected');
+    } else {
+      selectedPhotos.push(photo);
+      document.getElementById('p-'+id).classList.add('selected');
+    }
+    updateFooter();
+  }
+
+  function updateFooter() {
+    var totalDig = selectedPhotos.length * activeEvent.pDigital;
+    var totalImp = selectedPhotos.length * activeEvent.pPrint;
+    document.getElementById('pDigTotal').innerText = totalDig === 0 ? "GRATIS" : "$" + totalDig.toLocaleString();
+    document.getElementById('pImpTotal').innerText = totalImp === 0 ? "GRATIS" : "$" + totalImp.toLocaleString();
+    document.getElementById('btnConfirm').innerText = "CONFIRMAR (" + selectedPhotos.length + ")";
+  }
+
+  function openZoom(idx) {
+    currentZoomIdx = idx;
+    var p = allPhotos[idx];
+    document.getElementById('zoomImg').src = p.urlWeb;
+    document.getElementById('arrow-l').style.display = idx === 0 ? 'none' : 'block';
+    document.getElementById('arrow-r').style.display = idx === allPhotos.length - 1 ? 'none' : 'block';
+    var btn = document.getElementById('zoomSelectBtn');
+    var isSel = selectedPhotos.find(function(x){ return x.id === p.id; });
+    btn.innerText = isSel ? "QUITAR" : "SELECCIONAR";
+    btn.style.background = isSel ? "#444" : "var(--rojo)";
+    btn.onclick = function(){ togglePhoto(p.id); openZoom(idx); };
+    document.getElementById('lightbox').style.display = 'flex';
+  }
+
+  function nextPhoto() { if(currentZoomIdx < allPhotos.length - 1) openZoom(currentZoomIdx + 1); }
+  function prevPhoto() { if(currentZoomIdx > 0) openZoom(currentZoomIdx - 1); }
+  function closeZoom() { document.getElementById('lightbox').style.display = 'none'; }
+  function startReview() { if(selectedPhotos.length === 0) return luxAlert("AVISO", "Seleccioná al menos una foto o usá PACK ÁLBUM."); isFullAlbumMode = false; document.getElementById("orderType").value = "Descargas Digitales"; openCheckout(); }
+  function buyFullAlbum() { isFullAlbumMode = true; document.getElementById("orderType").value = "PACK ALBUM COMPLETO"; openCheckout(); }
+  function openCheckout() { updateFinalPrice(); document.getElementById('modalCheckout').style.display = 'flex'; setTimeout(function(){ document.getElementById('userName').focus(); }, 150); }
+
+  function closeCheckout() { document.getElementById("modalCheckout").style.display = "none"; }
+
+  function updateFinalPrice() { 
+    var type = document.getElementById('orderType').value; 
+    var unit = (type === 'Descargas Digitales') ? activeEvent.pDigital : activeEvent.pPrint; 
+    var total = isFullAlbumMode ? activeEvent.pFull : (selectedPhotos.length * unit);
+    document.getElementById('finalTotalDisplay').innerText = (total === 0) ? "GRATIS" : "$" + total.toLocaleString(); 
+  }
+
+  function sendOrder() {
+    var name = document.getElementById('userName').value;
+    var phone = document.getElementById('userPhone').value;
+    if(!name || !phone) return luxAlert("ERROR", "Escribe tu nombre y WhatsApp.");
+    
+    var type = document.getElementById('orderType').value;
+    var unit = (type === 'Descargas Digitales') ? activeEvent.pDigital : activeEvent.pPrint;
+    var total = isFullAlbumMode ? activeEvent.pFull : (selectedPhotos.length * unit);
+    var listNames = isFullAlbumMode ? ["TODO EL ALBUM COMPLETO"] : selectedPhotos.map(function(x){return x.name;});
+
+    toggleL(true, "REGISTRANDO...");
+    apiPost({ action: "submitOrder", name: name, phone: phone, orderType: type, eventName: activeEvent.displayName, photos: selectedPhotos.map(function(x){return x.id;}), photoNames: listNames, total: total }).then(function(res) {
+      toggleL(false);
+      var msg = "*TOMAUNO - PEDIDO*%0A*Cliente:* "+name+"%0A*WhatsApp:* "+phone+"%0A*Evento:* "+activeEvent.displayName+"%0A*Servicio:* "+type+"%0A*TOTAL:* "+(total==0?'GRATIS':'$'+total);
+      
+      document.getElementById('modalCheckout').style.display = 'none';
+      document.getElementById('view-gallery').style.display = 'none';
+      document.getElementById('view-success').style.display = 'block';
+      
+      if(total === 0 && (type === 'Descargas Digitales' || type === 'PACK ALBUM COMPLETO')) {
+        document.getElementById('downloadSection').style.display = 'block';
+        var listToDown = (type === 'PACK ALBUM COMPLETO') ? allPhotos : selectedPhotos;
+        var listHtml = listToDown.map(function(p){ return '<div class="download-item"><span>'+p.name+'</span> <a href="'+p.urlFull+'" target="_blank">BAJAR HQ</a></div>'; }).join("");
+        document.getElementById('downloadList').innerHTML = listHtml;
+      }
+
+      luxAlert("¡PEDIDO REGISTRADO!", "Presiona ACEPTAR para avisar por WhatsApp.");
+      document.getElementById('alertBtn').onclick = function() {
+        window.open("https://wa.me/"+res.whatsappNumber+"?text="+msg, "_blank");
+        closeAlert();
+      };
+    }).catch(function(err) {
+      toggleL(false);
+      luxAlert("ERROR", "No se pudo registrar el pedido: " + err.message);
+    });
+  }
+
+  function luxAlert(t, b) { document.getElementById('alertTitle').innerText = t; document.getElementById('alertBody').innerText = b; document.getElementById('modalAlert').style.display = 'flex'; document.getElementById('alertBtn').focus(); }
+  function closeAlert() { document.getElementById('modalAlert').style.display = 'none'; }
+  function toggleL(v, t) { if(t) document.getElementById('loadingTxt').innerText = t; document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
+</script>
+</body>
+</html>
