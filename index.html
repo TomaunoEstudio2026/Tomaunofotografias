@@ -139,7 +139,7 @@
 <div class="container" id="view-success" style="display:none">
     <div class="modal-box" style="margin:auto">
       <i class="fa fa-check-circle" style="font-size:60px; color:var(--verde)"></i>
-      <h3>¡PEDIDO REGISTRADO!</h3>
+      <h3>¡PEDIDO REGISTRADO!</h3><p style="font-size:11px;color:#aaa">Tu pedido quedó registrado. Coordinaremos el pago y la entrega por WhatsApp.</p>
       <div id="downloadSection" style="display:none">
         <h4 style="color:var(--oro)">DESCARGA HQ LISTA:</h4>
         <div id="downloadList"></div>
@@ -169,7 +169,7 @@
 <div class="footer-bar" id="footer">
   <div class="price-tag">Digital<b id="pDigTotal">0</b></div>
   <div class="price-tag">Impresa<b id="pImpTotal">0</b></div>
-  <button class="btn-order" style="background:var(--oro); color:black; font-size:9px" onclick="buyFullAlbum()">PACK ÁLBUM</button>
+  <button class="btn-order" id="btnPackAlbum" style="background:var(--oro); color:black; font-size:9px" onclick="buyFullAlbum()">PACK ÁLBUM</button>
   <button class="btn-order" id="btnConfirm" onclick="startReview()">CONFIRMAR (0)</button>
 </div>
 
@@ -390,12 +390,20 @@
     updateFooter();
   }
 
-  function updateFooter() {
+function updateFooter() {
     var totalDig = selectedPhotos.length * activeEvent.pDigital;
     var totalImp = selectedPhotos.length * activeEvent.pPrint;
     document.getElementById('pDigTotal').innerText = totalDig === 0 ? "GRATIS" : "$" + totalDig.toLocaleString();
     document.getElementById('pImpTotal').innerText = totalImp === 0 ? "GRATIS" : "$" + totalImp.toLocaleString();
     document.getElementById('btnConfirm').innerText = "CONFIRMAR (" + selectedPhotos.length + ")";
+
+    var packBtn = document.getElementById('btnPackAlbum');
+    if(packBtn){
+      var products = getProductsForEvent();
+      var full = products.find(function(p){ return p.isFullAlbum; });
+      packBtn.style.display = full ? 'inline-block' : 'none';
+      if(full) packBtn.innerText = full.price === 0 ? "PACK ÁLBUM" : "PACK $" + Number(full.price).toLocaleString();
+    }
   }
 
   function openZoom(idx) {
@@ -415,41 +423,105 @@
   function nextPhoto() { if(currentZoomIdx < allPhotos.length - 1) openZoom(currentZoomIdx + 1); }
   function prevPhoto() { if(currentZoomIdx > 0) openZoom(currentZoomIdx - 1); }
   function closeZoom() { document.getElementById('lightbox').style.display = 'none'; }
-  function startReview() { if(selectedPhotos.length === 0) return luxAlert("AVISO", "Seleccioná al menos una foto o usá PACK ÁLBUM."); isFullAlbumMode = false; document.getElementById("orderType").value = "Descargas Digitales"; openCheckout(); }
-  function buyFullAlbum() { isFullAlbumMode = true; document.getElementById("orderType").value = "PACK ALBUM COMPLETO"; openCheckout(); }
-  function openCheckout() { updateFinalPrice(); document.getElementById('modalCheckout').style.display = 'flex'; setTimeout(function(){ document.getElementById('userName').focus(); }, 150); }
+function startReview() {
+    if(selectedPhotos.length === 0) return luxAlert("AVISO", "Seleccioná al menos una foto.");
+    isFullAlbumMode = false;
+    populateOrderTypes(false);
+    openCheckout();
+  }
+function buyFullAlbum() {
+    var products = getProductsForEvent();
+    var idxFull = products.findIndex(function(p){ return p.isFullAlbum; });
+    if(idxFull < 0) return luxAlert("AVISO", "El pack álbum no está disponible para este evento.");
+    isFullAlbumMode = true;
+    populateOrderTypes(true);
+    openCheckout();
+  }
+function openCheckout() {
+    if(!document.getElementById('orderType').options.length) populateOrderTypes(isFullAlbumMode);
+    updateFinalPrice();
+    document.getElementById('modalCheckout').style.display = 'flex';
+    setTimeout(function(){ document.getElementById('userName').focus(); }, 150);
+  }
 
   function closeCheckout() { document.getElementById("modalCheckout").style.display = "none"; }
 
-  function updateFinalPrice() { 
-    var type = document.getElementById('orderType').value; 
-    var unit = (type === 'Descargas Digitales') ? activeEvent.pDigital : activeEvent.pPrint; 
-    var total = isFullAlbumMode ? activeEvent.pFull : (selectedPhotos.length * unit);
-    document.getElementById('finalTotalDisplay').innerText = (total === 0) ? "GRATIS" : "$" + total.toLocaleString();
-    var info = "";
-    if(type === "Impresiones 15x21") {
-      info = "🖨️ Las fotos impresas también se entregan digitalmente por WhatsApp o enlace, sin costo extra.";
-    } else if(type === "Descargas Digitales") {
-      info = "📲 Recibirás las fotos digitales seleccionadas luego de confirmar el pedido.";
-    } else {
-      info = "📦 El pack incluye el álbum completo. Si el álbum tiene muchas fotos, la entrega puede organizarse por enlace.";
+  function getProductsForEvent() {
+    if(activeEvent && Array.isArray(activeEvent.products) && activeEvent.products.length) return activeEvent.products;
+
+    var fallback = [];
+    fallback.push({ label:"Descargas Digitales", price:Number(activeEvent.pDigital || 0), perPhoto:true, includesDigital:false, selectionOnly:false, isFullAlbum:false });
+    fallback.push({ label:"Impresiones 15x21", price:Number(activeEvent.pPrint || 0), perPhoto:true, includesDigital:true, selectionOnly:false, isFullAlbum:false });
+    fallback.push({ label:"Selección para edición / fotolibro", price:0, perPhoto:false, includesDigital:false, selectionOnly:true, isFullAlbum:false });
+
+    if(Number(activeEvent.pFull || 0) > 0 || Number(activeEvent.pFull || 0) === -1) {
+      fallback.push({ label:"PACK ÁLBUM COMPLETO", price:Number(activeEvent.pFull) === -1 ? 0 : Number(activeEvent.pFull), perPhoto:false, includesDigital:true, selectionOnly:false, isFullAlbum:true });
     }
-    document.getElementById("orderInfo").innerText = info;
+    return fallback;
   }
 
-  function sendOrder() {
+  function populateOrderTypes(preferFull) {
+    var select = document.getElementById('orderType');
+    var products = getProductsForEvent();
+    select.innerHTML = products.map(function(p, i){
+      var priceTxt = p.price === 0 ? "GRATIS" : "$" + Number(p.price || 0).toLocaleString();
+      var suffix = p.perPhoto ? " / foto" : "";
+      return '<option value="'+i+'">'+p.label+' · '+priceTxt+suffix+'</option>';
+    }).join("");
+
+    if(preferFull) {
+      var idxFull = products.findIndex(function(p){ return p.isFullAlbum; });
+      select.value = idxFull >= 0 ? String(idxFull) : "0";
+    } else {
+      var idxDigital = products.findIndex(function(p){ return p.label === "Descargas Digitales"; });
+      select.value = idxDigital >= 0 ? String(idxDigital) : "0";
+    }
+  }
+
+  function getSelectedProduct() {
+    var products = getProductsForEvent();
+    var idx = Number(document.getElementById('orderType').value || 0);
+    return products[idx] || products[0];
+  }
+
+  function getOrderTotal(product) {
+    if(!product) product = getSelectedProduct();
+    if(product.isFullAlbum) return Number(product.price || 0);
+    if(product.perPhoto) return selectedPhotos.length * Number(product.price || 0);
+    return Number(product.price || 0);
+  }
+
+  function getOrderQuantity(product) {
+    if(!product) product = getSelectedProduct();
+    return product.isFullAlbum ? allPhotos.length : selectedPhotos.length;
+  }
+
+
+function updateFinalPrice() {
+    var product = getSelectedProduct();
+    var total = getOrderTotal(product);
+    var extra = "";
+
+    if(product.selectionOnly) extra = "<br><small style='color:#aaa'>Solo selección/lista de fotos. Sin descarga automática.</small>";
+    if(product.includesDigital && !product.isFullAlbum) extra = "<br><small style='color:#aaa'>Incluye copia digital sin costo adicional.</small>";
+    if(product.isFullAlbum) extra = "<br><small style='color:#aaa'>Pedido de álbum completo. La entrega se coordina por WhatsApp.</small>";
+
+    document.getElementById('finalTotalDisplay').innerHTML = ((total === 0) ? "GRATIS" : "$" + total.toLocaleString()) + extra;
+  }
+
+function sendOrder() {
     var name = document.getElementById('userName').value.trim();
     var phone = document.getElementById('userPhone').value.trim();
     var notes = (document.getElementById('userNotes') && document.getElementById('userNotes').value.trim()) || "Sin observaciones";
 
     if(!name || !phone) return luxAlert("ERROR", "Escribe tu nombre y WhatsApp.");
 
-    var type = document.getElementById('orderType').value;
-    var unit = (type === 'Descargas Digitales') ? activeEvent.pDigital : activeEvent.pPrint;
-    var total = isFullAlbumMode ? activeEvent.pFull : (selectedPhotos.length * unit);
-    var listNames = isFullAlbumMode ? ["TODO EL ALBUM COMPLETO"] : selectedPhotos.map(function(x){return x.name;});
-    var cantidad = isFullAlbumMode ? allPhotos.length : selectedPhotos.length;
-    var photoIds = isFullAlbumMode ? allPhotos.map(function(x){return x.id;}) : selectedPhotos.map(function(x){return x.id;});
+    var product = getSelectedProduct();
+    var type = product.label;
+    var total = getOrderTotal(product);
+    var listNames = product.isFullAlbum ? ["TODO EL ALBUM COMPLETO"] : selectedPhotos.map(function(x){return x.name;});
+    var cantidad = getOrderQuantity(product);
+    var photoIds = product.isFullAlbum ? allPhotos.map(function(x){return x.id;}) : selectedPhotos.map(function(x){return x.id;});
 
     toggleL(true, "REGISTRANDO...");
     apiPost({
@@ -476,9 +548,9 @@
         "📝 *Observaciones:*%0A" + notes + "%0A%0A" +
         "📂 *Fotografías:*%0A" + fotosTxt + "%0A%0A";
 
-      if(type === "Impresiones 15x21"){
-        msg += "✅ Las impresiones incluyen copia digital sin costo adicional.%0A%0A";
-      }
+      if(product.selectionOnly) msg += "✅ Pedido de selección/lista de fotos. Sin descarga automática.%0A%0A";
+      if(product.includesDigital && !product.isFullAlbum) msg += "✅ Incluye copia digital sin costo adicional.%0A%0A";
+      if(product.isFullAlbum) msg += "✅ Pedido de álbum completo. Entrega a coordinar por WhatsApp.%0A%0A";
 
       msg += "━━━━━━━━━━━━━━━%0A" +
         "💰 *TOTAL:* " + (total==0 ? "GRATIS" : "$" + total.toLocaleString());
@@ -486,13 +558,6 @@
       document.getElementById('modalCheckout').style.display = 'none';
       document.getElementById('view-gallery').style.display = 'none';
       document.getElementById('view-success').style.display = 'block';
-
-      if(total === 0 && (type === 'Descargas Digitales' || type === 'PACK ALBUM COMPLETO')) {
-        document.getElementById('downloadSection').style.display = 'block';
-        var listToDown = (type === 'PACK ALBUM COMPLETO') ? allPhotos : selectedPhotos;
-        var listHtml = listToDown.map(function(p){ return '<div class="download-item"><span>'+p.name+'</span> <a href="'+p.urlFull+'" target="_blank">BAJAR HQ</a></div>'; }).join("");
-        document.getElementById('downloadList').innerHTML = listHtml;
-      }
 
       luxAlert("¡PEDIDO REGISTRADO!", "Presiona ACEPTAR para avisar por WhatsApp.");
       document.getElementById('alertBtn').onclick = function() {
