@@ -66,6 +66,28 @@
     .download-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 11px; align-items: center; }
     .download-item a { background: var(--verde); color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 9px; }
 
+
+    .notes-soft::placeholder { color: #555; font-size: 12px; font-weight: 400; }
+    .admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:15px 0; }
+    .admin-card { background:#000; border:1px solid #222; border-radius:16px; padding:14px; text-align:center; }
+    .admin-card b { color:var(--rojo); font-size:20px; display:block; margin-bottom:4px; }
+    .admin-card span { color:#aaa; font-size:9px; text-transform:uppercase; letter-spacing:1px; }
+    .admin-tools { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 15px; }
+    .admin-tools input { flex:1; min-width:190px; margin:0; }
+    .order-row { background:#030303; border:1px solid #222; border-radius:14px; padding:12px; margin:10px 0; text-align:left; }
+    .order-row.paid { border-color:rgba(37,211,102,.35); }
+    .order-row.done { opacity:.78; }
+    .order-head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+    .order-head b { color:#fff; font-size:13px; }
+    .order-meta { color:#999; font-size:10px; line-height:1.55; margin-top:6px; }
+    .status-pill { display:inline-block; padding:4px 8px; border-radius:999px; font-size:9px; margin:2px 4px 2px 0; border:1px solid #333; }
+    .status-pending { color:#ffd37a; border-color:#5a4210; background:rgba(212,175,55,.08); }
+    .status-ok { color:#7dff9b; border-color:#145a25; background:rgba(37,211,102,.08); }
+    .order-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+    .order-actions button, .mini-btn { background:#151515; color:#fff; border:1px solid #333; padding:7px 10px; border-radius:999px; font-size:9px; cursor:pointer; }
+    .order-actions button:hover, .mini-btn:hover { border-color:var(--rojo); }
+    #adminOrders { max-height:58vh; overflow:auto; padding-right:4px; }
+
     #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--negro); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; }
   </style>
 </head>
@@ -99,7 +121,7 @@
 
 <div class="container" id="view-events">
   <div style="text-align:center; margin-bottom:20px">
-    <button class="btn-order" style="background:#111; border:1px solid #333; color:var(--oro)" onclick="document.getElementById('modalContact').style.display='flex'"><i class="fa fa-id-badge"></i> CONTACTO Y UBICACIÓN</button>
+    <button class="btn-order" style="background:#111; border:1px solid #333; color:var(--oro)" onclick="document.getElementById('modalContact').style.display='flex'" ondblclick="event.preventDefault(); event.stopPropagation(); openAdminPin();"><i class="fa fa-id-badge"></i> CONTACTO Y UBICACIÓN</button>
   </div>
   <h2>Álbumes Disponibles</h2>
   <div id="eventList" class="event-grid"></div>
@@ -165,11 +187,51 @@
     <div id="orderInfo" style="font-size:11px; line-height:1.45; color:#bbb; background:#050505; border:1px solid #222; border-radius:12px; padding:10px; margin-bottom:8px"></div>
     <input type="text" id="userName" placeholder="Nombre completo">
     <input type="text" id="userPhone" placeholder="Tu WhatsApp">
-    <textarea id="userNotes" placeholder="Comentarios o solicitudes especiales (opcional)&#10;Ej: Foto principal en blanco y negro, copia extra, entrega urgente"></textarea>
+    <textarea id="userNotes" class="notes-soft" placeholder="Dejanos tu inquietud o detalle sobre el pedido."></textarea>
     <button class="btn-order" id="btnSubmit" style="width:100%" onclick="sendOrder()">ENVIAR PEDIDO</button>
     <button onclick="closeCheckout()" style="background:none; border:none; color:#444; margin-top:10px; cursor:pointer">Volver</button>
   </div>
 </div>
+
+
+<div id="modalAdminPin" class="modal" style="z-index:12000">
+  <div class="modal-box">
+    <h3 style="color:var(--rojo); margin-top:0">PANEL ADMIN</h3>
+    <p style="font-size:11px; color:#aaa">Ingresá el PIN de administración.</p>
+    <input type="password" id="adminPinInput" placeholder="PIN">
+    <button class="btn-order" style="width:100%" onclick="checkAdminPin()">ENTRAR</button>
+    <button onclick="document.getElementById('modalAdminPin').style.display='none'" style="background:none; border:none; color:#555; margin-top:12px; cursor:pointer">Cerrar</button>
+  </div>
+</div>
+
+<div id="modalAdmin" class="modal" style="z-index:11900; align-items:flex-start; overflow:auto; padding:16px 0">
+  <div class="modal-box" style="max-width:980px; text-align:left; margin:20px auto">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px">
+      <div>
+        <h3 style="color:var(--rojo); margin:0">PANEL DE PEDIDOS</h3>
+        <p style="font-size:10px; color:#777; margin:5px 0 0">Pago, entrega, WhatsApp y listas de fotos.</p>
+      </div>
+      <button class="mini-btn" onclick="document.getElementById('modalAdmin').style.display='none'">CERRAR</button>
+    </div>
+
+    <div class="admin-grid">
+      <div class="admin-card"><b id="admTotalPedidos">0</b><span>Pedidos</span></div>
+      <div class="admin-card"><b id="admPendPago">0</b><span>Pend. pago</span></div>
+      <div class="admin-card"><b id="admPendEntrega">0</b><span>Pend. entrega</span></div>
+      <div class="admin-card"><b id="admTotalGeneral">$0</b><span>Total general</span></div>
+      <div class="admin-card"><b id="admTotalPendiente">$0</b><span>Por cobrar</span></div>
+      <div class="admin-card"><b id="admTotalCobrado">$0</b><span>Cobrado</span></div>
+    </div>
+
+    <div class="admin-tools">
+      <input id="adminSearch" placeholder="Buscar por cliente, celular, evento o estado..." oninput="renderAdminOrders()">
+      <button class="btn-order" onclick="loadAdminOrders()">ACTUALIZAR</button>
+    </div>
+
+    <div id="adminOrders"></div>
+  </div>
+</div>
+
 
 <script>
   // PEGAR ACÁ LA URL DEL DEPLOY DE APPS SCRIPT, terminada en /exec
@@ -211,6 +273,7 @@
 
   document.onkeydown = function(e) {
     if(document.getElementById('modalPass').style.display === 'flex' && e.key === "Enter") checkPass();
+    if(document.getElementById('modalAdminPin') && document.getElementById('modalAdminPin').style.display === 'flex' && e.key === "Enter") checkAdminPin();
     if(document.getElementById('modalCheckout').style.display === 'flex' && e.key === "Enter") sendOrder();
     if(document.getElementById('lightbox').style.display === 'flex') {
       if(e.key === "ArrowRight") nextPhoto();
@@ -441,6 +504,122 @@
       toggleL(false);
       luxAlert("ERROR", "No se pudo registrar el pedido: " + err.message);
     });
+  }
+
+
+  var ADMIN_PIN = "3233";
+  var adminOrdersData = [];
+
+  function openAdminPin() {
+    document.getElementById('modalContact').style.display = 'none';
+    document.getElementById('modalAdminPin').style.display = 'flex';
+    document.getElementById('adminPinInput').value = "";
+    setTimeout(function(){ document.getElementById('adminPinInput').focus(); }, 100);
+  }
+
+  function checkAdminPin() {
+    var pin = document.getElementById('adminPinInput').value;
+    if(pin !== ADMIN_PIN) return luxAlert("ERROR", "PIN incorrecto.");
+    document.getElementById('modalAdminPin').style.display = 'none';
+    document.getElementById('modalAdmin').style.display = 'flex';
+    loadAdminOrders();
+  }
+
+  async function loadAdminOrders() {
+    toggleL(true, "CARGANDO PEDIDOS...");
+    try {
+      var res = await apiGet({ action: "orders", pin: ADMIN_PIN });
+      toggleL(false);
+      adminOrdersData = res.orders || [];
+      renderAdminOrders();
+    } catch(err) {
+      toggleL(false);
+      luxAlert("ERROR", "No se pudieron cargar los pedidos: " + err.message);
+    }
+  }
+
+  function money(n) {
+    n = Number(n || 0);
+    return "$" + n.toLocaleString();
+  }
+
+  function renderAdminOrders() {
+    var q = (document.getElementById('adminSearch').value || "").toLowerCase();
+    var filtered = adminOrdersData.filter(function(o){
+      var hay = [o.cliente,o.whatsapp,o.evento,o.tipo,o.pago,o.entrega,o.observaciones].join(" ").toLowerCase();
+      return hay.indexOf(q) > -1;
+    });
+
+    var totalGeneral = adminOrdersData.reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
+    var totalPend = adminOrdersData.filter(function(o){ return (o.pago || "PENDIENTE") !== "PAGADO"; }).reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
+    var totalCob = adminOrdersData.filter(function(o){ return (o.pago || "") === "PAGADO"; }).reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
+    var pendPago = adminOrdersData.filter(function(o){ return (o.pago || "PENDIENTE") !== "PAGADO"; }).length;
+    var pendEntrega = adminOrdersData.filter(function(o){ return (o.entrega || "PENDIENTE") !== "ENTREGADO"; }).length;
+
+    document.getElementById('admTotalPedidos').innerText = adminOrdersData.length;
+    document.getElementById('admPendPago').innerText = pendPago;
+    document.getElementById('admPendEntrega').innerText = pendEntrega;
+    document.getElementById('admTotalGeneral').innerText = money(totalGeneral);
+    document.getElementById('admTotalPendiente').innerText = money(totalPend);
+    document.getElementById('admTotalCobrado').innerText = money(totalCob);
+
+    var html = filtered.map(function(o){
+      var pagoOk = (o.pago || "") === "PAGADO";
+      var entregaOk = (o.entrega || "") === "ENTREGADO";
+      var phoneClean = String(o.whatsapp || "").replace(/\D/g,'');
+      var waPhone = phoneClean.startsWith("54") ? phoneClean : "54" + phoneClean;
+      return '<div class="order-row '+(pagoOk?'paid':'')+' '+(entregaOk?'done':'')+'">'+
+        '<div class="order-head"><b>'+escapeHtml(o.cliente || "Sin nombre")+'</b><b style="color:var(--rojo)">'+money(o.total)+'</b></div>'+
+        '<div class="order-meta">'+
+          '📱 '+escapeHtml(o.whatsapp || "")+' · 🎉 '+escapeHtml(o.evento || "")+'<br>'+
+          '🛒 '+escapeHtml(o.tipo || "")+' · 📷 '+escapeHtml(o.cantidad || "0")+' fotos<br>'+
+          '📝 '+escapeHtml(o.observaciones || "Sin observaciones")+'<br>'+
+          '<span class="status-pill '+(pagoOk?'status-ok':'status-pending')+'">Pago: '+escapeHtml(o.pago || "PENDIENTE")+'</span>'+
+          '<span class="status-pill '+(entregaOk?'status-ok':'status-pending')+'">Entrega: '+escapeHtml(o.entrega || "PENDIENTE")+'</span>'+
+        '</div>'+
+        '<div class="order-actions">'+
+          '<button onclick="window.open(\\'https://wa.me/'+waPhone+'\\',\\'_blank\\')">💬 WhatsApp</button>'+
+          '<button onclick="copyText(\\''+jsStr(o.whatsapp || "")+'\\')">📋 Copiar cel</button>'+
+          '<button onclick="copyText(\\''+jsStr(o.fotos || "")+'\\')">📋 Copiar fotos</button>'+
+          '<button onclick="setOrderStatus('+o.row+',\\'pago\\',\\''+(pagoOk?'PENDIENTE':'PAGADO')+'\\')">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+
+          '<button onclick="setOrderStatus('+o.row+',\\'entrega\\',\\''+(entregaOk?'PENDIENTE':'ENTREGADO')+'\\')">'+(entregaOk?'↩ Entrega pend.':'📦 Entregado')+'</button>'+
+        '</div>'+
+      '</div>';
+    }).join("");
+
+    document.getElementById('adminOrders').innerHTML = html || '<p style="color:#777;text-align:center">Sin pedidos para mostrar.</p>';
+  }
+
+  async function setOrderStatus(row, field, value) {
+    var payload = { action:"updateOrder", pin:ADMIN_PIN, row:row };
+    payload[field] = value;
+    toggleL(true, "ACTUALIZANDO...");
+    try {
+      await apiPost(payload);
+      toggleL(false);
+      await loadAdminOrders();
+    } catch(err) {
+      toggleL(false);
+      luxAlert("ERROR", "No se pudo actualizar: " + err.message);
+    }
+  }
+
+  function copyText(txt) {
+    navigator.clipboard.writeText(txt || "").then(function(){
+      luxAlert("COPIADO", "Dato copiado al portapapeles.");
+    }).catch(function(){
+      luxAlert("AVISO", "No se pudo copiar automáticamente.");
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function jsStr(s) {
+    return String(s == null ? "" : s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,'\\n');
   }
 
   function luxAlert(t, b) { document.getElementById('alertTitle').innerText = t; document.getElementById('alertBody').innerText = b; document.getElementById('modalAlert').style.display = 'flex'; document.getElementById('alertBtn').focus(); }
