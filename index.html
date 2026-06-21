@@ -133,6 +133,82 @@
     }
 
     #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--negro); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+  
+    #floatingCart {
+      position: fixed;
+      right: 18px;
+      bottom: 58px;
+      z-index: 12000;
+      background: var(--rojo);
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      min-width: 70px;
+      height: 48px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-weight: 900;
+      box-shadow: 0 0 28px rgba(255,0,0,.55);
+      cursor: pointer;
+    }
+    #floatingCart .cart-icon { font-size: 20px; }
+    #floatingCart .cart-count { font-size: 20px; }
+    #zoomModal.selected-zoom #zoomImg {
+      outline: 6px solid var(--rojo);
+      box-shadow: 0 0 35px rgba(255,0,0,.7);
+    }
+    #zoomSelectedBadge {
+      display:block !important;
+      top:18px !important;
+      background:rgba(255,0,0,.98) !important;
+      color:white !important;
+    }
+    #zoomSelectedBadge::after {
+      content:"";
+    }
+    @media(max-width:700px){
+      #floatingCart { right: 12px; bottom: 78px; height: 46px; min-width: 66px; }
+    }
+
+  
+    .photo-watermark::after{
+      content:"tomauno";
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%) rotate(23deg);
+      color:rgba(255,0,0,.20);
+      -webkit-text-stroke:1px rgba(0,0,0,.18);
+      text-shadow:0 1px 3px rgba(255,255,255,.22);
+      font-size:46px;
+      font-weight:900;
+      letter-spacing:-3px;
+      font-family:Arial, sans-serif;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    #zoomModal .zoom-watermark::after{
+      content:"tomauno";
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%) rotate(24deg);
+      color:rgba(255,0,0,.18);
+      -webkit-text-stroke:1.5px rgba(0,0,0,.16);
+      font-size:72px;
+      font-weight:900;
+      letter-spacing:-4px;
+      font-family:Arial, sans-serif;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    @media(max-width:700px){
+      .photo-watermark::after{font-size:32px;}
+      #zoomModal .zoom-watermark::after{font-size:44px;}
+    }
+
   </style>
 </head>
 <body oncontextmenu="return false;">
@@ -294,6 +370,8 @@
 <button id="secretAdminBtn" ondblclick="event.preventDefault(); event.stopPropagation(); openAdminPin();" title=""></button>
 
 <div id="miniToast"></div>
+
+<div id="floatingCart" onclick="startReview()"><span class="cart-icon">🛒</span><span class="cart-count" id="floatingCartCount">0</span></div>
 
 <script>
   // PEGAR ACÁ LA URL DEL DEPLOY DE APPS SCRIPT, terminada en /exec
@@ -462,6 +540,8 @@ function updateFooter() {
     document.getElementById('pDigTotal').innerText = totalDig === 0 ? "GRATIS" : "$" + totalDig.toLocaleString();
     document.getElementById('pImpTotal').innerText = totalImp === 0 ? "GRATIS" : "$" + totalImp.toLocaleString();
     document.getElementById('btnConfirm').innerText = "CONFIRMAR (" + selectedPhotos.length + ")";
+    var fc=document.getElementById('floatingCart'); var fcc=document.getElementById('floatingCartCount');
+    if(fc && fcc){ fcc.innerText=selectedPhotos.length; fc.style.display = selectedPhotos.length ? 'flex' : 'none'; }
 
     var packBtn = document.getElementById('btnPackAlbum');
     if(packBtn){
@@ -480,10 +560,10 @@ function updateFooter() {
     document.getElementById('arrow-r').style.display = idx === allPhotos.length - 1 ? 'none' : 'block';
     var btn = document.getElementById('zoomSelectBtn');
     var isSel = selectedPhotos.find(function(x){ return x.id === p.id; });
-    btn.innerText = isSel ? "QUITAR SELECCIÓN" : "SELECCIONAR";
+    btn.innerText = isSel ? "✔ SELECCIONADA - QUITAR" : "SELECCIONAR";
     btn.style.background = isSel ? "#444" : "var(--rojo)";
     var badge = document.getElementById('zoomSelectedBadge');
-    if(badge) badge.style.display = isSel ? 'block' : 'none';
+    if(badge){ badge.style.display = isSel ? 'block' : 'none'; badge.innerText = isSel ? '✔ FOTO SELECCIONADA' : ''; }
     var zm = document.getElementById('zoomModal');
     if(zm) zm.classList.toggle('selected-zoom', isSel);
     btn.onclick = function(){ togglePhoto(p.id); openZoom(idx); };
