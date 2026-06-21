@@ -372,6 +372,62 @@
       body { padding-bottom:145px !important; }
     }
 
+  
+    /* WATERMARK V17 - más fuerte */
+    .photo-watermark{
+      background-image:
+        repeating-linear-gradient(-25deg,
+          transparent 0 80px,
+          rgba(255,0,0,.16) 80px 82px,
+          transparent 82px 150px
+        ) !important;
+      opacity:1 !important;
+    }
+    .photo-watermark::before{
+      color:rgba(0,0,0,.58) !important;
+      -webkit-text-stroke:1.8px rgba(255,255,255,.38) !important;
+      text-shadow:0 3px 6px rgba(255,255,255,.45) !important;
+      font-size:68px !important;
+    }
+    .photo-watermark::after{
+      color:rgba(255,0,0,.30) !important;
+      -webkit-text-stroke:1.3px rgba(0,0,0,.25) !important;
+      font-size:54px !important;
+    }
+    .zoom-watermark{
+      color:rgba(0,0,0,.66) !important;
+      -webkit-text-stroke:3px rgba(255,255,255,.42) !important;
+      text-shadow:0 4px 8px rgba(255,255,255,.48) !important;
+      font-size:96px !important;
+    }
+    #zoomModal .zoom-watermark::after{
+      color:rgba(255,0,0,.28) !important;
+      -webkit-text-stroke:2px rgba(0,0,0,.25) !important;
+      font-size:86px !important;
+    }
+    @media(max-width:700px){
+      .photo-watermark::before{font-size:48px !important;}
+      .photo-watermark::after{font-size:38px !important;}
+      .zoom-watermark{font-size:58px !important;}
+      #zoomModal .zoom-watermark::after{font-size:46px !important;}
+    }
+
+  
+    .mode-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:18px; }
+    .mode-card { background:#050505; border:1px solid #222; border-radius:18px; padding:18px 12px; text-align:center; cursor:pointer; transition:.2s; }
+    .mode-card:hover { border-color:var(--rojo); transform:translateY(-2px); }
+    .mode-card .ico { font-size:30px; display:block; margin-bottom:8px; }
+    .mode-card b { display:block; font-size:12px; color:#fff; margin-bottom:5px; }
+    .mode-card span { color:#aaa; font-size:11px; }
+    .extras-box { background:#050505; border:1px solid #222; border-radius:16px; padding:12px; margin:12px 0; display:none; }
+    .extra-row { display:flex; align-items:center; justify-content:space-between; gap:8px; border-bottom:1px solid #151515; padding:8px 0; font-size:11px; }
+    .extra-row:last-child { border-bottom:none; }
+    .extra-controls { display:flex; align-items:center; gap:8px; }
+    .extra-controls button { width:28px !important; height:28px; border-radius:50%; border:1px solid #333; background:#111; color:white; cursor:pointer; }
+    .extra-controls b { min-width:20px; text-align:center; color:var(--oro); }
+    #selectedModeLabel { color:var(--oro); font-size:11px; margin-bottom:10px; display:block; text-align:center; }
+    @media(max-width:700px){ .mode-grid{grid-template-columns:1fr;} .mode-card{padding:16px 10px;} }
+
   </style>
 </head>
 <body oncontextmenu="return false;">
@@ -425,7 +481,7 @@
     <div class="modal-box" style="margin:auto">
       <i class="fa fa-check-circle" style="font-size:60px; color:var(--verde)"></i>
       <h3>¡PEDIDO REGISTRADO!</h3><p style="font-size:11px;color:#aaa">Tu pedido quedó registrado. Coordinaremos el pago, edición y entrega por WhatsApp.</p>
-      <div id="downloadSection" style="display:none">
+      <div id="downloadSection" style="; display:none;">
         <h4 style="color:var(--oro)">DESCARGA HQ LISTA:</h4>
         <div id="downloadList"></div>
       </div>
@@ -536,6 +592,19 @@
 
 <div id="floatingCart" onclick="startReview()"><span class="cart-icon">🛒</span><span class="cart-count" id="floatingCartCount">0</span></div>
 
+
+<div id="modalMode" class="modal" style="z-index:11750">
+  <div class="modal-box" style="max-width:760px">
+    <h3 style="color:var(--rojo); margin-top:0">¿QUÉ QUERÉS ENCARGAR?</h3>
+    <p style="font-size:11px;color:#aaa;line-height:1.5">
+      Elegí primero el tipo de pedido. Si necesitás digitales e impresiones, hacé un pedido y después volvés a entrar para hacer el otro.
+    </p>
+    <div id="modeOptions" class="mode-grid"></div>
+    <button onclick="document.getElementById('modalMode').style.display='none'" style="background:none; border:none; color:#555; margin-top:14px; cursor:pointer">Cerrar</button>
+  </div>
+</div>
+
+
 <script>
   // PEGAR ACÁ LA URL DEL DEPLOY DE APPS SCRIPT, terminada en /exec
   var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznf-yPUwLZADidp01088eRXnJ4KRvV5wm_bb1cd72DObX9jcmpa7thI2VMhl1DQjZ9/exec";
@@ -564,6 +633,8 @@
   var selectedPhotos = []; 
   var allPhotos = []; 
   var activeEvent = null;
+  var selectedMainProduct = null;
+  var extraQuantities = {};
   var eventsData = [];
   var currentZoomIdx = 0;
   var isFullAlbumMode = false;
@@ -603,18 +674,121 @@
     }
   }
 
-  function askPass(id) {
+function askPass(id) {
     activeEvent = eventsData.find(function(e){ return e.id === id; });
-    if(!activeEvent.pass) { loadPhotos(activeEvent.id, activeEvent.displayName); } 
-    else { document.getElementById('modalPass').style.display = 'flex'; document.getElementById('inputPass').value = ""; setTimeout(function(){ document.getElementById('inputPass').focus(); }, 100); }
+    selectedMainProduct = null;
+    extraQuantities = {};
+    if(!activeEvent.pass) { openModeModal(); }
+    else {
+      document.getElementById('modalPass').style.display = 'flex';
+      document.getElementById('inputPass').value = "";
+      setTimeout(function(){ document.getElementById('inputPass').focus(); }, 100);
+    }
   }
 
-  function checkPass() {
+function checkPass() {
     if (document.getElementById('inputPass').value === activeEvent.pass) {
       document.getElementById('modalPass').style.display = 'none';
-      loadPhotos(activeEvent.id, activeEvent.displayName);
+      openModeModal();
     } else { luxAlert("ERROR", "Clave incorrecta."); }
   }
+
+
+  function isStandardMainProduct(p) {
+    if(!p) return false;
+    if(p.quantityExtra) return false;
+    return true;
+  }
+
+  function openModeModal() {
+    var products = getProductsForEvent().filter(isStandardMainProduct);
+    var htmlModes = products.map(function(p, i){
+      var price = Number(p.price || 0);
+      var priceTxt = price === 0 ? "GRATIS" : "$" + price.toLocaleString() + (p.perPhoto ? " / foto" : "");
+      var ico = p.isFullAlbum ? "📦" : (p.includesDigital ? "🖼️" : (p.label.toLowerCase().indexOf("digital")>-1 ? "📲" : "📚"));
+      return '<div class="mode-card" onclick="chooseOrderMode('+i+')">'+
+        '<span class="ico">'+ico+'</span><b>'+escapeHtml(p.label)+'</b><span>'+priceTxt+'</span>'+
+      '</div>';
+    }).join("");
+    document.getElementById('modeOptions').innerHTML = htmlModes || '<p style="color:#888">No hay servicios configurados.</p>';
+    document.getElementById('modalMode').style.display = 'flex';
+  }
+
+  function chooseOrderMode(idx) {
+    var products = getProductsForEvent().filter(isStandardMainProduct);
+    selectedMainProduct = products[idx];
+    extraQuantities = {};
+    document.getElementById('modalMode').style.display = 'none';
+
+    if(selectedMainProduct && selectedMainProduct.isFullAlbum) {
+      isFullAlbumMode = true;
+      selectedPhotos = [];
+      openCheckout();
+      return;
+    }
+
+    isFullAlbumMode = false;
+    loadPhotos(activeEvent.id, activeEvent.displayName);
+  }
+
+  function getExtraProducts() {
+    return getProductsForEvent().filter(function(p){ return !!p.quantityExtra; });
+  }
+
+function renderExtras() {
+    var extras = getExtraProducts();
+    var box = document.getElementById('extrasBox');
+    var list = document.getElementById('extrasList');
+    if(!box || !list || !extras.length) { if(box) box.style.display = 'none'; return; }
+
+    box.style.display = 'block';
+    list.innerHTML = extras.map(function(p){
+      var qty = Number(extraQuantities[p.label] || 0);
+      return '<div class="extra-row">'+
+        '<span>'+escapeHtml(p.label)+'<br><small style="color:#777">$'+Number(p.price||0).toLocaleString()+' c/u</small></span>'+
+        '<div class="extra-controls">'+
+          '<button data-extra="'+attr(p.label)+'" data-delta="-1">−</button>'+
+          '<b>'+qty+'</b>'+
+          '<button data-extra="'+attr(p.label)+'" data-delta="1">+</button>'+
+        '</div>'+
+      '</div>';
+    }).join("");
+
+    list.querySelectorAll('[data-extra]').forEach(function(btn){
+      btn.onclick = function(){
+        changeExtraQty(decodeURIComponent(btn.getAttribute('data-extra')), Number(btn.getAttribute('data-delta')));
+      };
+    });
+  }
+
+  function changeExtraQty(label, delta) {
+    var q = Number(extraQuantities[label] || 0) + delta;
+    if(q < 0) q = 0;
+    extraQuantities[label] = q;
+    renderExtras();
+    updateFinalPrice();
+  }
+
+  function getExtrasTotal() {
+    return getExtraProducts().reduce(function(sum, p){
+      return sum + (Number(extraQuantities[p.label] || 0) * Number(p.price || 0));
+    }, 0);
+  }
+
+  function getExtrasText(separator) {
+    separator = separator || "\\n";
+    var lines = [];
+    getExtraProducts().forEach(function(p){
+      var q = Number(extraQuantities[p.label] || 0);
+      if(q > 0) lines.push(p.label + " x" + q + " = $" + (q * Number(p.price || 0)).toLocaleString());
+    });
+    return lines.join(separator);
+  }
+
+  function escapeJs(s) {
+    return String(s == null ? "" : s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  }
+
 
   async function loadPhotos(id, name) {
     toggleL(true, "CARGANDO PRIMERAS FOTOS...");
@@ -699,17 +873,18 @@
   }
 
 function updateFooter() {
-    var totalDig = selectedPhotos.length * activeEvent.pDigital;
-    var totalImp = selectedPhotos.length * activeEvent.pPrint;
-    document.getElementById('pDigTotal').innerText = totalDig === 0 ? "GRATIS" : "$" + totalDig.toLocaleString();
-    document.getElementById('pImpTotal').innerText = totalImp === 0 ? "GRATIS" : "$" + totalImp.toLocaleString();
-    document.getElementById('btnConfirm').innerText = "CONFIRMAR (" + selectedPhotos.length + ")";
+    var product = selectedMainProduct || getSelectedProduct();
+    var total = product ? getOrderTotal(product) : 0;
+    document.getElementById('pDigTotal').innerText = product ? product.label : "Elegí servicio";
+    document.getElementById('pImpTotal').innerText = total === 0 ? "GRATIS" : "$" + total.toLocaleString();
+    document.getElementById('btnConfirm').innerText = product ? ("CONFIRMAR (" + selectedPhotos.length + ")") : "ELEGIR SERVICIO";
+
     var fc=document.getElementById('floatingCart'); var fcc=document.getElementById('floatingCartCount');
     if(fc && fcc){ fcc.innerText=selectedPhotos.length; fc.style.display = selectedPhotos.length ? 'flex' : 'none'; }
 
     var packBtn = document.getElementById('btnPackAlbum');
     if(packBtn){
-      var products = getProductsForEvent();
+      var products = getProductsForEvent().filter(isStandardMainProduct);
       var full = products.find(function(p){ return p.isFullAlbum; });
       packBtn.style.display = full ? 'inline-block' : 'none';
       if(full) packBtn.innerText = full.price === 0 ? "PACK ÁLBUM" : "PACK $" + Number(full.price).toLocaleString();
@@ -738,22 +913,24 @@ function updateFooter() {
   function prevPhoto() { if(currentZoomIdx > 0) openZoom(currentZoomIdx - 1); }
   function closeZoom() { document.getElementById('lightbox').style.display = 'none'; }
 function startReview() {
-    if(selectedPhotos.length === 0) return luxAlert("AVISO", "Seleccioná al menos una foto.");
-    isFullAlbumMode = false;
-    populateOrderTypes(false);
+    if(!selectedMainProduct) return openModeModal();
+    if(!selectedMainProduct.isFullAlbum && selectedPhotos.length === 0) return luxAlert("AVISO", "Seleccioná al menos una foto.");
+    isFullAlbumMode = !!selectedMainProduct.isFullAlbum;
     openCheckout();
   }
 function buyFullAlbum() {
-    var products = getProductsForEvent();
-    var idxFull = products.findIndex(function(p){ return p.isFullAlbum; });
-    if(idxFull < 0) return luxAlert("AVISO", "El pack álbum no está disponible para este evento.");
+    var products = getProductsForEvent().filter(isStandardMainProduct);
+    var full = products.find(function(p){ return p.isFullAlbum; });
+    if(!full) return luxAlert("AVISO", "El pack álbum no está disponible para este evento.");
+    selectedMainProduct = full;
     isFullAlbumMode = true;
-    populateOrderTypes(true);
     openCheckout();
   }
 function openCheckout() {
-    if(!document.getElementById('orderType').options.length) populateOrderTypes(isFullAlbumMode);
+    if(!selectedMainProduct) populateOrderTypes(isFullAlbumMode);
+    else populateOrderTypes(!!selectedMainProduct.isFullAlbum);
     updateFinalPrice();
+    hideEmptyDownloadBox();
     document.getElementById('modalCheckout').style.display = 'flex';
     setTimeout(function(){ document.getElementById('userName').focus(); }, 150);
   }
@@ -774,35 +951,40 @@ function openCheckout() {
     return fallback;
   }
 
-  function populateOrderTypes(preferFull) {
+function populateOrderTypes(preferFull) {
     var select = document.getElementById('orderType');
-    var products = getProductsForEvent();
+    var products = getProductsForEvent().filter(isStandardMainProduct);
+
+    if(!selectedMainProduct) {
+      selectedMainProduct = products.find(function(p){ return preferFull ? p.isFullAlbum : !p.isFullAlbum; }) || products[0];
+    }
+
     select.innerHTML = products.map(function(p, i){
-      var priceTxt = p.price === 0 ? "GRATIS" : "$" + Number(p.price || 0).toLocaleString();
-      var suffix = p.perPhoto ? " / foto" : "";
-      return '<option value="'+i+'">'+p.label+' · '+priceTxt+suffix+'</option>';
+      return '<option value="'+i+'">'+p.label+'</option>';
     }).join("");
 
-    if(preferFull) {
-      var idxFull = products.findIndex(function(p){ return p.isFullAlbum; });
-      select.value = idxFull >= 0 ? String(idxFull) : "0";
-    } else {
-      var idxDigital = products.findIndex(function(p){ return p.label === "Descargas Digitales"; });
-      select.value = idxDigital >= 0 ? String(idxDigital) : "0";
-    }
+    var idx = products.findIndex(function(p){ return p.label === selectedMainProduct.label; });
+    select.value = idx >= 0 ? String(idx) : "0";
+
+    var label = document.getElementById('selectedModeLabel');
+    if(label) label.innerText = "Servicio elegido: " + selectedMainProduct.label;
+    renderExtras();
   }
 
-  function getSelectedProduct() {
-    var products = getProductsForEvent();
+function getSelectedProduct() {
+    if(selectedMainProduct) return selectedMainProduct;
+    var products = getProductsForEvent().filter(isStandardMainProduct);
     var idx = Number(document.getElementById('orderType').value || 0);
     return products[idx] || products[0];
   }
 
-  function getOrderTotal(product) {
+function getOrderTotal(product) {
     if(!product) product = getSelectedProduct();
-    if(product.isFullAlbum) return Number(product.price || 0);
-    if(product.perPhoto) return selectedPhotos.length * Number(product.price || 0);
-    return Number(product.price || 0);
+    var main = 0;
+    if(product.isFullAlbum) main = Number(product.price || 0);
+    else if(product.perPhoto) main = selectedPhotos.length * Number(product.price || 0);
+    else main = Number(product.price || 0);
+    return main + getExtrasTotal();
   }
 
   function getOrderQuantity(product) {
@@ -816,9 +998,12 @@ function updateFinalPrice() {
     var total = getOrderTotal(product);
     var extra = "";
 
-    if(product.selectionOnly) extra = "<br><small style='color:#aaa'>Solo selección/lista de fotos. Sin descarga automática.</small>";
+    if(product.selectionOnly) extra = "<br><small style='color:#aaa'>Selección de fotos para edición/fotolibro. Sin descarga automática.</small>";
     if(product.includesDigital && !product.isFullAlbum) extra = "<br><small style='color:#aaa'>Incluye copia digital sin costo adicional.</small>";
     if(product.isFullAlbum) extra = "<br><small style='color:#aaa'>Pedido de álbum completo. La entrega se coordina por WhatsApp.</small>";
+
+    var extrasTxt = getExtrasText("<br>");
+    if(extrasTxt) extra += "<br><small style='color:#d4af37'>Extras:<br>"+extrasTxt+"</small>";
 
     document.getElementById('finalTotalDisplay').innerHTML = ((total === 0) ? "GRATIS" : "$" + total.toLocaleString()) + extra;
   }
@@ -832,18 +1017,20 @@ function sendOrder() {
 
     var product = getSelectedProduct();
     var type = product.label;
+    var extrasPlain = getExtrasText(" | ");
     var total = getOrderTotal(product);
     var listNames = product.isFullAlbum ? ["TODO EL ALBUM COMPLETO"] : selectedPhotos.map(function(x){return x.name;});
     var cantidad = getOrderQuantity(product);
     var photoIds = product.isFullAlbum ? allPhotos.map(function(x){return x.id;}) : selectedPhotos.map(function(x){return x.id;});
+    var notesToSave = notes + (extrasPlain ? " | Extras: " + extrasPlain : "");
 
     toggleL(true, "REGISTRANDO...");
     apiPost({
       action: "submitOrder",
       name: name,
       phone: phone,
-      notes: notes,
-      orderType: type,
+      notes: notesToSave,
+      orderType: extrasPlain ? (type + " + Extras") : type,
       eventName: activeEvent.displayName,
       photos: photoIds,
       photoNames: listNames,
@@ -858,7 +1045,11 @@ function sendOrder() {
         "📱 *WhatsApp:* " + phone + "%0A" +
         "🎉 *Evento:* " + activeEvent.displayName + "%0A%0A" +
         "🛒 *Servicio:* " + type + "%0A" +
-        "📷 *Cantidad:* " + cantidad + "%0A%0A" +
+        "📷 *Cantidad:* " + cantidad + "%0A%0A";
+
+      if(extrasPlain) msg += "➕ *Extras:*%0A" + getExtrasText("%0A") + "%0A%0A";
+
+      msg +=
         "📝 *Observaciones:*%0A" + notes + "%0A%0A" +
         "📂 *Fotografías:*%0A" + fotosTxt + "%0A%0A";
 
@@ -912,6 +1103,13 @@ function sendOrder() {
 
   var downloadTargetEvent = null;
 
+
+
+  function hideEmptyDownloadBox() {
+    var ds = document.getElementById('downloadSection');
+    var dl = document.getElementById('downloadList');
+    if(ds && dl && !dl.innerHTML.trim()) ds.style.display = 'none';
+  }
 
   function forceMobileTop() {
     setTimeout(function(){
