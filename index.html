@@ -831,7 +831,18 @@
     #modalDownloadCode { z-index: 80000 !important; }
     #btnMainDownloadFixed { display:inline-flex !important; align-items:center; justify-content:center; }
 
-  </style>
+  
+/* V26 correcciones urgentes */
+button,.btn-order,.mini-btn{transition:transform .08s ease,filter .12s ease,opacity .12s ease!important}
+button:active,.btn-order:active,.mini-btn:active{transform:scale(.96)!important;filter:brightness(1.25)!important}
+button.is-loading,.btn-order.is-loading,.mini-btn.is-loading{opacity:.65!important;pointer-events:none!important}
+#modalAlert{z-index:90000!important}
+#modalDownloadCode{z-index:80000!important}
+#btnMainDownloadFixed{display:inline-flex!important;align-items:center;justify-content:center;gap:8px;margin:10px auto 18px!important;background:#111!important;color:var(--oro)!important;border:1px solid #333!important;padding:11px 22px!important;border-radius:999px!important;font-weight:bold!important;cursor:pointer!important}
+#floatingCart{min-width:150px!important;width:auto!important;padding:0 18px!important;white-space:nowrap!important}
+#floatingCart .cart-count{white-space:nowrap!important;font-size:14px!important}
+
+</style>
 </head>
 <body oncontextmenu="return false;">
 
@@ -1083,6 +1094,8 @@ function askPass(id) {
     activeEvent = eventsData.find(function(e){ return e.id === id; });
     selectedMainProduct = null;
     extraQuantities = {};
+    selectedPhotos = [];
+    updateFooter();
     if(!activeEvent.pass || sessionStorage.getItem("TOMAUNO_ADMIN_OK") === "1") {
       openModeModal();
     } else {
@@ -1098,9 +1111,7 @@ function checkPass() {
       if(typed === ADMIN_PIN) sessionStorage.setItem("TOMAUNO_ADMIN_OK", "1");
       document.getElementById('modalPass').style.display = 'none';
       openModeModal();
-    } else {
-      luxAlert("ERROR", "Clave incorrecta.");
-    }
+    } else { luxAlert("ERROR", "Clave incorrecta."); }
   }
 
 
@@ -1129,7 +1140,6 @@ function chooseOrderMode(idx) {
     selectedMainProduct = products[idx];
     extraQuantities = {};
     document.getElementById('modalMode').style.display = 'none';
-
     if(selectedMainProduct && selectedMainProduct.isFullAlbum) {
       isFullAlbumMode = true;
       selectedPhotos = [];
@@ -1137,7 +1147,6 @@ function chooseOrderMode(idx) {
       openCheckout();
       return;
     }
-
     isFullAlbumMode = false;
     loadPhotos(activeEvent.id, activeEvent.displayName);
     setTimeout(updateFooter, 200);
@@ -1285,24 +1294,16 @@ function renderExtras() {
   }
 
 function updateFooter() {
-    var product = selectedMainProduct || getSelectedProduct();
+    var product = selectedMainProduct || null;
     var total = product ? getOrderTotal(product) : 0;
-
     var left = document.getElementById('pDigTotal');
     var right = document.getElementById('pImpTotal');
     if(left) left.innerText = product ? product.label : "Elegí servicio";
     if(right) right.innerText = "$" + Number(total || 0).toLocaleString();
-
     var btnC = document.getElementById('btnConfirm');
     if(btnC) btnC.innerText = product ? ("CONFIRMAR (" + selectedPhotos.length + ")") : "ELEGIR SERVICIO";
-
-    var fc=document.getElementById('floatingCart');
-    var fcc=document.getElementById('floatingCartCount');
-    if(fc && fcc){
-      fcc.innerText = selectedPhotos.length + " · $" + Number(total || 0).toLocaleString();
-      fc.style.display = (selectedPhotos.length || (product && product.isFullAlbum)) ? 'flex' : 'none';
-    }
-
+    var fc=document.getElementById('floatingCart'), fcc=document.getElementById('floatingCartCount');
+    if(fc && fcc){ fcc.innerText = selectedPhotos.length + " · $" + Number(total || 0).toLocaleString(); fc.style.display = (selectedPhotos.length || (product && product.isFullAlbum)) ? 'flex' : 'none'; }
     var packBtn = document.getElementById('btnPackAlbum');
     if(packBtn){
       var products = getProductsForEvent().filter(isStandardMainProduct);
@@ -1319,43 +1320,25 @@ function openZoom(idx) {
     var zfn=document.getElementById('zoomFileName'); if(zfn) zfn.innerText = p.name || '';
     document.getElementById('arrow-l').style.display = idx === 0 ? 'none' : 'block';
     document.getElementById('arrow-r').style.display = idx === allPhotos.length - 1 ? 'none' : 'block';
-
     var btn = document.getElementById('zoomSelectBtn');
     var isSel = !!selectedPhotos.find(function(x){ return x.id === p.id; });
-
     btn.innerText = isSel ? "✔ FOTO SELECCIONADA - QUITAR" : "SELECCIONAR";
     btn.style.background = "var(--rojo)";
-
     var badge = document.getElementById('zoomSelectedBadge');
-    if(badge){
-      badge.style.display = isSel ? 'block' : 'none';
-      badge.innerText = isSel ? '✔ FOTO SELECCIONADA' : '';
-    }
-
+    if(badge){ badge.style.display = isSel ? 'block' : 'none'; badge.innerText = isSel ? '✔ FOTO SELECCIONADA' : ''; }
     var lb = document.getElementById('lightbox');
     if(lb) lb.classList.toggle('selected-zoom', isSel);
-
-    btn.onclick = function(){
-      togglePhoto(p.id);
-      updateFooter();
-      openZoom(idx);
-    };
-
+    btn.onclick = function(){ togglePhoto(p.id); updateFooter(); openZoom(idx); };
     document.getElementById('lightbox').style.display = 'flex';
-    setTimeout(function(){ try{ btn.focus(); }catch(e){} }, 80);
+    setTimeout(function(){ try { btn.focus(); } catch(e){} }, 80);
   }
 
   function nextPhoto() { if(currentZoomIdx < allPhotos.length - 1) openZoom(currentZoomIdx + 1); }
   function prevPhoto() { if(currentZoomIdx > 0) openZoom(currentZoomIdx - 1); }
   function closeZoom() { document.getElementById('lightbox').style.display = 'none'; }
 function startReview() {
-    if(!selectedMainProduct) {
-      openModeModal();
-      return;
-    }
-    if(!selectedMainProduct.isFullAlbum && selectedPhotos.length === 0) {
-      return luxAlert("AVISO", "Seleccioná al menos una foto.");
-    }
+    if(!selectedMainProduct) return openModeModal();
+    if(!selectedMainProduct.isFullAlbum && selectedPhotos.length === 0) return luxAlert("AVISO", "Seleccioná al menos una foto.");
     isFullAlbumMode = !!selectedMainProduct.isFullAlbum;
     openCheckout();
   }
@@ -1585,10 +1568,9 @@ function sendOrder() {
     openDownloadCodeModal();
   }
 
-  function openDownloadCodeModal() {
+function openDownloadCodeModal() {
     var sel = document.getElementById('downloadEventSelect');
-    if(downloadTargetEvent || activeEvent){ if(sel) sel.style.display = downloadTargetEvent ? 'none' : (activeEvent ? 'none' : 'block'); }
-    downloadTargetEvent = downloadTargetEvent || activeEvent || null;
+    if(sel) sel.style.display = downloadTargetEvent ? 'none' : 'block';
     document.getElementById('modalDownloadCode').style.display = 'flex';
     document.getElementById('downloadCodeInput').value = "";
     setTimeout(function(){ document.getElementById('downloadCodeInput').focus(); }, 100);
@@ -1597,42 +1579,28 @@ function sendOrder() {
   async function redeemDownloadCode() {
     var code = document.getElementById('downloadCodeInput').value.trim();
     if(!code) return luxAlert("AVISO", "Ingresá tu clave de descarga.");
-
     var btn = document.getElementById('btnRedeemCode');
-    setBtnLoading(btn, true, "REVISANDO CONTRASEÑA...");
+    hardButtonFeedback(btn, "REVISANDO...");
     toggleL(true, "REVISANDO CONTRASEÑA...");
-
     var folderId = "";
-    try {
-      folderId = window.getDownloadTargetFolderId();
-    } catch(e) {
-      toggleL(false);
-      setBtnLoading(btn, false);
-      return luxAlert("AVISO", e.message);
-    }
-
+    try { folderId = getDownloadTargetFolderId(); }
+    catch(e){ toggleL(false); releaseButtonFeedback(btn); return luxAlert("AVISO", e.message); }
     apiGet({ action:"download", folderId: folderId, code: code }).then(function(res){
-      toggleL(false);
-      setBtnLoading(btn, false);
-
+      toggleL(false); releaseButtonFeedback(btn);
       var files = res.files || [];
       if(!files.length) return luxAlert("AVISO", "No encontramos fotos para esta clave.");
-
       document.getElementById('modalDownloadCode').style.display = 'none';
       downloadTargetEvent = null;
       document.getElementById('view-gallery').style.display = 'none';
       document.getElementById('view-events').style.display = 'none';
       document.getElementById('view-success').style.display = 'block';
       document.getElementById('downloadSection').style.display = 'block';
-
-      var listHtml = files.map(function(p){
+      document.getElementById('downloadList').innerHTML = files.map(function(p){
         return '<div class="download-item"><span>'+escapeHtml(p.name)+'</span> <a href="'+p.urlFull+'" target="_blank">BAJAR HQ</a></div>';
       }).join("");
-      document.getElementById('downloadList').innerHTML = listHtml;
       showToast("Descargas habilitadas");
     }).catch(function(err){
-      toggleL(false);
-      setBtnLoading(btn, false);
+      toggleL(false); releaseButtonFeedback(btn);
       luxAlert("ERROR", "No se pudo validar la clave: " + err.message);
     });
   }
@@ -1643,13 +1611,11 @@ function sendOrder() {
 function openAdminPin() {
     var c = document.getElementById('modalContact');
     if(c) c.style.display = 'none';
-
     if(sessionStorage.getItem("TOMAUNO_ADMIN_OK") === "1") {
       document.getElementById('modalAdmin').style.display = 'flex';
       loadAdminOrders();
       return;
     }
-
     document.getElementById('modalAdminPin').style.display = 'flex';
     document.getElementById('adminPinInput').value = "";
     setTimeout(function(){ document.getElementById('adminPinInput').focus(); }, 100);
@@ -1896,6 +1862,26 @@ function attr(s) {
       if(b) b.click();
     }
   }, true);
+
+  // V26_ENTER_HANDLER
+  document.addEventListener('keydown', function(e){
+    if(e.key === "Enter") {
+      var a=document.getElementById('modalAlert');
+      if(a&&a.style.display==='flex'){e.preventDefault();var b=document.getElementById('alertBtn');if(b)b.click();return;}
+      var d=document.getElementById('modalDownloadCode');
+      if(d&&d.style.display==='flex'){e.preventDefault();redeemDownloadCode();return;}
+      var p=document.getElementById('modalPass');
+      if(p&&p.style.display==='flex'){e.preventDefault();checkPass();return;}
+      var ap=document.getElementById('modalAdminPin');
+      if(ap&&ap.style.display==='flex'){e.preventDefault();checkAdminPin();return;}
+      var c=document.getElementById('modalCheckout');
+      if(c&&c.style.display==='flex'){var tag=(document.activeElement&&document.activeElement.tagName||"").toLowerCase();if(tag!=="textarea"){e.preventDefault();sendOrder();}}
+    }
+    if(e.code==="Space" && document.getElementById('lightbox') && document.getElementById('lightbox').style.display==='flex'){
+      e.preventDefault();var sb=document.getElementById('zoomSelectBtn');if(sb)sb.click();
+    }
+  }, true);
+
 </script>
 </body>
 </html
