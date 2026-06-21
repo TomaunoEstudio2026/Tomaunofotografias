@@ -428,6 +428,109 @@
     #selectedModeLabel { color:var(--oro); font-size:11px; margin-bottom:10px; display:block; text-align:center; }
     @media(max-width:700px){ .mode-grid{grid-template-columns:1fr;} .mode-card{padding:16px 10px;} }
 
+  
+    /* V19 ajustes finales */
+    .photo-watermark,
+    .zoom-watermark{
+      border:none !important;
+      outline:none !important;
+      background-color:transparent !important;
+      box-shadow:none !important;
+    }
+
+    .photo-watermark{
+      background-image:
+        repeating-linear-gradient(-25deg,
+          transparent 0 72px,
+          rgba(255,0,0,.18) 72px 75px,
+          transparent 75px 142px
+        ) !important;
+      opacity:1 !important;
+    }
+
+    .photo-watermark::before{
+      content:"tomauno" !important;
+      color:rgba(0,0,0,.62) !important;
+      -webkit-text-stroke:2px rgba(255,255,255,.40) !important;
+      text-shadow:0 3px 7px rgba(255,255,255,.48) !important;
+      font-size:74px !important;
+      font-weight:900 !important;
+      letter-spacing:-4px !important;
+    }
+
+    .photo-watermark::after{
+      content:"tomauno" !important;
+      color:rgba(255,0,0,.34) !important;
+      -webkit-text-stroke:1.4px rgba(0,0,0,.26) !important;
+      font-size:58px !important;
+      font-weight:900 !important;
+    }
+
+    .zoom-watermark{
+      color:rgba(0,0,0,.72) !important;
+      -webkit-text-stroke:3px rgba(255,255,255,.48) !important;
+      text-shadow:0 4px 9px rgba(255,255,255,.50) !important;
+      font-size:104px !important;
+      opacity:1 !important;
+    }
+
+    #zoomModal .zoom-watermark::after{
+      content:"tomauno";
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%) rotate(24deg);
+      color:rgba(255,0,0,.34);
+      -webkit-text-stroke:2px rgba(0,0,0,.28);
+      font-size:92px;
+      font-weight:900;
+      letter-spacing:-4px;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+
+    #zoomModal.selected-zoom #zoomImg{
+      outline:7px solid var(--rojo) !important;
+      box-shadow:0 0 45px rgba(255,0,0,.80) !important;
+    }
+
+    #zoomSelectedBadge{
+      display:block !important;
+      top:18px !important;
+      left:18px !important;
+      transform:none !important;
+      font-size:17px !important;
+      padding:12px 20px !important;
+      background:rgba(255,0,0,.98) !important;
+      color:white !important;
+      z-index:10050 !important;
+      box-shadow:0 0 30px rgba(255,0,0,.60), 0 0 30px rgba(0,0,0,.85) !important;
+    }
+
+    .mode-card span.free-text{ display:none !important; }
+    .mode-card span.price-text{ color:#aaa; font-size:11px; }
+
+    #orderType{ display:none !important; }
+    #selectedModeLabel{
+      background:#050505;
+      border:1px solid #222;
+      border-radius:14px;
+      padding:12px;
+      margin-bottom:12px;
+      color:var(--oro) !important;
+      font-weight:bold;
+    }
+
+    .empty-download-placeholder{ display:none !important; }
+
+    @media(max-width:700px){
+      .photo-watermark::before{font-size:48px !important;}
+      .photo-watermark::after{font-size:38px !important;}
+      .zoom-watermark{font-size:58px !important;}
+      #zoomModal .zoom-watermark::after{font-size:48px !important;}
+      #zoomSelectedBadge{font-size:14px !important; left:10px !important; top:10px !important; padding:10px 14px !important;}
+    }
+
   </style>
 </head>
 <body oncontextmenu="return false;">
@@ -517,12 +620,8 @@
 <div id="modalCheckout" class="modal">
   <div class="modal-box">
     <h3 style="color:var(--rojo); margin-top:0">DATOS DEL PEDIDO</h3>
-    <select id="orderType" onchange="updateFinalPrice()">
-      <option value="Descargas Digitales">Descargas Digitales</option>
-      <option value="Impresiones 15x21">Impresiones 15x21</option>
-      <option value="PACK ALBUM COMPLETO">¡PACK ÁLBUM COMPLETO!</option>
-    </select>
-    <div style="background:#000; padding:15px; border-radius:15px; margin:10px 0"><b id="finalTotalDisplay" style="color:var(--rojo); font-size:24px">$0</b></div>
+    <select id="orderType" style="display:none"></select>
+    <div class="empty-download-placeholder" style="display:none"><b id="finalTotalDisplay" style="color:var(--rojo); font-size:24px">$0</b></div>
     <div id="orderInfo" style="font-size:11px; line-height:1.45; color:#bbb; background:#050505; border:1px solid #222; border-radius:12px; padding:10px; margin-bottom:8px"></div>
     <input type="text" id="userName" placeholder="Nombre completo">
     <input type="text" id="userPhone" placeholder="Tu WhatsApp">
@@ -704,8 +803,14 @@ function checkPass() {
     var products = getProductsForEvent().filter(isStandardMainProduct);
     var htmlModes = products.map(function(p, i){
       var price = Number(p.price || 0);
-      var priceTxt = price === 0 ? "GRATIS" : "$" + price.toLocaleString() + (p.perPhoto ? " / foto" : "");
-      var ico = p.isFullAlbum ? "📦" : (p.includesDigital ? "🖼️" : (p.label.toLowerCase().indexOf("digital")>-1 ? "📲" : "📚"));
+      var priceTxt = price === 0 ? "Seleccionar fotos" : "$" + price.toLocaleString() + (p.perPhoto ? " / foto" : "");
+      var low = p.label.toLowerCase();
+      var ico = p.isFullAlbum ? "📦" :
+        (low.indexOf("digital")>-1 ? "📲" :
+        (low.indexOf("impres")>-1 || low.indexOf("15x21")>-1 ? "🖼️" :
+        (low.indexOf("foto")>-1 || low.indexOf("libro")>-1 ? "📚" :
+        (low.indexOf("port")>-1 || low.indexOf("cuadro")>-1 ? "🖼️" :
+        (low.indexOf("ampli")>-1 ? "🖼️" : "➕")))));
       return '<div class="mode-card" onclick="chooseOrderMode('+i+')">'+
         '<span class="ico">'+ico+'</span><b>'+escapeHtml(p.label)+'</b><span>'+priceTxt+'</span>'+
       '</div>';
@@ -765,6 +870,7 @@ function renderExtras() {
     var q = Number(extraQuantities[label] || 0) + delta;
     if(q < 0) q = 0;
     extraQuantities[label] = q;
+    refreshSelectedModeLabel();
     renderExtras();
     updateFinalPrice();
   }
@@ -886,7 +992,7 @@ function updateFooter() {
     if(packBtn){
       var products = getProductsForEvent().filter(isStandardMainProduct);
       var full = products.find(function(p){ return p.isFullAlbum; });
-      packBtn.style.display = full ? 'inline-block' : 'none';
+      packBtn.style.display = (!selectedMainProduct && full) ? 'inline-block' : 'none';
       if(full) packBtn.innerText = full.price === 0 ? "PACK ÁLBUM" : "PACK $" + Number(full.price).toLocaleString();
     }
   }
@@ -903,6 +1009,7 @@ function updateFooter() {
     btn.style.background = isSel ? "#444" : "var(--rojo)";
     var badge = document.getElementById('zoomSelectedBadge');
     if(badge){ badge.style.display = isSel ? 'block' : 'none'; badge.innerText = isSel ? '✔ FOTO SELECCIONADA' : ''; }
+    var zm = document.getElementById('zoomModal'); if(zm) zm.classList.toggle('selected-zoom', isSel);
     var zm = document.getElementById('zoomModal');
     if(zm) zm.classList.toggle('selected-zoom', isSel);
     btn.onclick = function(){ togglePhoto(p.id); openZoom(idx); };
@@ -1058,7 +1165,7 @@ function sendOrder() {
       if(product.isFullAlbum) msg += "✅ Pedido de álbum completo. Entrega a coordinar por WhatsApp.%0A%0A";
 
       msg += "━━━━━━━━━━━━━━━%0A" +
-        "💰 *TOTAL:* " + (total==0 ? "GRATIS" : "$" + total.toLocaleString());
+        "💰 *TOTAL:* " + (total==0 ? "GRATIS" : "$" + total.toLocaleString()) + "%0A%0A✅ El pedido también quedó guardado en el panel de Tomauno.";
 
       document.getElementById('modalCheckout').style.display = 'none';
       document.getElementById('view-gallery').style.display = 'none';
@@ -1367,4 +1474,16 @@ function attr(s) {
   function toggleL(v, t) { if(t) document.getElementById('loadingTxt').innerText = t; document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
 </script>
 </body>
-</html>
+</html
+  function refreshSelectedModeLabel() {
+    var label = document.getElementById('selectedModeLabel');
+    var p = getSelectedProduct();
+    if(label && p) {
+      var price = Number(p.price || 0);
+      var txt = "Servicio elegido: " + p.label;
+      if(price > 0) txt += " · $" + price.toLocaleString() + (p.perPhoto ? " / foto" : "");
+      label.innerText = txt;
+    }
+  }
+
+>
