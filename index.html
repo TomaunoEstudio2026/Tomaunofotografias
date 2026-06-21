@@ -209,6 +209,169 @@
       #zoomModal .zoom-watermark::after{font-size:44px;}
     }
 
+  
+    /* FIX MOBILE FINAL - evita zoom horizontal y ordena todo en columna */
+    @media (max-width:700px){
+      html, body {
+        width:100% !important;
+        max-width:100% !important;
+        overflow-x:hidden !important;
+        margin:0 !important;
+      }
+
+      header {
+        position:relative !important;
+        width:100% !important;
+        left:0 !important;
+        right:0 !important;
+        padding:18px 10px !important;
+      }
+
+      .logo-txt {
+        font-size:26px !important;
+        line-height:1.05 !important;
+      }
+
+      .container {
+        width:100% !important;
+        max-width:100% !important;
+        padding:14px !important;
+        margin:0 !important;
+        overflow-x:hidden !important;
+      }
+
+      h2 {
+        font-size:11px !important;
+        letter-spacing:4px !important;
+        margin:24px 0 20px !important;
+      }
+
+      .event-grid {
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        width:100% !important;
+        max-width:100% !important;
+        gap:16px !important;
+        padding:0 !important;
+        margin:0 !important;
+      }
+
+      .event-card {
+        width:100% !important;
+        max-width:100% !important;
+        min-width:0 !important;
+        margin:0 !important;
+        padding:38px 18px !important;
+        border-radius:22px !important;
+      }
+
+      #view-events, #view-gallery, #view-success {
+        width:100% !important;
+        max-width:100% !important;
+        overflow-x:hidden !important;
+      }
+
+      .gallery {
+        display:grid !important;
+        grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+        width:100% !important;
+        max-width:100% !important;
+        gap:8px !important;
+        padding:0 6px 150px !important;
+        margin:0 !important;
+        overflow-x:hidden !important;
+      }
+
+      .photo-box {
+        width:100% !important;
+        max-width:100% !important;
+        aspect-ratio:1/1 !important;
+        border-radius:11px !important;
+      }
+
+      .photo-box img {
+        width:100% !important;
+        height:100% !important;
+        object-fit:cover !important;
+      }
+
+      #albumTitle {
+        position:static !important;
+        display:block !important;
+        width:100% !important;
+        text-align:center !important;
+        margin:8px 0 12px !important;
+        right:auto !important;
+      }
+
+      #view-gallery > div:first-child {
+        display:flex !important;
+        flex-direction:column !important;
+        align-items:center !important;
+        gap:10px !important;
+        width:100% !important;
+      }
+
+      #view-gallery button {
+        max-width:calc(100vw - 28px) !important;
+      }
+
+      .modal {
+        width:100% !important;
+        max-width:100% !important;
+        padding:10px !important;
+        overflow-x:hidden !important;
+        align-items:center !important;
+        justify-content:center !important;
+      }
+
+      .modal-box {
+        width:100% !important;
+        max-width:calc(100vw - 22px) !important;
+        margin:0 auto !important;
+        padding:20px 16px !important;
+        border-radius:22px !important;
+        overflow-x:hidden !important;
+      }
+
+      .modal-box input,
+      .modal-box textarea,
+      .modal-box select,
+      .modal-box button {
+        width:100% !important;
+        max-width:100% !important;
+      }
+
+      #zoomImg {
+        max-width:100vw !important;
+        max-height:72vh !important;
+        width:auto !important;
+        height:auto !important;
+        object-fit:contain !important;
+      }
+
+      .footer-bar {
+        left:0 !important;
+        right:0 !important;
+        bottom:0 !important;
+        width:100% !important;
+        max-width:100% !important;
+        overflow-x:auto !important;
+        justify-content:flex-start !important;
+        padding:8px 10px !important;
+        gap:8px !important;
+      }
+
+      .footer-bar > * { flex:0 0 auto !important; }
+
+      #floatingCart {
+        right:12px !important;
+        bottom:82px !important;
+      }
+
+      body { padding-bottom:145px !important; }
+    }
+
   </style>
 </head>
 <body oncontextmenu="return false;">
@@ -467,6 +630,7 @@
 
       document.getElementById('view-events').style.display = 'none';
       document.getElementById('view-gallery').style.display = 'block';
+      forceMobileTop();
       document.getElementById('currentEventTitle').innerText = name;
       document.getElementById('footer').style.display = 'flex';
       updateFooter();
@@ -747,6 +911,14 @@ function sendOrder() {
   }
 
   var downloadTargetEvent = null;
+
+
+  function forceMobileTop() {
+    setTimeout(function(){
+      try { window.scrollTo({ top: 0, left: 0, behavior: "auto" }); } catch(e) { window.scrollTo(0,0); }
+      try { document.body.scrollLeft = 0; document.documentElement.scrollLeft = 0; } catch(e) {}
+    }, 80);
+  }
 
   function openDownloadCodeModalForEvent(folderId, eventName) {
     downloadTargetEvent = { id: folderId, displayName: eventName };
