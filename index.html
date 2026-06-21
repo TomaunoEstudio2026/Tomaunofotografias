@@ -541,6 +541,103 @@
       #zoomFileName{left:10px; bottom:10px; max-width:78%; font-size:10px;}
     }
 
+  
+    /* V21 FIX REAL */
+    .photo-watermark{
+      background-image:none !important;
+      border:none !important;
+      outline:none !important;
+      box-shadow:none !important;
+      opacity:1 !important;
+    }
+    .photo-watermark::before{
+      content:"tomauno" !important;
+      position:absolute !important;
+      left:50% !important;
+      top:50% !important;
+      transform:translate(-50%,-50%) rotate(-24deg) !important;
+      color:rgba(0,0,0,.36) !important;
+      -webkit-text-stroke:1px rgba(255,255,255,.22) !important;
+      text-shadow:0 2px 4px rgba(255,255,255,.24) !important;
+      font-size:42px !important;
+      font-weight:900 !important;
+      letter-spacing:-3px !important;
+      font-family:Arial,sans-serif !important;
+      pointer-events:none !important;
+      white-space:nowrap !important;
+    }
+    .photo-watermark::after{ content:none !important; display:none !important; }
+
+    .zoom-watermark{
+      border:none !important;
+      outline:none !important;
+      background:transparent !important;
+      box-shadow:none !important;
+      opacity:1 !important;
+      color:rgba(0,0,0,.78) !important;
+      -webkit-text-stroke:3.2px rgba(255,255,255,.55) !important;
+      text-shadow:0 4px 10px rgba(255,255,255,.55) !important;
+      font-size:110px !important;
+      font-weight:900 !important;
+      pointer-events:none !important;
+    }
+    #lightbox .zoom-watermark::after{
+      content:"tomauno";
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%) rotate(24deg);
+      color:rgba(255,0,0,.44);
+      -webkit-text-stroke:2px rgba(0,0,0,.30);
+      font-size:92px;
+      font-weight:900;
+      letter-spacing:-4px;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    #lightbox.selected-zoom #zoomImg{
+      outline:8px solid var(--rojo) !important;
+      box-shadow:0 0 55px rgba(255,0,0,.85) !important;
+    }
+    #zoomSelectedBadge{
+      left:18px !important;
+      top:18px !important;
+      transform:none !important;
+      background:rgba(255,0,0,.98) !important;
+      color:white !important;
+      font-size:17px !important;
+      font-weight:900 !important;
+      padding:12px 20px !important;
+      border-radius:999px !important;
+      z-index:10050 !important;
+      box-shadow:0 0 30px rgba(255,0,0,.60), 0 0 30px rgba(0,0,0,.85) !important;
+    }
+    #zoomFileName{
+      position:absolute;
+      left:18px;
+      bottom:18px;
+      background:rgba(0,0,0,.78);
+      color:#fff;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      padding:8px 13px;
+      font-size:11px;
+      z-index:10050;
+      max-width:70%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    #orderType{ display:none !important; }
+    #downloadSection:empty, #downloadList:empty, .empty-download-placeholder{ display:none !important; }
+    @media(max-width:700px){
+      .photo-watermark::before{font-size:32px !important;}
+      .zoom-watermark{font-size:62px !important;}
+      #lightbox .zoom-watermark::after{font-size:48px !important;}
+      #zoomSelectedBadge{font-size:14px !important; left:10px !important; top:10px !important; padding:10px 14px !important;}
+      #zoomFileName{left:10px; bottom:10px; max-width:78%; font-size:10px;}
+    }
+
   </style>
 </head>
 <body oncontextmenu="return false;">
@@ -989,12 +1086,17 @@ function renderExtras() {
 function updateFooter() {
     var product = selectedMainProduct || getSelectedProduct();
     var total = product ? getOrderTotal(product) : 0;
+
     document.getElementById('pDigTotal').innerText = product ? product.label : "Elegí servicio";
     document.getElementById('pImpTotal').innerText = total === 0 ? "GRATIS" : "$" + total.toLocaleString();
     document.getElementById('btnConfirm').innerText = product ? ("CONFIRMAR (" + selectedPhotos.length + ")") : "ELEGIR SERVICIO";
 
-    var fc=document.getElementById('floatingCart'); var fcc=document.getElementById('floatingCartCount');
-    if(fc && fcc){ fcc.innerText=selectedPhotos.length; fc.style.display = selectedPhotos.length ? 'flex' : 'none'; }
+    var fc=document.getElementById('floatingCart');
+    var fcc=document.getElementById('floatingCartCount');
+    if(fc && fcc){
+      fcc.innerText = selectedPhotos.length + " · " + (total === 0 ? "GRATIS" : "$" + total.toLocaleString());
+      fc.style.display = (selectedPhotos.length || (product && product.isFullAlbum)) ? 'flex' : 'none';
+    }
 
     var packBtn = document.getElementById('btnPackAlbum');
     if(packBtn){
@@ -1005,21 +1107,35 @@ function updateFooter() {
     }
   }
 
-  function openZoom(idx) {
+function openZoom(idx) {
     currentZoomIdx = idx;
     var p = allPhotos[idx];
     document.getElementById('zoomImg').src = p.urlWeb;
     var zfn=document.getElementById('zoomFileName'); if(zfn) zfn.innerText = p.name || '';
     document.getElementById('arrow-l').style.display = idx === 0 ? 'none' : 'block';
     document.getElementById('arrow-r').style.display = idx === allPhotos.length - 1 ? 'none' : 'block';
+
     var btn = document.getElementById('zoomSelectBtn');
-    var isSel = selectedPhotos.find(function(x){ return x.id === p.id; });
-    btn.innerText = isSel ? "✔ SELECCIONADA - QUITAR" : "SELECCIONAR";
-    btn.style.background = isSel ? "#444" : "var(--rojo)";
+    var isSel = !!selectedPhotos.find(function(x){ return x.id === p.id; });
+
+    btn.innerText = isSel ? "✔ FOTO SELECCIONADA - QUITAR" : "SELECCIONAR";
+    btn.style.background = isSel ? "var(--rojo)" : "var(--rojo)";
+
     var badge = document.getElementById('zoomSelectedBadge');
-    if(badge){ badge.style.display = isSel ? 'block' : 'none'; badge.innerText = isSel ? '✔ FOTO SELECCIONADA' : ''; }
-    var zm=document.getElementById('zoomModal'); if(zm) zm.classList.toggle('selected-zoom', isSel);
-    btn.onclick = function(){ togglePhoto(p.id); openZoom(idx); };
+    if(badge){
+      badge.style.display = isSel ? 'block' : 'none';
+      badge.innerText = isSel ? '✔ FOTO SELECCIONADA' : '';
+    }
+
+    var lb = document.getElementById('lightbox');
+    if(lb) lb.classList.toggle('selected-zoom', isSel);
+
+    btn.onclick = function(){
+      togglePhoto(p.id);
+      updateFooter();
+      openZoom(idx);
+    };
+
     document.getElementById('lightbox').style.display = 'flex';
   }
 
@@ -1482,25 +1598,4 @@ function attr(s) {
   function toggleL(v, t) { if(t) document.getElementById('loadingTxt').innerText = t; document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
 </script>
 </body>
-</html
-  function refreshSelectedModeLabel() {
-    var label = document.getElementById('selectedModeLabel');
-    var p = getSelectedProduct();
-    if(label && p) {
-      var price = Number(p.price || 0);
-      var txt = "Servicio elegido: " + p.label;
-      if(price > function removeCheckoutEmptyBoxes() {
-    var modal = document.getElementById('modalCheckout');
-    if(!modal) return;
-    modal.querySelectorAll('div').forEach(function(d){
-      var txt = (d.textContent || "").trim();
-      if(!txt && d.children.length === 0 && d.offsetHeight < 20) {
-        d.style.display = "none";
-      }
-    });
-    var ds = document.getElementById('downloadSection');
-    var dl = document.getElementById('downloadList');
-    if(ds && dl && !dl.innerHTML.trim()) ds.style.display = "none";
-  }
-
->
+</html>
