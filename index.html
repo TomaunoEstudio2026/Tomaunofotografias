@@ -951,6 +951,20 @@ button.is-loading,.btn-order.is-loading,.mini-btn.is-loading{opacity:.65!importa
 #downloadEventSelect{display:none !important;}
 #modalDownloadCode{z-index:90000 !important;}
 
+
+/* V31 fixes directos */
+#modalDownloadCode{z-index:95000!important}
+#modalAlert{z-index:99000!important}
+#modalAdmin{z-index:94000!important}
+button:active{transform:scale(.96)!important;filter:brightness(1.2)!important}
+button.is-loading{opacity:.65!important;pointer-events:none!important}
+.admin-delete-btn{
+  background:#3a1010!important;
+  color:#fff!important;
+  border:1px solid #ff2222!important;
+  min-width:46px!important;
+}
+
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1026,7 +1040,7 @@ button.is-loading,.btn-order.is-loading,.mini-btn.is-loading{opacity:.65!importa
   </div>
   <i id="arrow-r" class="fa fa-chevron-right nav-arrow" style="right:10px" onclick="nextPhoto()"></i>
   <div style="margin-top:20px; display:flex; gap:10px; z-index:10000">
-    <button id="zoomSelectBtn" class="btn-order" style="background:#fff; color:#000">SELECCIONAR</button>
+    <button id="zoomTrashBtn" title="Quitar selección" onclick="if(currentZoomIdx>=0){ togglePhoto(allPhotos[currentZoomIdx].id); updateFooter(); openZoom(currentZoomIdx); }" style="background:#3a1010;color:white;border:1px solid #ff2222;padding:12px 18px;border-radius:22px;font-weight:bold;margin-right:8px;display:none">🗑️</button><button id="zoomSelectBtn" class="btn-order" style="background:#fff; color:#000">SELECCIONAR</button>
     <button class="btn-order" style="background:#222" onclick="closeZoom()">CERRAR</button>
   </div>
 </div>
@@ -1433,6 +1447,8 @@ function openZoom(idx) {
     btn.style.background = "var(--rojo)";
     var badge = document.getElementById('zoomSelectedBadge');
     if(badge){ badge.style.display = isSel ? 'block' : 'none'; badge.innerText = isSel ? '✔ FOTO SELECCIONADA' : ''; }
+    var zt = document.getElementById('zoomTrashBtn');
+    if(zt) zt.style.display = isSel ? 'inline-block' : 'none';
     var lb = document.getElementById('lightbox');
     if(lb) lb.classList.toggle('selected-zoom', isSel);
     btn.onclick = function(){ togglePhoto(p.id); updateFooter(); openZoom(idx); };
@@ -1744,39 +1760,54 @@ function openDownloadCodeModal() {
     setTimeout(function(){ document.getElementById('downloadCodeInput').focus(); }, 100);
   }
 
-  function redeemDownloadCode() {
-    var code = document.getElementById('downloadCodeInput').value.trim();
+function redeemDownloadCode() {
+    var inp = document.getElementById('downloadCodeInput');
+    var code = inp ? inp.value.trim() : "";
     if(!code) return luxAlert("AVISO", "Ingresá tu clave de descarga.");
 
     var btn = document.getElementById('btnRedeemCode');
-    hardButtonFeedback(btn, "REVISANDO...");
-    toggleL(true, "REVISANDO CONTRASEÑA...");
+    if(btn) {
+      btn.classList.add("is-loading");
+      btn.disabled = true;
+      btn.dataset.originalText = btn.dataset.originalText || btn.innerText;
+      btn.innerText = "REVISANDO...";
+    }
+    toggleL(true, "REVISANDO CLAVE...");
 
-    var folderId = "";
-    try { folderId = getDownloadTargetFolderId(); } catch(e) { folderId = ""; }
-
-    apiGet({ action:"download", folderId: folderId, code: code }).then(function(res){
+    apiGet({ action:"download", code: code }).then(function(res){
       toggleL(false);
-      releaseButtonFeedback(btn);
+      if(btn) {
+        btn.classList.remove("is-loading");
+        btn.disabled = false;
+        btn.innerText = btn.dataset.originalText || "BUSCAR DESCARGAS";
+      }
+
+      if(!res || res.success === false) {
+        return luxAlert("ERROR", (res && res.msg) ? res.msg : "No se pudo validar la clave.");
+      }
 
       var files = res.files || [];
       if(!files.length) return luxAlert("AVISO", "No encontramos fotos para esta clave.");
 
       document.getElementById('modalDownloadCode').style.display = 'none';
-      downloadTargetEvent = null;
       document.getElementById('view-gallery').style.display = 'none';
       document.getElementById('view-events').style.display = 'none';
       document.getElementById('view-success').style.display = 'block';
       document.getElementById('downloadSection').style.display = 'block';
 
       document.getElementById('downloadList').innerHTML = files.map(function(p){
-        return '<div class="download-item"><span>'+escapeHtml(p.name)+'</span> <a href="'+p.urlFull+'" target="_blank">BAJAR HQ</a></div>';
+        return '<div class="download-item"><span>'+escapeHtml(p.name)+'</span> <a href="'+p.urlFull+'" target="_blank" download>BAJAR HQ</a></div>';
       }).join("");
-      showToast("Descargas habilitadas");
+
+      luxAlert("DESCARGAS LISTAS", "Encontramos " + files.length + " archivo(s). Ya podés descargarlos.");
     }).catch(function(err){
       toggleL(false);
-      releaseButtonFeedback(btn);
-      luxAlert("ERROR", "No se pudo validar la clave: " + err.message);
+      if(btn) {
+        btn.classList.remove("is-loading");
+        btn.disabled = false;
+        btn.innerText = btn.dataset.originalText || "BUSCAR DESCARGAS";
+      }
+      luxAlert("ERROR", "No se pudo validar la clave: " + (err && err.message ? err.message : err));
     });
   }
 
@@ -1898,7 +1929,7 @@ function checkAdminPin() {
           '<button data-copy="'+attr(o.fotos || "")+'">📋 Copiar fotos</button>'+
           '<button data-row="'+o.row+'" data-field="pago" data-value="'+(pagoOk?'PENDIENTE':'PAGADO')+'">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+
           '<button data-row="'+o.row+'" data-field="entrega" data-value="'+(entregaOk?'PENDIENTE':'ENTREGADO')+'">'+(entregaOk?'↩ Entrega pend.':'📦 Entregado')+'</button>'+
-          '<button data-delete-row="'+o.row+'">🗑️</button>'+
+          '<button class="admin-delete-btn" onclick="deleteOrder('+o.row+', this)">🗑️ Eliminar</button>'+
         '</div>'+
       '</div>';
     }).join("");
@@ -2084,22 +2115,38 @@ function attr(s) {
 </script>
 </body>
 </html
-  async function deleteOrder(row, btn) {
-    if(!confirm("¿Eliminar este pedido de la planilla?")) return;
-    if(typeof hardButtonFeedback === "function") hardButtonFeedback(btn, "...");
-    else if(typeof setBtnLoading === "function") setBtnLoading(btn, true, "...");
+async function deleteOrder(row, btn) {
+    row = Number(row);
+    if(!row || row < 2) return luxAlert("ERROR", "Fila inválida.");
+    if(!confirm("¿Eliminar este pedido de la planilla? Esta acción no se puede deshacer.")) return;
+
+    if(btn) {
+      btn.classList.add("is-loading");
+      btn.disabled = true;
+      btn.dataset.originalText = btn.dataset.originalText || btn.innerText;
+      btn.innerText = "ELIMINANDO...";
+    }
     toggleL(true, "ELIMINANDO...");
+
     try {
-      await apiPost({ action:"deleteOrder", pin:ADMIN_PIN, row:Number(row) });
+      var res = await apiPost({ action:"deleteOrder", pin:ADMIN_PIN, row:row });
+      if(!res || res.success === false) throw new Error((res && res.msg) ? res.msg : "No se pudo eliminar.");
       toggleL(false);
-      if(typeof releaseButtonFeedback === "function") releaseButtonFeedback(btn);
+      if(btn) {
+        btn.classList.remove("is-loading");
+        btn.disabled = false;
+        btn.innerText = btn.dataset.originalText || "🗑️ Eliminar";
+      }
       showToast("Pedido eliminado");
       await loadAdminOrders();
     } catch(err) {
       toggleL(false);
-      if(typeof releaseButtonFeedback === "function") releaseButtonFeedback(btn);
-      else if(typeof setBtnLoading === "function") setBtnLoading(btn, false);
-      luxAlert("ERROR", "No se pudo eliminar: " + err.message);
+      if(btn) {
+        btn.classList.remove("is-loading");
+        btn.disabled = false;
+        btn.innerText = btn.dataset.originalText || "🗑️ Eliminar";
+      }
+      luxAlert("ERROR", "No se pudo eliminar: " + (err && err.message ? err.message : err));
     }
   }
 
