@@ -1293,6 +1293,25 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 #ticketCanvas { width:100%; max-width:820px; background:#fff; border:1px solid #ddd; border-radius:6px; }
 .protect-overlay { position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center; background:#000; color:#fff; font-size:22px; text-align:center; padding:30px; }
 
+
+
+/* V39 FIXES - admin, extras, ticket */
+#ticketModal{z-index:14000!important;}
+#ticketModal .modal-box{max-height:94vh;overflow:auto;}
+.ticket-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.admin-tools .mini-btn,.admin-tools .btn-order{min-height:44px;font-size:11px!important;}
+.extra-row.extra-toggle{cursor:pointer;border:1px solid #222;border-radius:14px;padding:12px;margin:8px 0;background:#020202;}
+.extra-row.extra-active{border-color:var(--rojo);box-shadow:0 0 16px rgba(255,0,0,.18);}
+.extra-check{width:28px;height:28px;border-radius:50%;border:2px solid #555;display:flex;align-items:center;justify-content:center;font-weight:900;}
+.extra-active .extra-check{background:var(--rojo);border-color:var(--rojo);color:#fff;}
+.extra-hint{color:#888;font-size:12px;line-height:1.35;margin:6px 0 0;}
+.report-note{font-size:12px;color:#999;margin:6px 0 0;}
+@media(max-width:700px){
+  .admin-tools{display:grid!important;grid-template-columns:1fr!important;}
+  .admin-tools input,.admin-tools select,.admin-tools button{width:100%!important;min-width:0!important;font-size:15px!important;}
+  .ticket-actions .btn-order{font-size:13px!important;padding:13px 18px!important;}
+}
+
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1449,6 +1468,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
       <button class="mini-btn" onclick="printAdminReport()">🖨️ Imprimir/PDF</button>
     </div>
 
+    <p class="report-note">Los reportes se generan con el filtro actual: todos los eventos o el evento elegido.</p>
     <div id="adminOrders"></div>
   </div>
 </div>
@@ -1620,7 +1640,24 @@ function chooseOrderMode(idx) {
   }
 
   function getExtraProducts() {
-    return getProductsForEvent().filter(function(p){ return !!p.quantityExtra; });
+    var known = {
+      "Descargas Digitales": true,
+      "Impresiones 15x21": true,
+      "Selección para edición / fotolibro": true,
+      "PACK ÁLBUM COMPLETO": true
+    };
+    return getProductsForEvent().filter(function(p){
+      if(!p || p.isFullAlbum) return false;
+      if(p.quantityExtra) return true;               // modo cant
+      if(p.extraProduct) return true;
+      if(p.label && !known[p.label]) return true;    // extras configurados desde nombre de carpeta
+      return false;
+    }).map(function(p){
+      if(p.quantityExtra) p.extraMode = "cant";
+      else if(p.perPhoto) p.extraMode = "foto";
+      else p.extraMode = "fijo";
+      return p;
+    });
   }
 
 function renderExtras() {
@@ -1630,21 +1667,46 @@ function renderExtras() {
     if(!box || !list || !extras.length) { if(box) box.style.display = 'none'; return; }
 
     box.style.display = 'block';
-    list.innerHTML = extras.map(function(p){
+    var help = '<div class="extra-hint">Podés sumar productos adicionales a tu pedido. Si elegís copias extra, después nos indicás por WhatsApp de qué foto querés la copia.</div>';
+    list.innerHTML = help + extras.map(function(p){
+      var mode = p.extraMode || (p.quantityExtra ? 'cant' : (p.perPhoto ? 'foto' : 'fijo'));
       var qty = Number(extraQuantities[p.label] || 0);
-      return '<div class="extra-row">'+
-        '<span>'+escapeHtml(p.label)+'<br><small style="color:#777">$'+Number(p.price||0).toLocaleString()+' c/u</small></span>'+
-        '<div class="extra-controls">'+
-          '<button data-extra="'+attr(p.label)+'" data-delta="-1">−</button>'+
-          '<b>'+qty+'</b>'+
-          '<button data-extra="'+attr(p.label)+'" data-delta="1">+</button>'+
-        '</div>'+
+      var active = qty > 0;
+      var priceTxt = '$'+Number(p.price||0).toLocaleString();
+      if(mode === 'foto') priceTxt += ' por foto seleccionada';
+      if(mode === 'cant') priceTxt += ' c/u';
+      if(mode === 'fijo') priceTxt += ' fijo';
+
+      if(mode === 'cant') {
+        return '<div class="extra-row">'+
+          '<span>'+escapeHtml(p.label)+'<br><small style="color:#777">'+priceTxt+'</small></span>'+
+          '<div class="extra-controls">'+
+            '<button type="button" data-extra="'+attr(p.label)+'" data-delta="-1">−</button>'+
+            '<b>'+qty+'</b>'+
+            '<button type="button" data-extra="'+attr(p.label)+'" data-delta="1">+</button>'+
+          '</div>'+
+        '</div>';
+      }
+
+      var calc = mode === 'foto' && active ? selectedPhotos.length : qty;
+      return '<div class="extra-row extra-toggle '+(active?'extra-active':'')+'" data-extra-toggle="'+attr(p.label)+'">'+
+        '<span>'+escapeHtml(p.label)+'<br><small style="color:#777">'+priceTxt+(mode==='foto' && active ? ' · '+selectedPhotos.length+' foto(s)' : '')+'</small></span>'+
+        '<div class="extra-check">'+(active?'✓':'')+'</div>'+
       '</div>';
     }).join("");
 
     list.querySelectorAll('[data-extra]').forEach(function(btn){
-      btn.onclick = function(){
+      btn.onclick = function(e){
+        e.preventDefault();
         changeExtraQty(decodeURIComponent(btn.getAttribute('data-extra')), Number(btn.getAttribute('data-delta')));
+      };
+    });
+    list.querySelectorAll('[data-extra-toggle]').forEach(function(row){
+      row.onclick = function(){
+        var label = decodeURIComponent(row.getAttribute('data-extra-toggle'));
+        extraQuantities[label] = Number(extraQuantities[label] || 0) > 0 ? 0 : 1;
+        renderExtras();
+        updateFinalPrice();
       };
     });
   }
@@ -1659,15 +1721,24 @@ function renderExtras() {
 
   function getExtrasTotal() {
     return getExtraProducts().reduce(function(sum, p){
-      return sum + (Number(extraQuantities[p.label] || 0) * Number(p.price || 0));
+      var mode = p.extraMode || (p.quantityExtra ? 'cant' : (p.perPhoto ? 'foto' : 'fijo'));
+      var q = Number(extraQuantities[p.label] || 0);
+      if(q <= 0) return sum;
+      if(mode === 'foto') q = selectedPhotos.length || 0;
+      if(mode === 'fijo') q = 1;
+      return sum + (q * Number(p.price || 0));
     }, 0);
   }
 
   function getExtrasText(separator) {
-    separator = separator || "\\n";
+    separator = separator || "\n";
     var lines = [];
     getExtraProducts().forEach(function(p){
+      var mode = p.extraMode || (p.quantityExtra ? 'cant' : (p.perPhoto ? 'foto' : 'fijo'));
       var q = Number(extraQuantities[p.label] || 0);
+      if(q <= 0) return;
+      if(mode === 'foto') q = selectedPhotos.length || 0;
+      if(mode === 'fijo') q = 1;
       if(q > 0) lines.push(p.label + " x" + q + " = $" + (q * Number(p.price || 0)).toLocaleString());
     });
     return lines.join(separator);
@@ -1980,8 +2051,7 @@ function renderOrderSummary() {
     var shown = names.slice(0, 10).map(function(n){ return '• ' + escapeHtml(n); }).join('<br>');
     if(names.length > 10) shown += '<br>• ... y ' + (names.length - 10) + ' foto(s) más';
     var extrasTxt = getExtrasText('<br>');
-    box.innerHTML = '<div class="sum-title">Resumen antes de registrar</div>'+
-      '<div class="sum-line"><b>Servicio:</b> '+escapeHtml(product.label || '')+'</div>'+
+    box.innerHTML = '<div class="sum-line"><b>Servicio:</b> '+escapeHtml(product.label || '')+'</div>'+
       '<div class="sum-line"><b>Cantidad:</b> '+escapeHtml(String(qty || 0))+'</div>'+
       '<div class="sum-line"><b>Total:</b> '+(total === 0 ? 'GRATIS' : '$'+Number(total || 0).toLocaleString())+'</div>'+
       (extrasTxt ? '<div class="sum-line"><b>Extras:</b><br>'+extrasTxt+'</div>' : '')+
@@ -2833,28 +2903,44 @@ function attr(s) {
   window.exportAdminCsv = function(){
     var rows = window.__lastAdminFiltered || adminOrdersData || [];
     if(!rows.length) return luxAlert('SIN DATOS','No hay pedidos para exportar.');
-    var headers = ['Fecha','Cliente','WhatsApp','Evento','Tipo','Cantidad','Total','Fotos','Observaciones','Pago','Entrega','ClaveDescarga'];
-    var csv = headers.join(';') + '\n' + rows.map(function(o){
-      return [o.fecha,o.cliente,o.whatsapp,o.evento,o.tipo,o.cantidad,o.total,o.fotos,o.observaciones,o.pago,o.entrega,o.clave].map(function(v){
-        v = String(v == null ? '' : v).replace(/\r?\n/g,' ');
-        return '"' + v.replace(/"/g,'""') + '"';
-      }).join(';');
-    }).join('\n');
-    var blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8;'});
+    var reportDate = new Date().toLocaleString('es-AR');
+    var evFilter = ((document.getElementById('adminEventFilter') || {}).value || 'Todos los eventos');
+    var escXls = function(v){ return String(v == null ? '' : v).replace(/[\r\n]+/g,' ').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var total = rows.reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
+    var htmlXls = '<html><head><meta charset="UTF-8"><style>'+
+      'body{font-family:Arial,sans-serif;} h1{font-size:22px;} .meta{font-size:13px;color:#555;margin-bottom:14px;} table{border-collapse:collapse;width:100%;font-size:12px;} th{background:#e60000;color:#fff;font-weight:bold;} td,th{border:1px solid #ccc;padding:7px;vertical-align:top;} .total{font-weight:bold;background:#f2f2f2;}'+
+      '</style></head><body>'+
+      '<h1>Pedidos Registrados de Tomauno</h1>'+
+      '<div class="meta">Fecha del reporte: '+escXls(reportDate)+'<br>Filtro de evento: '+escXls(evFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>'+
+      '<table><thead><tr>'+
+      ['Fecha','Cliente','WhatsApp','Evento','Tipo','Cantidad','Total','Fotos','Observaciones','Pago','Entrega','ClaveDescarga'].map(function(h){return '<th>'+h+'</th>';}).join('')+
+      '</tr></thead><tbody>'+
+      rows.map(function(o){
+        return '<tr>'+[formatDate(o.fecha),o.cliente,o.whatsapp,o.evento,o.tipo,o.cantidad,o.total,o.fotos,o.observaciones,o.pago,o.entrega,o.clave].map(function(v){ return '<td>'+escXls(v)+'</td>'; }).join('')+'</tr>';
+      }).join('')+
+      '<tr class="total"><td colspan="6">TOTAL</td><td>'+escXls(money(total))+'</td><td colspan="5"></td></tr>'+
+      '</tbody></table></body></html>';
+    var blob = new Blob(['\ufeff'+htmlXls], {type:'application/vnd.ms-excel;charset=utf-8;'});
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'pedidos_tomauno_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.download = 'Pedidos_Registrados_Tomauno_' + new Date().toISOString().slice(0,10) + '.xls';
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
   };
 
   window.printAdminReport = function(){
     var rows = window.__lastAdminFiltered || adminOrdersData || [];
+    if(!rows.length) return luxAlert('SIN DATOS','No hay pedidos para imprimir.');
+    var evFilter = ((document.getElementById('adminEventFilter') || {}).value || 'Todos los eventos');
     var w = window.open('', '_blank');
     if(!w) return luxAlert('AVISO','El navegador bloqueó la ventana de impresión.');
-    w.document.write('<html><head><title>Pedidos Tomauno</title><style>body{font-family:Arial;padding:24px}table{width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #ddd;padding:6px}th{background:#e00;color:#fff}</style></head><body>');
-    w.document.write('<h1>Pedidos Tomauno</h1><table><thead><tr><th>Fecha</th><th>Cliente</th><th>WhatsApp</th><th>Evento</th><th>Tipo</th><th>Cant.</th><th>Total</th><th>Pago</th><th>Entrega</th></tr></thead><tbody>');
-    rows.forEach(function(o){ w.document.write('<tr><td>'+escapeHtml(formatDate(o.fecha))+'</td><td>'+escapeHtml(o.cliente||'')+'</td><td>'+escapeHtml(o.whatsapp||'')+'</td><td>'+escapeHtml(o.evento||'')+'</td><td>'+escapeHtml(o.tipo||'')+'</td><td>'+escapeHtml(o.cantidad||'')+'</td><td>'+money(o.total)+'</td><td>'+escapeHtml(o.pago||'')+'</td><td>'+escapeHtml(o.entrega||'')+'</td></tr>'); });
+    var reportDate = new Date().toLocaleString('es-AR');
+    var total = rows.reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
+    w.document.write('<html><head><title>Pedidos Registrados de Tomauno</title><style>body{font-family:Arial;padding:24px;color:#111}h1{margin:0 0 6px}.meta{color:#666;font-size:13px;margin-bottom:18px}table{width:100%;border-collapse:collapse;font-size:11px}td,th{border:1px solid #ddd;padding:6px;vertical-align:top}th{background:#e00;color:#fff}.total{font-weight:bold;background:#f2f2f2}@media print{button{display:none}}</style></head><body>');
+    w.document.write('<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+escapeHtml(reportDate)+'<br>Filtro de evento: '+escapeHtml(evFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>');
+    w.document.write('<table><thead><tr><th>Fecha</th><th>Cliente</th><th>WhatsApp</th><th>Evento</th><th>Tipo</th><th>Cant.</th><th>Total</th><th>Pago</th><th>Entrega</th><th>Fotos</th></tr></thead><tbody>');
+    rows.forEach(function(o){ w.document.write('<tr><td>'+escapeHtml(formatDate(o.fecha))+'</td><td>'+escapeHtml(o.cliente||'')+'</td><td>'+escapeHtml(o.whatsapp||'')+'</td><td>'+escapeHtml(o.evento||'')+'</td><td>'+escapeHtml(o.tipo||'')+'</td><td>'+escapeHtml(o.cantidad||'')+'</td><td>'+money(o.total)+'</td><td>'+escapeHtml(o.pago||'')+'</td><td>'+escapeHtml(o.entrega||'')+'</td><td>'+escapeHtml(o.fotos||'')+'</td></tr>'); });
+    w.document.write('<tr class="total"><td colspan="6">TOTAL</td><td>'+money(total)+'</td><td colspan="3"></td></tr>');
     w.document.write('</tbody></table></body></html>');
     w.document.close(); w.focus(); setTimeout(function(){ w.print(); }, 400);
   };
@@ -2901,12 +2987,34 @@ function attr(s) {
   };
 
   window.downloadTicketPng = function(){
-    var c = document.getElementById('ticketCanvas'); if(!c) return;
-    var a = document.createElement('a');
-    var o = window.__ticketOrder || {};
-    a.download = 'ticket_tomauno_' + String(o.cliente || 'pedido').replace(/[^a-z0-9]+/gi,'_') + '.png';
-    a.href = c.toDataURL('image/png');
-    a.click();
+    var c = document.getElementById('ticketCanvas');
+    if(!c) return luxAlert('ERROR','No se encontró el ticket para descargar.');
+    try {
+      var a = document.createElement('a');
+      var o = window.__ticketOrder || {};
+      a.download = 'ticket_tomauno_' + String(o.cliente || 'pedido').replace(/[^a-z0-9]+/gi,'_') + '.png';
+      a.href = c.toDataURL('image/png');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      miniToast('Ticket PNG generado.');
+    } catch(err) {
+      luxAlert('ERROR','No se pudo descargar el ticket: '+err.message);
+    }
+  };
+
+  window.copyTicketPng = function(){
+    var c = document.getElementById('ticketCanvas');
+    if(!c) return luxAlert('ERROR','No se encontró el ticket para copiar.');
+    if(!navigator.clipboard || !window.ClipboardItem) return luxAlert('AVISO','Este navegador no permite copiar imágenes al portapapeles. Usá DESCARGAR PNG.');
+    c.toBlob(function(blob){
+      if(!blob) return luxAlert('ERROR','No se pudo preparar la imagen del ticket.');
+      navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function(){
+        miniToast('Ticket copiado como imagen.');
+      }).catch(function(){
+        luxAlert('AVISO','No se pudo copiar la imagen. Usá DESCARGAR PNG.');
+      });
+    }, 'image/png');
   };
 
   window.openDownloadFolderHelp = function(){
@@ -2919,6 +3027,15 @@ function attr(s) {
     var h4 = document.querySelector('#downloadSection h4');
     if(h4) h4.insertAdjacentHTML('afterend','<p class="keep-download-msg" style="color:#aaa;font-size:14px;line-height:1.45">En celular puede abrirse Google Drive. Tocá los tres puntitos y elegí <b>Descargar</b>.</p>');
   });
+
+  // V39: refuerza filtros del admin aunque algún botón haya sido agregado después.
+  document.addEventListener('DOMContentLoaded', function(){
+    var f = document.getElementById('adminEventFilter');
+    var s = document.getElementById('adminSearch');
+    if(f) f.addEventListener('change', function(){ if(typeof window.renderAdminOrders === 'function') window.renderAdminOrders(); });
+    if(s) s.addEventListener('input', function(){ if(typeof window.renderAdminOrders === 'function') window.renderAdminOrders(); });
+  });
+
 })();
 
 </script>
@@ -2927,7 +3044,8 @@ function attr(s) {
   <div class="modal-box ticket-box">
     <h3 style="margin-top:0;color:#111">TICKET DE PAGO</h3>
     <canvas id="ticketCanvas" width="900" height="1200"></canvas>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+    <div class="ticket-actions">
+      <button class="btn-order" onclick="copyTicketPng()">COPIAR PNG</button>
       <button class="btn-order" onclick="downloadTicketPng()">DESCARGAR PNG</button>
       <button class="btn-order" style="background:#222" onclick="document.getElementById('ticketModal').style.display='none'">CERRAR</button>
     </div>
