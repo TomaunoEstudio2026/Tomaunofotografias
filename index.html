@@ -3065,7 +3065,147 @@ function attr(s) {
         return '<tr>'+[formatDate(o.fecha),o.cliente,o.whatsapp,o.evento,o.tipo,o.cantidad,o.total,o.fotos,o.observaciones,o.pago,o.entrega,o.clave].map(function(v){ return '<td>'+escXls(v)+'</td>'; }).join('')+'</tr>';
       }).join('')+
       '<tr class="total"><td colspan="6">TOTAL</td><td>'+escXls(money(total))+'</td><td colspan="5"></td></tr>'+
-      '</tbody></table></body></html>';
+      '</tbody></table>
+
+<style id="tomauno-ux-final-patch-v1">
+/* UX final solicitado: solo capa visual y overrides seguros */
+.photo-watermark{opacity:.65!important;}
+.photo-watermark::after{color:rgba(255,0,0,.16)!important;}
+#lightbox .zoom-watermark{opacity:.65!important;}
+#lightbox .zoom-watermark::after{color:rgba(255,0,0,.15)!important;}
+#modalAlert,#modalConfirm{z-index:210000!important;align-items:center!important;justify-content:center!important;}
+#modalAlert .modal-box,#modalConfirm .modal-box{position:relative!important;z-index:210001!important;box-shadow:0 0 55px rgba(255,0,0,.38),0 0 0 9999px rgba(0,0,0,.72)!important;}
+.tomauno-info-modal{z-index:130000!important;padding:14px!important;}
+.tomauno-info-box{max-width:620px!important;text-align:left!important;line-height:1.65!important;box-shadow:0 22px 70px rgba(0,0,0,.75)!important;}
+.tomauno-info-box h3{color:var(--rojo);margin-top:0;text-align:center;font-family:'Playfair Display',serif;font-size:28px!important;}
+.tomauno-info-box h4{color:var(--oro);text-align:center;margin:8px 0 14px;}
+.tomauno-info-box p,.tomauno-info-box li{font-size:14px!important;color:#ddd!important;}
+.tomauno-info-box ol{padding-left:22px;margin:0 0 12px;}
+.modal-close-soft{background:none;border:none;color:#777;margin:18px auto 0;display:block;cursor:pointer;font-size:13px;}
+.zoom-counter{position:fixed;left:50%;bottom:112px;transform:translateX(-50%);z-index:10001;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:800;letter-spacing:.3px;box-shadow:0 0 24px rgba(0,0,0,.55);pointer-events:none;}
+#modalCheckout{z-index:90000!important;align-items:center!important;padding:16px!important;}
+#modalCheckout .modal-box{max-width:920px!important;width:96%!important;max-height:92vh!important;overflow:auto!important;text-align:left!important;padding:22px!important;}
+#modalCheckout h3{text-align:center!important;font-size:22px!important;margin:0 0 14px!important;}
+#modalCheckout select,#modalCheckout input,#modalCheckout textarea{width:100%!important;margin:6px 0 10px!important;}
+#modalCheckout .final-price-box{margin:8px 0 10px!important;padding:12px!important;text-align:center!important;}
+#modalCheckout #finalTotalDisplay small{font-size:12px!important;line-height:1.35!important;}
+.checkout-grid-final{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;}
+.checkout-left-final,.checkout-right-final{min-width:0;}
+.compact-gift-note{font-size:12px;color:var(--oro);line-height:1.35;margin:6px 0 10px;text-align:center;border:1px solid rgba(212,175,55,.28);border-radius:14px;padding:9px;background:rgba(212,175,55,.06);}
+.sum-line{font-size:13px!important;line-height:1.35!important;margin:4px 0!important;color:#ddd!important;}
+.sum-line.compact-main{background:#111;border:1px solid #222;border-radius:12px;padding:9px!important;}
+.sum-photos{font-size:12px!important;line-height:1.38!important;max-height:150px;overflow:auto;background:#050505;border:1px solid #222;border-radius:12px;padding:10px;margin-top:8px;}
+.extras-box{background:#080808!important;border:1px solid #242424!important;border-radius:16px!important;padding:13px!important;margin:0 0 12px!important;}
+.extras-box:before{content:'Podés sumar productos adicionales a tu pedido.';display:block;color:#aaa;font-size:12px;line-height:1.35;margin-bottom:9px;}
+.extras-box small{font-size:11px!important;color:#888!important;}
+.menu-main-btn{margin-bottom:8px!important;}
+@media(max-width:900px){.checkout-grid-final{grid-template-columns:1fr;}#modalCheckout .modal-box{max-width:calc(100vw - 20px)!important;padding:16px!important;text-align:center!important;}.zoom-counter{bottom:148px;font-size:12px}.menu-main-btn{width:100%!important;margin-left:0!important;display:block!important;}}
+</style>
+
+<script id="tomauno-ux-final-patch-v1">
+(function(){
+  if(window.__TOMAUNO_UX_FINAL_PATCH__) return; window.__TOMAUNO_UX_FINAL_PATCH__=true;
+  function qs(id){return document.getElementById(id);} 
+  function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function moneyLocal(v){try{return '$ '+Number(v||0).toLocaleString('es-AR');}catch(e){return '$ '+v;}}
+  function labelServicio(label){
+    var s=String(label||'').toLowerCase();
+    if(s.indexOf('pack')>-1 || s.indexOf('álbum completo')>-1 || s.indexOf('album completo')>-1) return '📦 Pack álbum completo';
+    if(s.indexOf('impres')>-1) return '🖼️ Comprar Impresiones';
+    if(s.indexOf('edición')>-1 || s.indexOf('edicion')>-1 || s.indexOf('fotolibro')>-1 || s.indexOf('selección')>-1 || s.indexOf('seleccion')>-1) return '✨ Seleccionar Fotografías para Edición';
+    if(s.indexOf('digital')>-1 || s.indexOf('descarga')>-1) return '📥 Comprar Digitales';
+    return label || '';
+  }
+  window.tomaunoDisplayServiceLabel=labelServicio;
+
+  function ensureCheckoutGrid(){
+    var modal=qs('modalCheckout'), box=modal && modal.querySelector('.modal-box');
+    if(!box || box.querySelector('.checkout-grid-final')) return;
+    var select=qs('orderType'), price=box.querySelector('.final-price-box'), summary=qs('orderSummary'), extras=qs('extrasBox'), name=qs('userName'), phone=qs('userPhone'), notes=qs('userNotes'), submit=qs('btnSubmit');
+    var back=Array.prototype.slice.call(box.children).find(function(el){return el.tagName==='BUTTON' && String(el.textContent||'').trim().toLowerCase()==='volver';});
+    var grid=document.createElement('div'); grid.className='checkout-grid-final';
+    var left=document.createElement('div'); left.className='checkout-left-final';
+    var right=document.createElement('div'); right.className='checkout-right-final';
+    var gift=document.createElement('div'); gift.className='compact-gift-note'; gift.textContent='🎁 Si encargás impresiones, las fotografías digitales están incluidas sin costo adicional.';
+    if(select) left.appendChild(select); left.appendChild(gift); if(price) left.appendChild(price); if(summary) left.appendChild(summary);
+    if(extras) right.appendChild(extras); if(name) right.appendChild(name); if(phone) right.appendChild(phone); if(notes) right.appendChild(notes); if(submit) right.appendChild(submit); if(back) right.appendChild(back);
+    grid.appendChild(left); grid.appendChild(right); box.appendChild(grid);
+  }
+
+  var oldPopulate=window.populateOrderTypes;
+  if(typeof oldPopulate==='function'){
+    window.populateOrderTypes=function(preferFull){
+      oldPopulate.apply(this,arguments);
+      try{
+        var select=qs('orderType'); if(select){ Array.prototype.forEach.call(select.options,function(opt){ var p=(typeof getProductsForEvent==='function'?getProductsForEvent().filter(isStandardMainProduct):[])[Number(opt.value)]; if(p) opt.textContent=labelServicio(p.label); }); }
+      }catch(e){}
+      ensureCheckoutGrid();
+    };
+  }
+
+  var oldOpenCheckout=window.openCheckout;
+  if(typeof oldOpenCheckout==='function'){
+    window.openCheckout=function(){ var r=oldOpenCheckout.apply(this,arguments); ensureCheckoutGrid(); setTimeout(ensureCheckoutGrid,80); return r; };
+  }
+
+  window.renderOrderSummary=function(){
+    var box=qs('orderSummary'); if(!box) return;
+    var product=(typeof getSelectedProduct==='function')?getSelectedProduct():null;
+    if(!product){box.innerHTML='';return;}
+    var qty=(typeof getOrderQuantity==='function')?getOrderQuantity(product):0;
+    var total=(typeof getOrderTotal==='function')?getOrderTotal(product):0;
+    var names=product.isFullAlbum?['Álbum completo']:(window.selectedPhotos||selectedPhotos||[]).map(function(p){return p.name||p.id;});
+    var shown=names.slice(0,10).map(function(n){return '• '+esc(n);}).join('<br>');
+    if(names.length>10) shown+='<br>• ... y '+(names.length-10)+' foto(s) más';
+    var extrasTxt=(typeof getExtrasText==='function')?getExtrasText('<br>'):'';
+    box.innerHTML='<div class="sum-line compact-main"><b>Servicio:</b> '+esc(labelServicio(product.label||''))+' <span style="color:#666">|</span> <b>Cantidad:</b> '+esc(String(qty||0))+' <span style="color:#666">|</span> <b>Total:</b> '+(total===0?'GRATIS':'$'+Number(total||0).toLocaleString('es-AR'))+'</div>'+ (extrasTxt?'<div class="sum-line"><b>Productos adicionales:</b><br>'+extrasTxt+'</div>':'')+'<div class="sum-photos"><b>Fotos seleccionadas:</b><br>'+(shown||'Sin fotos seleccionadas')+'</div>';
+  };
+
+  window.updateFinalPrice=function(){
+    var product=(typeof getSelectedProduct==='function')?getSelectedProduct():null;
+    var total=(typeof getOrderTotal==='function')?getOrderTotal(product):0;
+    var extra='';
+    if(product){
+      if(product.selectionOnly) extra="<br><small style='color:#aaa'>Selección para edición. Sin descarga automática.</small>";
+      if(product.includesDigital && !product.isFullAlbum) extra="<br><small style='color:#aaa'>🎁 Digitales incluidas sin costo adicional.</small>";
+      if(product.isFullAlbum) extra="<br><small style='color:#aaa'>Álbum completo. Entrega por WhatsApp.</small>";
+    }
+    var display=qs('finalTotalDisplay'); if(display) display.innerHTML=((total===0)?'GRATIS':'$'+Number(total||0).toLocaleString('es-AR'))+extra;
+    try{window.renderOrderSummary();}catch(e){}
+  };
+
+  var oldOpenZoom=window.openZoom;
+  if(typeof oldOpenZoom==='function'){
+    window.openZoom=function(idx){
+      var r=oldOpenZoom.apply(this,arguments);
+      try{ var c=qs('zoomCounter'); var total=(window.allPhotos||allPhotos||[]).length||0; if(c) c.textContent='Foto '+(Number(idx)+1)+' de '+total; }catch(e){}
+      return r;
+    };
+  }
+
+  window.printAdminReport=function(){
+    var rows=window.__lastAdminFiltered || window.adminOrdersData || (typeof adminOrdersData!=='undefined'?adminOrdersData:[]) || [];
+    if(!rows.length) return luxAlert('SIN DATOS','No hay pedidos para imprimir.');
+    var evFilter=((qs('adminEventFilter')||{}).value||'Todos los eventos');
+    var statusFilter=((qs('adminStatusFilter')||{}).value||'Todos los estados');
+    var w=window.open('','_blank'); if(!w) return luxAlert('AVISO','El navegador bloqueó la ventana de impresión.');
+    var reportDate=new Date().toLocaleString('es-AR');
+    var total=rows.reduce(function(s,o){return s+Number(o.total||0);},0);
+    function extras(o){ return (typeof extractExtrasFromOrder==='function') ? extractExtrasFromOrder(o) : (o.extras || ''); }
+    function estado(o){ var a=[]; if(o.pago) a.push('Pago: '+o.pago); if(o.entrega) a.push('Entrega: '+o.entrega); return a.join(' | '); }
+    w.document.write('<html><head><meta charset="UTF-8"><title>Pedidos Registrados de Tomauno</title><style>body{font-family:Arial;padding:24px;color:#111}h1{margin:0 0 6px}.meta{color:#666;font-size:13px;margin-bottom:18px}table{width:100%;border-collapse:collapse;font-size:10px}td,th{border:1px solid #ddd;padding:6px;vertical-align:top}th{background:#e00;color:#fff}.total{font-weight:bold;background:#f2f2f2}.small{font-size:9px;white-space:pre-wrap}@media print{button{display:none}}</style></head><body>');
+    w.document.write('<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+esc(reportDate)+'<br>Filtro de evento: '+esc(evFilter)+'<br>Filtro de estado: '+esc(statusFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>');
+    w.document.write('<table><thead><tr><th>Fecha</th><th>Cliente</th><th>WhatsApp</th><th>Evento</th><th>Fotos seleccionadas</th><th>Productos adicionales</th><th>Total</th><th>Estado</th><th>Clave de descarga</th></tr></thead><tbody>');
+    rows.forEach(function(o){w.document.write('<tr><td>'+esc((typeof formatDate==='function')?formatDate(o.fecha):o.fecha)+'</td><td>'+esc(o.cliente||'')+'</td><td>'+esc(o.whatsapp||'')+'</td><td>'+esc(o.evento||'')+'</td><td class="small">'+esc(o.fotos||'')+'</td><td class="small">'+esc(extras(o)||'')+'</td><td>'+moneyLocal(o.total)+'</td><td>'+esc(estado(o)||'')+'</td><td>'+esc(o.clave||o.claveDescarga||'')+'</td></tr>');});
+    w.document.write('<tr class="total"><td colspan="6">TOTAL</td><td>'+moneyLocal(total)+'</td><td colspan="2"></td></tr></tbody></table></body></html>');
+    w.document.close(); w.focus(); setTimeout(function(){w.print();},450);
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){ ensureCheckoutGrid(); });
+})();
+</script>
+
+</body></html>';
       // v44: productos desde hoja Productos_Tomauno + copiar aviso igual a WhatsApp admin
     var blob = new Blob(['\ufeff'+htmlXls], {type:'application/vnd.ms-excel;charset=utf-8;'});
     var a = document.createElement('a');
@@ -3350,144 +3490,74 @@ function attr(s) {
 </script>
 
 
-<style id="tomauno-ux-final-patch-v1">
-/* UX final solicitado: solo capa visual y overrides seguros */
-.photo-watermark{opacity:.65!important;}
-.photo-watermark::after{color:rgba(255,0,0,.16)!important;}
-#lightbox .zoom-watermark{opacity:.65!important;}
-#lightbox .zoom-watermark::after{color:rgba(255,0,0,.15)!important;}
-#modalAlert,#modalConfirm{z-index:210000!important;align-items:center!important;justify-content:center!important;}
-#modalAlert .modal-box,#modalConfirm .modal-box{position:relative!important;z-index:210001!important;box-shadow:0 0 55px rgba(255,0,0,.38),0 0 0 9999px rgba(0,0,0,.72)!important;}
-.tomauno-info-modal{z-index:130000!important;padding:14px!important;}
-.tomauno-info-box{max-width:620px!important;text-align:left!important;line-height:1.65!important;box-shadow:0 22px 70px rgba(0,0,0,.75)!important;}
-.tomauno-info-box h3{color:var(--rojo);margin-top:0;text-align:center;font-family:'Playfair Display',serif;font-size:28px!important;}
-.tomauno-info-box h4{color:var(--oro);text-align:center;margin:8px 0 14px;}
-.tomauno-info-box p,.tomauno-info-box li{font-size:14px!important;color:#ddd!important;}
-.tomauno-info-box ol{padding-left:22px;margin:0 0 12px;}
-.modal-close-soft{background:none;border:none;color:#777;margin:18px auto 0;display:block;cursor:pointer;font-size:13px;}
-.zoom-counter{position:fixed;left:50%;bottom:112px;transform:translateX(-50%);z-index:10001;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:800;letter-spacing:.3px;box-shadow:0 0 24px rgba(0,0,0,.55);pointer-events:none;}
-#modalCheckout{z-index:90000!important;align-items:center!important;padding:16px!important;}
-#modalCheckout .modal-box{max-width:920px!important;width:96%!important;max-height:92vh!important;overflow:auto!important;text-align:left!important;padding:22px!important;}
-#modalCheckout h3{text-align:center!important;font-size:22px!important;margin:0 0 14px!important;}
-#modalCheckout select,#modalCheckout input,#modalCheckout textarea{width:100%!important;margin:6px 0 10px!important;}
-#modalCheckout .final-price-box{margin:8px 0 10px!important;padding:12px!important;text-align:center!important;}
-#modalCheckout #finalTotalDisplay small{font-size:12px!important;line-height:1.35!important;}
-.checkout-grid-final{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;}
-.checkout-left-final,.checkout-right-final{min-width:0;}
-.compact-gift-note{font-size:12px;color:var(--oro);line-height:1.35;margin:6px 0 10px;text-align:center;border:1px solid rgba(212,175,55,.28);border-radius:14px;padding:9px;background:rgba(212,175,55,.06);}
-.sum-line{font-size:13px!important;line-height:1.35!important;margin:4px 0!important;color:#ddd!important;}
-.sum-line.compact-main{background:#111;border:1px solid #222;border-radius:12px;padding:9px!important;}
-.sum-photos{font-size:12px!important;line-height:1.38!important;max-height:150px;overflow:auto;background:#050505;border:1px solid #222;border-radius:12px;padding:10px;margin-top:8px;}
-.extras-box{background:#080808!important;border:1px solid #242424!important;border-radius:16px!important;padding:13px!important;margin:0 0 12px!important;}
-.extras-box:before{content:'Podés sumar productos adicionales a tu pedido.';display:block;color:#aaa;font-size:12px;line-height:1.35;margin-bottom:9px;}
-.extras-box small{font-size:11px!important;color:#888!important;}
-.menu-main-btn{margin-bottom:8px!important;}
-@media(max-width:900px){.checkout-grid-final{grid-template-columns:1fr;}#modalCheckout .modal-box{max-width:calc(100vw - 20px)!important;padding:16px!important;text-align:center!important;}.zoom-counter{bottom:148px;font-size:12px}.menu-main-btn{width:100%!important;margin-left:0!important;display:block!important;}}
+<style id="tomauno-correccion-servicios-pdf-v2">
+.mode-card b{line-height:1.25!important;}
 </style>
-
-<script id="tomauno-ux-final-patch-v1">
+<script id="tomauno-correccion-servicios-pdf-v2">
 (function(){
-  if(window.__TOMAUNO_UX_FINAL_PATCH__) return; window.__TOMAUNO_UX_FINAL_PATCH__=true;
   function qs(id){return document.getElementById(id);} 
   function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-  function moneyLocal(v){try{return '$ '+Number(v||0).toLocaleString('es-AR');}catch(e){return '$ '+v;}}
-  function labelServicio(label){
+  function money(v){try{return '$ '+Number(v||0).toLocaleString('es-AR');}catch(e){return '$ '+v;}}
+  function serviceLabel(label){
     var s=String(label||'').toLowerCase();
-    if(s.indexOf('pack')>-1 || s.indexOf('álbum completo')>-1 || s.indexOf('album completo')>-1) return '📦 Pack álbum completo';
-    if(s.indexOf('impres')>-1) return '🖼️ Comprar Impresiones';
-    if(s.indexOf('edición')>-1 || s.indexOf('edicion')>-1 || s.indexOf('fotolibro')>-1 || s.indexOf('selección')>-1 || s.indexOf('seleccion')>-1) return '✨ Seleccionar Fotografías para Edición';
-    if(s.indexOf('digital')>-1 || s.indexOf('descarga')>-1) return '📥 Comprar Digitales';
-    return label || '';
+    if(s.indexOf('pack')>-1 || s.indexOf('álbum completo')>-1 || s.indexOf('album completo')>-1) return '📦 PACK ÁLBUM COMPLETO';
+    if(s.indexOf('impres')>-1) return '🖼️ COMPRAR IMPRESIONES';
+    if(s.indexOf('edición')>-1 || s.indexOf('edicion')>-1 || s.indexOf('fotolibro')>-1 || s.indexOf('selección')>-1 || s.indexOf('seleccion')>-1) return '✨ SELECCIONAR FOTOGRAFÍAS PARA EDICIÓN';
+    if(s.indexOf('digital')>-1 || s.indexOf('descarga')>-1) return '📥 COMPRAR DIGITALES';
+    return String(label||'');
   }
-  window.tomaunoDisplayServiceLabel=labelServicio;
+  window.tomaunoDisplayServiceLabel = serviceLabel;
 
-  function ensureCheckoutGrid(){
-    var modal=qs('modalCheckout'), box=modal && modal.querySelector('.modal-box');
-    if(!box || box.querySelector('.checkout-grid-final')) return;
-    var select=qs('orderType'), price=box.querySelector('.final-price-box'), summary=qs('orderSummary'), extras=qs('extrasBox'), name=qs('userName'), phone=qs('userPhone'), notes=qs('userNotes'), submit=qs('btnSubmit');
-    var back=Array.prototype.slice.call(box.children).find(function(el){return el.tagName==='BUTTON' && String(el.textContent||'').trim().toLowerCase()==='volver';});
-    var grid=document.createElement('div'); grid.className='checkout-grid-final';
-    var left=document.createElement('div'); left.className='checkout-left-final';
-    var right=document.createElement('div'); right.className='checkout-right-final';
-    var gift=document.createElement('div'); gift.className='compact-gift-note'; gift.textContent='🎁 Si encargás impresiones, las fotografías digitales están incluidas sin costo adicional.';
-    if(select) left.appendChild(select); left.appendChild(gift); if(price) left.appendChild(price); if(summary) left.appendChild(summary);
-    if(extras) right.appendChild(extras); if(name) right.appendChild(name); if(phone) right.appendChild(phone); if(notes) right.appendChild(notes); if(submit) right.appendChild(submit); if(back) right.appendChild(back);
-    grid.appendChild(left); grid.appendChild(right); box.appendChild(grid);
-  }
-
-  var oldPopulate=window.populateOrderTypes;
-  if(typeof oldPopulate==='function'){
-    window.populateOrderTypes=function(preferFull){
-      oldPopulate.apply(this,arguments);
-      try{
-        var select=qs('orderType'); if(select){ Array.prototype.forEach.call(select.options,function(opt){ var p=(typeof getProductsForEvent==='function'?getProductsForEvent().filter(isStandardMainProduct):[])[Number(opt.value)]; if(p) opt.textContent=labelServicio(p.label); }); }
-      }catch(e){}
-      ensureCheckoutGrid();
-    };
-  }
-
-  var oldOpenCheckout=window.openCheckout;
-  if(typeof oldOpenCheckout==='function'){
-    window.openCheckout=function(){ var r=oldOpenCheckout.apply(this,arguments); ensureCheckoutGrid(); setTimeout(ensureCheckoutGrid,80); return r; };
-  }
-
-  window.renderOrderSummary=function(){
-    var box=qs('orderSummary'); if(!box) return;
-    var product=(typeof getSelectedProduct==='function')?getSelectedProduct():null;
-    if(!product){box.innerHTML='';return;}
-    var qty=(typeof getOrderQuantity==='function')?getOrderQuantity(product):0;
-    var total=(typeof getOrderTotal==='function')?getOrderTotal(product):0;
-    var names=product.isFullAlbum?['Álbum completo']:(window.selectedPhotos||selectedPhotos||[]).map(function(p){return p.name||p.id;});
-    var shown=names.slice(0,10).map(function(n){return '• '+esc(n);}).join('<br>');
-    if(names.length>10) shown+='<br>• ... y '+(names.length-10)+' foto(s) más';
-    var extrasTxt=(typeof getExtrasText==='function')?getExtrasText('<br>'):'';
-    box.innerHTML='<div class="sum-line compact-main"><b>Servicio:</b> '+esc(labelServicio(product.label||''))+' <span style="color:#666">|</span> <b>Cantidad:</b> '+esc(String(qty||0))+' <span style="color:#666">|</span> <b>Total:</b> '+(total===0?'GRATIS':'$'+Number(total||0).toLocaleString('es-AR'))+'</div>'+ (extrasTxt?'<div class="sum-line"><b>Productos adicionales:</b><br>'+extrasTxt+'</div>':'')+'<div class="sum-photos"><b>Fotos seleccionadas:</b><br>'+(shown||'Sin fotos seleccionadas')+'</div>';
+  window.extractExtrasFromOrder = function(o){
+    o=o||{};
+    var direct = o.extras || o.productosAdicionales || o.productos_adicionales || o.adicionales || o.detallesExtras || o.detalleExtras || '';
+    if(direct && String(direct).trim()) return String(direct).trim();
+    var obs = String(o.observaciones || o.obs || '');
+    var m = obs.match(/(?:^|\|)\s*Extras\s*:\s*(.*)$/i);
+    if(m && m[1]) return m[1].trim().replace(/^\|\s*/,'');
+    return '';
+  };
+  window.cleanOrderObservations = function(o){
+    var obs = String((o&& (o.observaciones || o.obs)) || '');
+    return obs.replace(/\s*\|\s*Extras\s*:\s*.*$/i,'').trim();
   };
 
-  window.updateFinalPrice=function(){
-    var product=(typeof getSelectedProduct==='function')?getSelectedProduct():null;
-    var total=(typeof getOrderTotal==='function')?getOrderTotal(product):0;
-    var extra='';
-    if(product){
-      if(product.selectionOnly) extra="<br><small style='color:#aaa'>Selección para edición. Sin descarga automática.</small>";
-      if(product.includesDigital && !product.isFullAlbum) extra="<br><small style='color:#aaa'>🎁 Digitales incluidas sin costo adicional.</small>";
-      if(product.isFullAlbum) extra="<br><small style='color:#aaa'>Álbum completo. Entrega por WhatsApp.</small>";
-    }
-    var display=qs('finalTotalDisplay'); if(display) display.innerHTML=((total===0)?'GRATIS':'$'+Number(total||0).toLocaleString('es-AR'))+extra;
-    try{window.renderOrderSummary();}catch(e){}
+  window.openModeModal = function(){
+    var products = (typeof getProductsForEvent==='function' ? getProductsForEvent() : []).filter(typeof isStandardMainProduct==='function' ? isStandardMainProduct : function(){return true;});
+    var htmlModes = products.map(function(p,i){
+      var price = Number(p.price || 0);
+      var priceTxt = price === 0 ? 'Seleccionar fotos' : '$' + price.toLocaleString('es-AR') + (p.perPhoto ? ' / foto' : '');
+      var label = serviceLabel(p.label);
+      var ico = label.split(' ')[0] || '';
+      return '<div class="mode-card" onclick="chooseOrderMode('+i+')"><span class="ico">'+esc(ico)+'</span><b>'+esc(label.replace(/^\S+\s*/,''))+'</b><span>'+esc(priceTxt)+'</span></div>';
+    }).join('');
+    var box=qs('modeOptions'); if(box) box.innerHTML = htmlModes || '<p style="color:#888">No hay servicios configurados.</p>';
+    var modal=qs('modalMode'); if(modal) modal.style.display='flex';
   };
 
-  var oldOpenZoom=window.openZoom;
-  if(typeof oldOpenZoom==='function'){
-    window.openZoom=function(idx){
-      var r=oldOpenZoom.apply(this,arguments);
-      try{ var c=qs('zoomCounter'); var total=(window.allPhotos||allPhotos||[]).length||0; if(c) c.textContent='Foto '+(Number(idx)+1)+' de '+total; }catch(e){}
-      return r;
-    };
-  }
-
-  window.printAdminReport=function(){
-    var rows=window.__lastAdminFiltered || window.adminOrdersData || (typeof adminOrdersData!=='undefined'?adminOrdersData:[]) || [];
-    if(!rows.length) return luxAlert('SIN DATOS','No hay pedidos para imprimir.');
+  window.printAdminReport = function(){
+    var rows = window.__lastAdminFiltered || window.adminOrdersData || (typeof adminOrdersData!=='undefined'?adminOrdersData:[]) || [];
+    if(!rows.length) return (typeof luxAlert==='function'?luxAlert('SIN DATOS','No hay pedidos para imprimir.'):alert('No hay pedidos para imprimir.'));
     var evFilter=((qs('adminEventFilter')||{}).value||'Todos los eventos');
     var statusFilter=((qs('adminStatusFilter')||{}).value||'Todos los estados');
-    var w=window.open('','_blank'); if(!w) return luxAlert('AVISO','El navegador bloqueó la ventana de impresión.');
+    var w=window.open('','_blank');
+    if(!w) return (typeof luxAlert==='function'?luxAlert('AVISO','El navegador bloqueó la ventana de impresión.'):alert('El navegador bloqueó la ventana de impresión.'));
     var reportDate=new Date().toLocaleString('es-AR');
     var total=rows.reduce(function(s,o){return s+Number(o.total||0);},0);
-    function extras(o){ return (typeof extractExtrasFromOrder==='function') ? extractExtrasFromOrder(o) : (o.extras || ''); }
-    function estado(o){ var a=[]; if(o.pago) a.push('Pago: '+o.pago); if(o.entrega) a.push('Entrega: '+o.entrega); return a.join(' | '); }
+    function estado(o){var a=[]; if(o.pago) a.push('Pago: '+o.pago); if(o.entrega) a.push('Entrega: '+o.entrega); return a.join(' | ');}
     w.document.write('<html><head><meta charset="UTF-8"><title>Pedidos Registrados de Tomauno</title><style>body{font-family:Arial;padding:24px;color:#111}h1{margin:0 0 6px}.meta{color:#666;font-size:13px;margin-bottom:18px}table{width:100%;border-collapse:collapse;font-size:10px}td,th{border:1px solid #ddd;padding:6px;vertical-align:top}th{background:#e00;color:#fff}.total{font-weight:bold;background:#f2f2f2}.small{font-size:9px;white-space:pre-wrap}@media print{button{display:none}}</style></head><body>');
     w.document.write('<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+esc(reportDate)+'<br>Filtro de evento: '+esc(evFilter)+'<br>Filtro de estado: '+esc(statusFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>');
     w.document.write('<table><thead><tr><th>Fecha</th><th>Cliente</th><th>WhatsApp</th><th>Evento</th><th>Fotos seleccionadas</th><th>Productos adicionales</th><th>Total</th><th>Estado</th><th>Clave de descarga</th></tr></thead><tbody>');
-    rows.forEach(function(o){w.document.write('<tr><td>'+esc((typeof formatDate==='function')?formatDate(o.fecha):o.fecha)+'</td><td>'+esc(o.cliente||'')+'</td><td>'+esc(o.whatsapp||'')+'</td><td>'+esc(o.evento||'')+'</td><td class="small">'+esc(o.fotos||'')+'</td><td class="small">'+esc(extras(o)||'')+'</td><td>'+moneyLocal(o.total)+'</td><td>'+esc(estado(o)||'')+'</td><td>'+esc(o.clave||o.claveDescarga||'')+'</td></tr>');});
-    w.document.write('<tr class="total"><td colspan="6">TOTAL</td><td>'+moneyLocal(total)+'</td><td colspan="2"></td></tr></tbody></table></body></html>');
+    rows.forEach(function(o){
+      var fecha=(typeof formatDate==='function')?formatDate(o.fecha):o.fecha;
+      var extras=window.extractExtrasFromOrder(o);
+      w.document.write('<tr><td>'+esc(fecha)+'</td><td>'+esc(o.cliente||'')+'</td><td>'+esc(o.whatsapp||'')+'</td><td>'+esc(o.evento||'')+'</td><td class="small">'+esc(o.fotos||'')+'</td><td class="small">'+esc(extras||'')+'</td><td>'+money(o.total)+'</td><td>'+esc(estado(o))+'</td><td>'+esc(o.clave||o.claveDescarga||'')+'</td></tr>');
+    });
+    w.document.write('<tr class="total"><td colspan="6">TOTAL</td><td>'+money(total)+'</td><td colspan="2"></td></tr></tbody></table></body></html>');
     w.document.close(); w.focus(); setTimeout(function(){w.print();},450);
   };
-
-  document.addEventListener('DOMContentLoaded',function(){ ensureCheckoutGrid(); });
 })();
 </script>
-
 </body>
 </html>
 
