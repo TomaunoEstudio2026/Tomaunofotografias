@@ -869,6 +869,88 @@ button.is-loading,.btn-order.is-loading,.mini-btn.is-loading{opacity:.65!importa
 }
 @media(max-width:700px){.zoom-watermark{background-size:96% auto !important; opacity:.98 !important;}}
 
+
+/* V29: quitar cuadro vacío y limpiar watermark */
+#modalCheckout #downloadSection,
+#modalCheckout #downloadList,
+#modalCheckout .download-section,
+#modalCheckout .empty-download-placeholder {
+  display:none !important;
+  height:0 !important;
+  min-height:0 !important;
+  max-height:0 !important;
+  padding:0 !important;
+  margin:0 !important;
+  border:0 !important;
+  overflow:hidden !important;
+}
+#modalCheckout div:empty {
+  display:none !important;
+}
+
+/* Visor grande: dejar solo un watermark textual completo, sin imagen PNG rota ni doble logo */
+.zoom-watermark {
+  background:none !important;
+  background-image:none !important;
+  border:none !important;
+  outline:none !important;
+  box-shadow:none !important;
+  width:100% !important;
+  height:100% !important;
+  left:0 !important;
+  top:0 !important;
+  transform:none !important;
+  opacity:1 !important;
+  font-size:0 !important;
+  color:transparent !important;
+  pointer-events:none !important;
+}
+.zoom-watermark::before {
+  content:"TOMAUNO" !important;
+  display:block !important;
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  transform:translate(-50%,-50%) rotate(-18deg) !important;
+  font-family:Arial, sans-serif !important;
+  font-size:120px !important;
+  font-weight:900 !important;
+  letter-spacing:-8px !important;
+  color:rgba(255,0,0,.55) !important;
+  -webkit-text-stroke:3px rgba(0,0,0,.55) !important;
+  text-shadow:0 3px 7px rgba(255,255,255,.35) !important;
+  white-space:nowrap !important;
+}
+.zoom-watermark::after,
+#lightbox .zoom-watermark::after {
+  content:none !important;
+  display:none !important;
+}
+@media(max-width:700px){
+  .zoom-watermark::before{
+    font-size:64px !important;
+    letter-spacing:-4px !important;
+  }
+}
+
+
+/* V30 fixes: checkout encima, sin cuadro vacío, descarga simple */
+#modalCheckout{z-index:90000 !important;}
+#modalAlert{z-index:95000 !important;}
+#lightbox{z-index:60000 !important;}
+#orderInfo:empty,
+#orderInfo.order-info-empty{
+  display:none !important;
+  height:0 !important;
+  min-height:0 !important;
+  padding:0 !important;
+  margin:0 !important;
+  border:0 !important;
+  overflow:hidden !important;
+}
+#downloadEventSelect{display:none !important;}
+#modalDownloadCode{z-index:90000 !important;}
+
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -965,7 +1047,6 @@ button.is-loading,.btn-order.is-loading,.mini-btn.is-loading{opacity:.65!importa
       <option value="PACK ALBUM COMPLETO">¡PACK ÁLBUM COMPLETO!</option>
     </select>
     <div style="background:#000; padding:15px; border-radius:15px; margin:10px 0"><b id="finalTotalDisplay" style="color:var(--rojo); font-size:24px">$0</b></div>
-    <div id="orderInfo" style="font-size:11px; line-height:1.45; color:#bbb; background:#050505; border:1px solid #222; border-radius:12px; padding:10px; margin-bottom:8px"></div>
     <input type="text" id="userName" placeholder="Nombre completo">
     <input type="text" id="userPhone" placeholder="Tu WhatsApp">
     <textarea id="userNotes" class="notes-soft" placeholder="Dejanos tu inquietud o detalle sobre el pedido."></textarea>
@@ -1021,7 +1102,6 @@ button.is-loading,.btn-order.is-loading,.mini-btn.is-loading{opacity:.65!importa
   <div class="modal-box">
     <h3 style="color:var(--rojo); margin-top:0">DESCARGAR PEDIDO</h3>
     <p style="font-size:11px;color:#aaa;line-height:1.5">Ingresá la clave de 4 dígitos que te enviamos por WhatsApp después del pago.</p>
-    <select id="downloadEventSelect" autocomplete="off" style="margin-bottom:10px"></select>
     <input type="text" id="downloadCodeInput" inputmode="numeric" autocomplete="off" placeholder="Clave de descarga" maxlength="4">
     <button id="btnRedeemCode" class="btn-order" style="width:100%" onclick="redeemDownloadCode()">BUSCAR DESCARGAS</button>
     <button onclick="document.getElementById('modalDownloadCode').style.display='none'" style="background:none; border:none; color:#555; margin-top:12px; cursor:pointer">Cerrar</button>
@@ -1380,6 +1460,9 @@ function openZoom(idx) {
 
 function forceConfirmSelection() {
     try {
+      var lb = document.getElementById('lightbox');
+      if(lb && lb.style.display === 'flex') lb.style.display = 'none';
+
       if(!selectedMainProduct) {
         openModeModal();
         return;
@@ -1416,14 +1499,41 @@ function buyFullAlbum() {
     isFullAlbumMode = true;
     openCheckout();
   }
+
+  function cleanCheckoutEmptyBoxes() {
+    try {
+      var m = document.getElementById('modalCheckout');
+      if(!m) return;
+      var ds = m.querySelector('#downloadSection');
+      if(ds) ds.style.display = 'none';
+      var dl = m.querySelector('#downloadList');
+      if(dl) dl.style.display = 'none';
+      m.querySelectorAll('div').forEach(function(d){
+        var txt = (d.textContent || "").trim();
+        if(!txt && d.children.length === 0) {
+          d.style.display = "none";
+          d.style.height = "0";
+          d.style.padding = "0";
+          d.style.margin = "0";
+          d.style.border = "0";
+        }
+      });
+    } catch(e) {}
+  }
+
 function openCheckout() {
     try { populateOrderTypes(isFullAlbumMode); } catch(e) {}
     try { refreshSelectedModeLabel(); } catch(e) {}
     try { updateFinalPrice(); } catch(e) {}
     try { hideEmptyDownloadBox(); } catch(e) {}
+    try { cleanCheckoutEmptyBoxes(); } catch(e) {}
     var m = document.getElementById('modalCheckout');
     if(m) m.style.display = 'flex';
-    setTimeout(function(){ var n = document.getElementById('userName'); if(n) n.focus(); }, 150);
+    setTimeout(function(){
+      try { cleanCheckoutEmptyBoxes(); } catch(e) {}
+      var n = document.getElementById('userName');
+      if(n) n.focus();
+    }, 150);
   }
 
   function closeCheckout() { document.getElementById("modalCheckout").style.display = "none"; }
@@ -1616,15 +1726,8 @@ function sendOrder() {
   }
 
 
-  function openDirectDownloadModal() {
+function openDirectDownloadModal() {
     downloadTargetEvent = null;
-    var sel = document.getElementById('downloadEventSelect');
-    if(sel) {
-      sel.style.display = 'block';
-      sel.innerHTML = (eventsData || []).map(function(ev){
-        return '<option value="'+attr(ev.id)+'">'+escapeHtml(ev.displayName)+'</option>';
-      }).join("");
-    }
     openDownloadCodeModal();
   }
 
@@ -1635,37 +1738,44 @@ function sendOrder() {
 
 function openDownloadCodeModal() {
     var sel = document.getElementById('downloadEventSelect');
-    if(sel) sel.style.display = downloadTargetEvent ? 'none' : 'block';
+    if(sel) sel.style.display = 'none';
     document.getElementById('modalDownloadCode').style.display = 'flex';
     document.getElementById('downloadCodeInput').value = "";
     setTimeout(function(){ document.getElementById('downloadCodeInput').focus(); }, 100);
   }
 
-  async function redeemDownloadCode() {
+  function redeemDownloadCode() {
     var code = document.getElementById('downloadCodeInput').value.trim();
     if(!code) return luxAlert("AVISO", "Ingresá tu clave de descarga.");
+
     var btn = document.getElementById('btnRedeemCode');
     hardButtonFeedback(btn, "REVISANDO...");
     toggleL(true, "REVISANDO CONTRASEÑA...");
+
     var folderId = "";
-    try { folderId = getDownloadTargetFolderId(); }
-    catch(e){ toggleL(false); releaseButtonFeedback(btn); return luxAlert("AVISO", e.message); }
+    try { folderId = getDownloadTargetFolderId(); } catch(e) { folderId = ""; }
+
     apiGet({ action:"download", folderId: folderId, code: code }).then(function(res){
-      toggleL(false); releaseButtonFeedback(btn);
+      toggleL(false);
+      releaseButtonFeedback(btn);
+
       var files = res.files || [];
       if(!files.length) return luxAlert("AVISO", "No encontramos fotos para esta clave.");
+
       document.getElementById('modalDownloadCode').style.display = 'none';
       downloadTargetEvent = null;
       document.getElementById('view-gallery').style.display = 'none';
       document.getElementById('view-events').style.display = 'none';
       document.getElementById('view-success').style.display = 'block';
       document.getElementById('downloadSection').style.display = 'block';
+
       document.getElementById('downloadList').innerHTML = files.map(function(p){
         return '<div class="download-item"><span>'+escapeHtml(p.name)+'</span> <a href="'+p.urlFull+'" target="_blank">BAJAR HQ</a></div>';
       }).join("");
       showToast("Descargas habilitadas");
     }).catch(function(err){
-      toggleL(false); releaseButtonFeedback(btn);
+      toggleL(false);
+      releaseButtonFeedback(btn);
       luxAlert("ERROR", "No se pudo validar la clave: " + err.message);
     });
   }
@@ -1959,32 +2069,45 @@ function attr(s) {
   }, true);
   setTimeout(bindConfirmButtons, 300);
 
+
+  // V30_DELETE_CAPTURE
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if(t && t.closest) t = t.closest('[data-delete-row]');
+    if(t && t.getAttribute && t.hasAttribute('data-delete-row')) {
+      e.preventDefault();
+      e.stopPropagation();
+      deleteOrder(t.getAttribute('data-delete-row'), t);
+    }
+  }, true);
+
 </script>
 </body>
 </html
   async function deleteOrder(row, btn) {
     if(!confirm("¿Eliminar este pedido de la planilla?")) return;
-    setBtnLoading(btn, true, "...");
+    if(typeof hardButtonFeedback === "function") hardButtonFeedback(btn, "...");
+    else if(typeof setBtnLoading === "function") setBtnLoading(btn, true, "...");
     toggleL(true, "ELIMINANDO...");
     try {
       await apiPost({ action:"deleteOrder", pin:ADMIN_PIN, row:Number(row) });
       toggleL(false);
+      if(typeof releaseButtonFeedback === "function") releaseButtonFeedback(btn);
       showToast("Pedido eliminado");
       await loadAdminOrders();
     } catch(err) {
       toggleL(false);
-      setBtnLoading(btn, false);
+      if(typeof releaseButtonFeedback === "function") releaseButtonFeedback(btn);
+      else if(typeof setBtnLoading === "function") setBtnLoading(btn, false);
       luxAlert("ERROR", "No se pudo eliminar: " + err.message);
     }
   }
 
 
-  function getDownloadTargetFolderId() {
-    if(downloadTargetEvent && downloadTargetEvent.id) return downloadTargetEvent.id;
-    if(activeEvent && activeEvent.id) return activeEvent.id;
-    var sel = document.getElementById('downloadEventSelect');
-    if(sel && sel.value) return decodeURIComponent(sel.value);
-    throw new Error("Elegí el álbum del pedido.");
+function getDownloadTargetFolderId() {
+    if(typeof downloadTargetEvent !== "undefined" && downloadTargetEvent && downloadTargetEvent.id) return downloadTargetEvent.id;
+    if(typeof activeEvent !== "undefined" && activeEvent && activeEvent.id) return activeEvent.id;
+    return "";
   }
 
 
