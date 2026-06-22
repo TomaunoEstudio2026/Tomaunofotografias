@@ -1334,6 +1334,10 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 #ticketModal .ticket-box{position:relative!important;z-index:100000!important;width:min(94vw,640px)!important;max-width:640px!important;}
 #ticketPreview{max-width:480px!important;cursor:context-menu;}
 @media(max-width:700px){#finalTotalDisplay{font-size:20px!important;}#finalTotalDisplay small{font-size:11px!important;}#ticketPreview{max-width:86vw!important;}}
+
+/* V42 admin filtros */
+#adminStatusFilter{background:#000;color:#fff;border:1px solid #333;border-radius:12px;padding:14px;font-size:13px;}
+@media(max-width:700px){#adminStatusFilter,#adminEventFilter,#adminSearch{min-width:100%!important;font-size:16px!important;}}
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1485,6 +1489,14 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 
     <div class="admin-tools">
       <select id="adminEventFilter" onchange="renderAdminOrders()" style="min-width:170px;margin:0"><option value="">Todos los eventos</option></select>
+      <select id="adminStatusFilter" onchange="renderAdminOrders()" style="min-width:170px;margin:0">
+        <option value="">Todos los estados</option>
+        <option value="pagoPendiente">Pendiente de pago</option>
+        <option value="pagado">Pagados</option>
+        <option value="entregaPendiente">Entrega pendiente</option>
+        <option value="entregado">Entregados</option>
+        <option value="accion">Requieren acción</option>
+      </select>
       <input id="adminSearch" placeholder="Buscar por cliente, celular, evento o estado..." oninput="renderAdminOrders()">
       <button class="btn-order" onclick="loadAdminOrders(this)">ACTUALIZAR</button>
       <button class="mini-btn" onclick="exportAdminCsv()">📊 Exportar Excel/CSV</button>
@@ -2009,8 +2021,57 @@ function openCheckout() {
 
   function closeCheckout() { document.getElementById("modalCheckout").style.display = "none"; }
 
+
+  function parseExtraProductsFromFolderName(rawName) {
+    var out = [];
+    rawName = String(rawName || '');
+    if(rawName.indexOf(':') < 0 && rawName.indexOf(';') < 0) return out;
+    var parts = rawName.split('_');
+    var pFullToken = parts.length >= 5 ? String(parts[4] || '') : '0';
+    var productConfig = parts.slice(5).join('_');
+    if(pFullToken.indexOf(';') > -1) {
+      var semiParts = pFullToken.split(';');
+      pFullToken = semiParts.shift() || '0';
+      productConfig = semiParts.join(';') + (productConfig ? ';' + productConfig : '');
+    }
+    productConfig = String(productConfig || '').trim();
+    if(!productConfig || productConfig.indexOf(':') < 0) return out;
+    productConfig.split(';').forEach(function(item){
+      item = String(item || '').trim();
+      if(!item) return;
+      var p = item.split(':');
+      var label = String(p[0] || '').trim();
+      var price = Number(p[1] || 0);
+      var mode = String(p[2] || 'foto').trim().toLowerCase();
+      if(!label) return;
+      out.push({
+        label: label,
+        price: isNaN(price) ? 0 : price,
+        perPhoto: mode === 'foto',
+        includesDigital: label.toLowerCase().indexOf('impres') > -1,
+        selectionOnly: price === 0 && mode === 'fijo',
+        isFullAlbum: false,
+        quantityExtra: mode === 'cant',
+        extraProduct: true
+      });
+    });
+    return out;
+  }
+
   function getProductsForEvent() {
-    if(activeEvent && Array.isArray(activeEvent.products) && activeEvent.products.length) return activeEvent.products;
+    var rawName = activeEvent && (activeEvent.rawName || activeEvent.folderName || activeEvent.name || activeEvent.configName || activeEvent.displayName) || '';
+    var parsedExtras = parseExtraProductsFromFolderName(rawName);
+
+    if(activeEvent && Array.isArray(activeEvent.products) && activeEvent.products.length) {
+      var products = activeEvent.products.slice();
+      // Si el backend todavía no mandó extras pero sí mandó el nombre crudo de carpeta, los agregamos desde el HTML.
+      if(parsedExtras.length) {
+        var existing = {};
+        products.forEach(function(p){ if(p && p.label) existing[p.label] = true; });
+        parsedExtras.forEach(function(p){ if(!existing[p.label]) products.push(p); });
+      }
+      return products;
+    }
 
     var fallback = [];
     fallback.push({ label:"Descargas Digitales", price:Number(activeEvent.pDigital || 0), perPhoto:true, includesDigital:false, selectionOnly:false, isFullAlbum:false });
@@ -2020,6 +2081,7 @@ function openCheckout() {
     if(Number(activeEvent.pFull || 0) > 0 || Number(activeEvent.pFull || 0) === -1) {
       fallback.push({ label:"PACK ÁLBUM COMPLETO", price:Number(activeEvent.pFull) === -1 ? 0 : Number(activeEvent.pFull), perPhoto:false, includesDigital:true, selectionOnly:false, isFullAlbum:true });
     }
+    parsedExtras.forEach(function(p){ fallback.push(p); });
     return fallback;
   }
 
@@ -2408,8 +2470,16 @@ function checkAdminPin() {
   function renderAdminOrders() {
     var q = ((document.getElementById('adminSearch') || {}).value || "").toLowerCase();
     var evFilter = ((document.getElementById('adminEventFilter') || {}).value || "");
+    var stFilter = ((document.getElementById('adminStatusFilter') || {}).value || "");
     var filtered = adminOrdersData.filter(function(o){
       if(evFilter && o.evento !== evFilter) return false;
+      var pagoOk = String(o.pago || '').toUpperCase() === 'PAGADO';
+      var entregaOk = String(o.entrega || '').toUpperCase() === 'ENTREGADO';
+      if(stFilter === 'pagoPendiente' && pagoOk) return false;
+      if(stFilter === 'pagado' && !pagoOk) return false;
+      if(stFilter === 'entregaPendiente' && entregaOk) return false;
+      if(stFilter === 'entregado' && !entregaOk) return false;
+      if(stFilter === 'accion' && (pagoOk && entregaOk)) return false;
       var hay = [o.cliente,o.whatsapp,o.evento,o.tipo,o.pago,o.entrega,o.observaciones].join(" ").toLowerCase();
       return hay.indexOf(q) > -1;
     });
@@ -2873,8 +2943,16 @@ function attr(s) {
   window.renderAdminOrders = function(){
     var q = ((document.getElementById('adminSearch') || {}).value || '').toLowerCase();
     var evFilter = ((document.getElementById('adminEventFilter') || {}).value || '');
+    var stFilter = ((document.getElementById('adminStatusFilter') || {}).value || '');
     var filtered = adminOrdersData.filter(function(o){
       if(evFilter && o.evento !== evFilter) return false;
+      var pagoOk = String(o.pago || '').toUpperCase() === 'PAGADO';
+      var entregaOk = String(o.entrega || '').toUpperCase() === 'ENTREGADO';
+      if(stFilter === 'pagoPendiente' && pagoOk) return false;
+      if(stFilter === 'pagado' && !pagoOk) return false;
+      if(stFilter === 'entregaPendiente' && entregaOk) return false;
+      if(stFilter === 'entregado' && !entregaOk) return false;
+      if(stFilter === 'accion' && (pagoOk && entregaOk)) return false;
       var hay = [o.cliente,o.whatsapp,o.evento,o.tipo,o.pago,o.entrega,o.observaciones,o.fotos].join(' ').toLowerCase();
       return hay.indexOf(q) > -1;
     });
@@ -3063,8 +3141,10 @@ function attr(s) {
   document.addEventListener('DOMContentLoaded', function(){
     var f = document.getElementById('adminEventFilter');
     var s = document.getElementById('adminSearch');
+    var st = document.getElementById('adminStatusFilter');
     if(f) f.addEventListener('change', function(){ if(typeof window.renderAdminOrders === 'function') window.renderAdminOrders(); });
     if(s) s.addEventListener('input', function(){ if(typeof window.renderAdminOrders === 'function') window.renderAdminOrders(); });
+    if(st) st.addEventListener('change', function(){ if(typeof window.renderAdminOrders === 'function') window.renderAdminOrders(); });
   });
 
 })();
