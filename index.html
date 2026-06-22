@@ -1322,6 +1322,18 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 @media(max-width:700px){#ticketModal .ticket-box{padding:14px!important;}#ticketPreview{max-width:92vw;}.ticket-actions .btn-order{font-size:13px!important;padding:13px 14px!important;}}
 #zoomConfirmBtn{background:var(--verde)!important;color:#fff!important;}
 @media(max-width:700px){#lightbox > div[style*="margin-top:20px"]{flex-wrap:wrap;justify-content:center;padding:0 10px;}#zoomConfirmBtn{width:100%;max-width:260px;font-size:13px!important;}}
+
+/* V41 ajustes pedidos/admin */
+.final-price-box{background:#000;padding:12px 14px;border-radius:15px;margin:10px 0;text-align:center;}
+#finalTotalDisplay{color:var(--rojo);font-size:22px;font-weight:900;line-height:1.15;display:block;}
+#finalTotalDisplay small{font-size:12px!important;line-height:1.25!important;font-weight:700!important;display:block;margin-top:7px;color:#aaa!important;}
+#finalTotalDisplay small[style*="d4af37"]{color:var(--oro)!important;}
+#zoomConfirmBtn{background:var(--rojo)!important;color:#fff!important;}
+#floatingCart.order-done{display:none!important;}
+#ticketModal{position:fixed!important;z-index:99999!important;inset:0!important;background:rgba(0,0,0,.86)!important;}
+#ticketModal .ticket-box{position:relative!important;z-index:100000!important;width:min(94vw,640px)!important;max-width:640px!important;}
+#ticketPreview{max-width:480px!important;cursor:context-menu;}
+@media(max-width:700px){#finalTotalDisplay{font-size:20px!important;}#finalTotalDisplay small{font-size:11px!important;}#ticketPreview{max-width:86vw!important;}}
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1411,7 +1423,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   <div style="margin-top:20px; display:flex; gap:10px; z-index:10000">
     <button id="zoomSelectBtn" class="btn-order" style="background:#fff; color:#000">SELECCIONAR</button>
     <button id="zoomConfirmBtn" class="btn-order" onclick="forceConfirmSelection()">CONFIRMAR PEDIDO</button>
-    <button class="btn-order" style="background:#222" onclick="closeZoom()">CERRAR</button>
+    <button class="btn-order" style="background:#222" onclick="closeZoom()">GALERIA</button>
   </div>
   <div id="zoomHelp">En celular: deslizá a los costados para pasar de foto. Tocá dos veces la foto para seleccionar o quitar.</div>
 </div>
@@ -1431,7 +1443,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
       <option value="Impresiones 15x21">Impresiones 15x21</option>
       <option value="PACK ALBUM COMPLETO">¡PACK ÁLBUM COMPLETO!</option>
     </select>
-    <div style="background:#000; padding:15px; border-radius:15px; margin:10px 0"><b id="finalTotalDisplay" style="color:var(--rojo); font-size:24px">$0</b></div>
+    <div class="final-price-box"><b id="finalTotalDisplay">$0</b></div>
     <div id="orderSummary"></div>
     <input type="text" id="userName" placeholder="Nombre completo">
     <input type="text" id="userPhone" placeholder="Tu WhatsApp">
@@ -1852,7 +1864,11 @@ function updateFooter() {
     var btnC = document.getElementById('btnConfirm');
     if(btnC) btnC.innerText = product ? ("CONFIRMAR (" + selectedPhotos.length + ")") : "ELEGIR SERVICIO";
     var fc=document.getElementById('floatingCart'), fcc=document.getElementById('floatingCartCount');
-    if(fc && fcc){ fcc.innerText = selectedPhotos.length + " · $" + Number(total || 0).toLocaleString(); fc.style.display = (selectedPhotos.length || (product && product.isFullAlbum)) ? 'flex' : 'none'; }
+    if(fc && fcc){
+      fcc.innerText = selectedPhotos.length + " · $" + Number(total || 0).toLocaleString();
+      fc.classList.toggle('order-done', !!window.__orderCompleted);
+      fc.style.display = (!window.__orderCompleted && (selectedPhotos.length || (product && product.isFullAlbum))) ? 'flex' : 'none';
+    }
     var packBtn = document.getElementById('btnPackAlbum');
     if(packBtn){
       var products = getProductsForEvent().filter(isStandardMainProduct);
@@ -2185,6 +2201,9 @@ function sendOrder() {
       document.getElementById('view-gallery').style.display = 'none';
       document.getElementById('view-success').classList.remove('download-ready');
       document.getElementById('view-success').style.display = 'block';
+      window.__orderCompleted = true;
+      selectedPhotos = [];
+      updateFooter();
 
       showOrderSuccessToWhatsapp("https://wa.me/"+res.whatsappNumber+"?text="+msg);
     }).catch(function(err) {
@@ -2902,10 +2921,10 @@ function attr(s) {
     var cont = document.getElementById('adminOrders');
     cont.innerHTML = htmlRows || '<p style="color:#777;text-align:center">Sin pedidos para mostrar.</p>';
     cont.querySelectorAll('[data-wa-msg]').forEach(function(btn){
-      btn.onclick = function(){ window.open('https://wa.me/' + btn.getAttribute('data-wa-msg') + '?text=' + encodeURIComponent(btn.getAttribute('data-wa-text') || ''), '_blank'); };
+      btn.onclick = function(){ window.open('https://wa.me/' + decodeURIComponent(btn.getAttribute('data-wa-msg') || '') + '?text=' + encodeURIComponent(decodeURIComponent(btn.getAttribute('data-wa-text') || '')), '_blank'); };
     });
-    cont.querySelectorAll('[data-msg]').forEach(function(btn){ btn.onclick = function(){ copyText(btn.getAttribute('data-msg')); }; });
-    cont.querySelectorAll('[data-copy]').forEach(function(btn){ btn.onclick = function(){ copyText(btn.getAttribute('data-copy')); }; });
+    cont.querySelectorAll('[data-msg]').forEach(function(btn){ btn.onclick = function(){ copyText(decodeURIComponent(btn.getAttribute('data-msg') || '')); }; });
+    cont.querySelectorAll('[data-copy]').forEach(function(btn){ btn.onclick = function(){ copyText(decodeURIComponent(btn.getAttribute('data-copy') || '')); }; });
     cont.querySelectorAll('[data-row][data-field]').forEach(function(btn){ btn.onclick = function(){ setOrderStatus(btn.getAttribute('data-row'), btn.getAttribute('data-field'), btn.getAttribute('data-value'), btn); }; });
     cont.querySelectorAll('[data-ticket-row]').forEach(function(btn){ btn.onclick = function(){ openPaymentTicket(btn.getAttribute('data-ticket-row')); }; });
     cont.querySelectorAll('.admin-delete-btn').forEach(function(btn){ btn.onclick = function(e){ e.preventDefault(); deleteOrder(btn.getAttribute('data-delete-row'), btn); }; });
@@ -3057,7 +3076,7 @@ function attr(s) {
     <h3 style="margin-top:0;color:#111">TICKET DE PAGO</h3>
     <canvas id="ticketCanvas" width="900" height="1200"></canvas>
     <img id="ticketPreview" alt="Ticket Tomauno" oncontextmenu="event.stopPropagation()">
-    <p id="ticketHint">Podés hacer clic derecho sobre el ticket y elegir <b>Copiar imagen</b>. También queda disponible la descarga PNG.</p>
+    <p id="ticketHint">Para copiar sin descargar: clic derecho sobre el ticket y elegí <b>Copiar imagen</b>. Si tu navegador no lo permite, usá DESCARGAR PNG.</p>
     <div class="ticket-actions">
       <button class="btn-order" onclick="copyTicketPng()">COPIAR PNG</button>
       <button class="btn-order" onclick="downloadTicketPng()">DESCARGAR PNG</button>
