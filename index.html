@@ -1312,6 +1312,16 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   .ticket-actions .btn-order{font-size:13px!important;padding:13px 18px!important;}
 }
 
+
+/* V40 ticket visible y copiable */
+#ticketModal{z-index:60000!important;align-items:center!important;justify-content:center!important;}
+#ticketModal .ticket-box{width:min(96vw,720px)!important;max-width:720px!important;max-height:94vh!important;overflow:auto!important;padding:18px!important;}
+#ticketCanvas{display:none!important;}
+#ticketPreview{display:block;width:100%;max-width:520px;height:auto;margin:0 auto;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 12px 35px rgba(0,0,0,.35);}
+#ticketHint{font-size:13px;color:#333;line-height:1.35;margin:10px auto 0;max-width:520px;}
+@media(max-width:700px){#ticketModal .ticket-box{padding:14px!important;}#ticketPreview{max-width:92vw;}.ticket-actions .btn-order{font-size:13px!important;padding:13px 14px!important;}}
+#zoomConfirmBtn{background:var(--verde)!important;color:#fff!important;}
+@media(max-width:700px){#lightbox > div[style*="margin-top:20px"]{flex-wrap:wrap;justify-content:center;padding:0 10px;}#zoomConfirmBtn{width:100%;max-width:260px;font-size:13px!important;}}
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1400,6 +1410,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   <i id="arrow-r" class="fa fa-chevron-right nav-arrow" style="right:10px" onclick="nextPhoto()"></i>
   <div style="margin-top:20px; display:flex; gap:10px; z-index:10000">
     <button id="zoomSelectBtn" class="btn-order" style="background:#fff; color:#000">SELECCIONAR</button>
+    <button id="zoomConfirmBtn" class="btn-order" onclick="forceConfirmSelection()">CONFIRMAR PEDIDO</button>
     <button class="btn-order" style="background:#222" onclick="closeZoom()">CERRAR</button>
   </div>
   <div id="zoomHelp">En celular: deslizá a los costados para pasar de foto. Tocá dos veces la foto para seleccionar o quitar.</div>
@@ -2984,6 +2995,7 @@ function attr(s) {
     ctx.font='bold 18px Arial'; ctx.fillStyle='#555'; ctx.fillText('Gracias por formar parte de Tomauno.',60,1035);
     ctx.fillText('Pedro Méndez 2069 · Posadas · @tomaunomodels · 3764-354522',60,1075);
     ctx.fillStyle='#f00'; ctx.beginPath(); ctx.arc(875,1195,210,0,Math.PI*2); ctx.fill();
+    try { var img=document.getElementById('ticketPreview'); if(img) img.src=c.toDataURL('image/png'); } catch(_e) {}
   };
 
   window.downloadTicketPng = function(){
@@ -3006,13 +3018,13 @@ function attr(s) {
   window.copyTicketPng = function(){
     var c = document.getElementById('ticketCanvas');
     if(!c) return luxAlert('ERROR','No se encontró el ticket para copiar.');
-    if(!navigator.clipboard || !window.ClipboardItem) return luxAlert('AVISO','Este navegador no permite copiar imágenes al portapapeles. Usá DESCARGAR PNG.');
+    if(!navigator.clipboard || !window.ClipboardItem) return luxAlert('AVISO','Este navegador no permite copiar imágenes automático. Hacé clic derecho sobre la imagen del ticket y elegí Copiar imagen, o usá DESCARGAR PNG.');
     c.toBlob(function(blob){
       if(!blob) return luxAlert('ERROR','No se pudo preparar la imagen del ticket.');
       navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function(){
         miniToast('Ticket copiado como imagen.');
       }).catch(function(){
-        luxAlert('AVISO','No se pudo copiar la imagen. Usá DESCARGAR PNG.');
+        luxAlert('AVISO','No se pudo copiar automático. Podés hacer clic derecho sobre la imagen del ticket y elegir Copiar imagen, o usar DESCARGAR PNG.');
       });
     }, 'image/png');
   };
@@ -3044,6 +3056,8 @@ function attr(s) {
   <div class="modal-box ticket-box">
     <h3 style="margin-top:0;color:#111">TICKET DE PAGO</h3>
     <canvas id="ticketCanvas" width="900" height="1200"></canvas>
+    <img id="ticketPreview" alt="Ticket Tomauno" oncontextmenu="event.stopPropagation()">
+    <p id="ticketHint">Podés hacer clic derecho sobre el ticket y elegir <b>Copiar imagen</b>. También queda disponible la descarga PNG.</p>
     <div class="ticket-actions">
       <button class="btn-order" onclick="copyTicketPng()">COPIAR PNG</button>
       <button class="btn-order" onclick="downloadTicketPng()">DESCARGAR PNG</button>
