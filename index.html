@@ -1021,6 +1021,18 @@ button.is-loading{opacity:.65!important;pointer-events:none!important}
   border:1px solid #ff3333!important;
 }
 
+
+/* V34 */
+.admin-delete-btn{
+  position:relative!important;
+  z-index:999999!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  background:#4a0b0b!important;
+  color:#fff!important;
+  border:1px solid #ff3333!important;
+}
+
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1199,6 +1211,8 @@ button.is-loading{opacity:.65!important;pointer-events:none!important}
 
 
 <script>
+  var lastWhatsappUrl = '';
+
   // PEGAR ACÁ LA URL DEL DEPLOY DE APPS SCRIPT, terminada en /exec
   var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznf-yPUwLZADidp01088eRXnJ4KRvV5wm_bb1cd72DObX9jcmpa7thI2VMhl1DQjZ9/exec";
 
@@ -1691,6 +1705,28 @@ function updateFinalPrice() {
     document.getElementById('finalTotalDisplay').innerHTML = ((total === 0) ? "GRATIS" : "$" + total.toLocaleString()) + extra;
   }
 
+
+  function showOrderSuccessToWhatsapp(waUrl) {
+    lastWhatsappUrl = waUrl || "";
+    var vs = document.getElementById('view-success');
+    if(vs) {
+      vs.classList.remove('download-ready');
+      vs.style.display = 'block';
+    }
+    var h = document.querySelector('#view-success h3');
+    if(h) h.innerText = "¡PEDIDO REGISTRADO!";
+    var p = document.querySelector('#view-success p');
+    if(p) p.innerText = "Tu pedido quedó registrado. Ahora te llevamos a WhatsApp para enviarnos la confirmación.";
+    var btn = document.querySelector('#view-success .btn-order');
+    if(btn) {
+      btn.innerText = "IR A WHATSAPP";
+      btn.onclick = function(){
+        if(lastWhatsappUrl) window.open(lastWhatsappUrl, "_blank");
+        else location.reload();
+      };
+    }
+  }
+
 function sendOrder() {
     var name = document.getElementById('userName').value.trim();
     var phone = document.getElementById('userPhone').value.trim();
@@ -1752,11 +1788,7 @@ function sendOrder() {
       document.getElementById('view-success').classList.remove('download-ready');
       document.getElementById('view-success').style.display = 'block';
 
-      luxAlert("¡PEDIDO REGISTRADO!", "Presiona ACEPTAR para avisar por WhatsApp.");
-      document.getElementById('alertBtn').onclick = function() {
-        window.open("https://wa.me/"+res.whatsappNumber+"?text="+msg, "_blank");
-        closeAlert();
-      };
+      showOrderSuccessToWhatsapp("https://wa.me/"+res.whatsappNumber+"?text="+msg);
     }).catch(function(err) {
       toggleL(false);
       setBtnLoading(btnSend, false);
@@ -2221,9 +2253,28 @@ function attr(s) {
     return false;
   }, true);
 
+
+  // V34_DELETE_POINTER_CAPTURE
+  document.addEventListener('pointerup', function(e){
+    var t = e.target;
+    if(!t || !t.closest) return;
+    var b = t.closest('.admin-delete-btn');
+    if(!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var row = b.getAttribute('data-delete-row');
+    if(row) deleteOrder(row, b);
+  }, true);
 </script>
 </body>
 </html
+
+  function handleApiResult_(res) {
+    if(!res) throw new Error("Respuesta vacía del servidor.");
+    if(res.success === false) throw new Error(res.msg || "El servidor devolvió error.");
+    return res;
+  }
+
 async function deleteOrder(row, btn) {
     row = Number(row);
     if(!row || row < 2) {
@@ -2231,8 +2282,7 @@ async function deleteOrder(row, btn) {
       return;
     }
 
-    var ok = confirm("¿Eliminar este pedido de la planilla? Esta acción no se puede deshacer.");
-    if(!ok) return;
+    if(!confirm("¿Eliminar este pedido de la planilla? Esta acción no se puede deshacer.")) return;
 
     if(btn) {
       btn.classList.add("is-loading");
@@ -2244,17 +2294,19 @@ async function deleteOrder(row, btn) {
 
     try {
       var res = await apiPost({ action:"deleteOrder", pin:ADMIN_PIN, row:row });
-      if(!res || res.success === false) throw new Error((res && res.msg) ? res.msg : "No se pudo eliminar por POST.");
+      handleApiResult_(res);
       toggleL(false);
       showToast("Pedido eliminado");
       await loadAdminOrders();
+      return;
     } catch(errPost) {
       try {
         var res2 = await apiGet({ action:"deleteOrder", pin:ADMIN_PIN, row:row });
-        if(!res2 || res2.success === false) throw new Error((res2 && res2.msg) ? res2.msg : "No se pudo eliminar por GET.");
+        handleApiResult_(res2);
         toggleL(false);
         showToast("Pedido eliminado");
         await loadAdminOrders();
+        return;
       } catch(errGet) {
         toggleL(false);
         if(btn) {
@@ -2262,7 +2314,7 @@ async function deleteOrder(row, btn) {
           btn.disabled = false;
           btn.innerText = btn.dataset.originalText || "🗑️ Eliminar";
         }
-        alert("No se pudo eliminar: " + (errGet && errGet.message ? errGet.message : errGet));
+        alert("No se pudo eliminar. POST: " + (errPost && errPost.message ? errPost.message : errPost) + " | GET: " + (errGet && errGet.message ? errGet.message : errGet));
       }
     }
   }
