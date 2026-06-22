@@ -3031,9 +3031,8 @@ function attr(s) {
         return '<tr>'+[formatDate(o.fecha),o.cliente,o.whatsapp,o.evento,o.tipo,o.cantidad,o.total,o.fotos,o.observaciones,o.pago,o.entrega,o.clave].map(function(v){ return '<td>'+escXls(v)+'</td>'; }).join('')+'</tr>';
       }).join('')+
       '<tr class="total"><td colspan="6">TOTAL</td><td>'+escXls(money(total))+'</td><td colspan="5"></td></tr>'+
-      '</tbody></table>
-<!-- v44: productos desde hoja Productos_Tomauno + copiar aviso igual a WhatsApp admin -->
-</body></html>';
+      '</tbody></table></body></html>';
+      // v44: productos desde hoja Productos_Tomauno + copiar aviso igual a WhatsApp admin
     var blob = new Blob(['\ufeff'+htmlXls], {type:'application/vnd.ms-excel;charset=utf-8;'});
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -3050,15 +3049,12 @@ function attr(s) {
     if(!w) return luxAlert('AVISO','El navegador bloqueó la ventana de impresión.');
     var reportDate = new Date().toLocaleString('es-AR');
     var total = rows.reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
-    w.document.write('<html><head><title>Pedidos Registrados de Tomauno</title>
-  <!-- TOMAUNO FOTOS v45: productos desde Sheets + impresión 15x21 extra con precio del álbum --><style>body{font-family:Arial;padding:24px;color:#111}h1{margin:0 0 6px}.meta{color:#666;font-size:13px;margin-bottom:18px}table{width:100%;border-collapse:collapse;font-size:11px}td,th{border:1px solid #ddd;padding:6px;vertical-align:top}th{background:#e00;color:#fff}.total{font-weight:bold;background:#f2f2f2}@media print{button{display:none}}</style></head><body>');
+    w.document.write('<html><head><title>Pedidos Registrados de Tomauno</title><style>body{font-family:Arial;padding:24px;color:#111}h1{margin:0 0 6px}.meta{color:#666;font-size:13px;margin-bottom:18px}table{width:100%;border-collapse:collapse;font-size:11px}td,th{border:1px solid #ddd;padding:6px;vertical-align:top}th{background:#e00;color:#fff}.total{font-weight:bold;background:#f2f2f2}@media print{button{display:none}}</style></head><body>');
     w.document.write('<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+escapeHtml(reportDate)+'<br>Filtro de evento: '+escapeHtml(evFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>');
     w.document.write('<table><thead><tr><th>Fecha</th><th>Cliente</th><th>WhatsApp</th><th>Evento</th><th>Tipo</th><th>Cant.</th><th>Total</th><th>Pago</th><th>Entrega</th><th>Fotos</th></tr></thead><tbody>');
     rows.forEach(function(o){ w.document.write('<tr><td>'+escapeHtml(formatDate(o.fecha))+'</td><td>'+escapeHtml(o.cliente||'')+'</td><td>'+escapeHtml(o.whatsapp||'')+'</td><td>'+escapeHtml(o.evento||'')+'</td><td>'+escapeHtml(o.tipo||'')+'</td><td>'+escapeHtml(o.cantidad||'')+'</td><td>'+money(o.total)+'</td><td>'+escapeHtml(o.pago||'')+'</td><td>'+escapeHtml(o.entrega||'')+'</td><td>'+escapeHtml(o.fotos||'')+'</td></tr>'); });
     w.document.write('<tr class="total"><td colspan="6">TOTAL</td><td>'+money(total)+'</td><td colspan="3"></td></tr>');
-    w.document.write('</tbody></table>
-<!-- v44: productos desde hoja Productos_Tomauno + copiar aviso igual a WhatsApp admin -->
-</body></html>');
+    w.document.write('</tbody></table></body></html>');
     w.document.close(); w.focus(); setTimeout(function(){ w.print(); }, 400);
   };
 
