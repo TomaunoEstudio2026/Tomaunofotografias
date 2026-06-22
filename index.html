@@ -965,6 +965,50 @@ button.is-loading{opacity:.65!important;pointer-events:none!important}
   min-width:46px!important;
 }
 
+
+/* V32 ajustes */
+#floatingCart{
+  z-index:98000 !important;
+  bottom:24px !important;
+}
+#lightbox #floatingCart{display:flex!important}
+.admin-delete-btn{
+  background:#3a1010!important;
+  color:#fff!important;
+  border:1px solid #ff2222!important;
+  min-width:86px!important;
+}
+#view-success.download-ready h3,
+#view-success.download-ready p:not(.keep-download-msg){
+  display:none!important;
+}
+#view-success.download-ready .fa-check-circle{
+  display:none!important;
+}
+/* Watermark sin PNG con borde: texto puro completo */
+.zoom-watermark{
+  background:none!important;
+  background-image:none!important;
+  opacity:1!important;
+}
+.zoom-watermark::before{
+  content:"TOMAUNO"!important;
+  display:block!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  transform:translate(-50%,-50%) rotate(-18deg)!important;
+  font-family:Arial,sans-serif!important;
+  font-size:120px!important;
+  font-weight:900!important;
+  letter-spacing:-8px!important;
+  color:rgba(255,0,0,.48)!important;
+  -webkit-text-stroke:3px rgba(0,0,0,.52)!important;
+  white-space:nowrap!important;
+}
+.zoom-watermark::after{content:none!important;display:none!important;}
+@media(max-width:700px){.zoom-watermark::before{font-size:64px!important;letter-spacing:-4px!important;}}
+
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1040,7 +1084,7 @@ button.is-loading{opacity:.65!important;pointer-events:none!important}
   </div>
   <i id="arrow-r" class="fa fa-chevron-right nav-arrow" style="right:10px" onclick="nextPhoto()"></i>
   <div style="margin-top:20px; display:flex; gap:10px; z-index:10000">
-    <button id="zoomTrashBtn" title="Quitar selección" onclick="if(currentZoomIdx>=0){ togglePhoto(allPhotos[currentZoomIdx].id); updateFooter(); openZoom(currentZoomIdx); }" style="background:#3a1010;color:white;border:1px solid #ff2222;padding:12px 18px;border-radius:22px;font-weight:bold;margin-right:8px;display:none">🗑️</button><button id="zoomSelectBtn" class="btn-order" style="background:#fff; color:#000">SELECCIONAR</button>
+    <button id="zoomSelectBtn" class="btn-order" style="background:#fff; color:#000">SELECCIONAR</button>
     <button class="btn-order" style="background:#222" onclick="closeZoom()">CERRAR</button>
   </div>
 </div>
@@ -1441,18 +1485,27 @@ function openZoom(idx) {
     var zfn=document.getElementById('zoomFileName'); if(zfn) zfn.innerText = p.name || '';
     document.getElementById('arrow-l').style.display = idx === 0 ? 'none' : 'block';
     document.getElementById('arrow-r').style.display = idx === allPhotos.length - 1 ? 'none' : 'block';
+
     var btn = document.getElementById('zoomSelectBtn');
     var isSel = !!selectedPhotos.find(function(x){ return x.id === p.id; });
+
     btn.innerText = isSel ? "✔ FOTO SELECCIONADA - QUITAR" : "SELECCIONAR";
     btn.style.background = "var(--rojo)";
+
     var badge = document.getElementById('zoomSelectedBadge');
     if(badge){ badge.style.display = isSel ? 'block' : 'none'; badge.innerText = isSel ? '✔ FOTO SELECCIONADA' : ''; }
-    var zt = document.getElementById('zoomTrashBtn');
-    if(zt) zt.style.display = isSel ? 'inline-block' : 'none';
+
     var lb = document.getElementById('lightbox');
     if(lb) lb.classList.toggle('selected-zoom', isSel);
-    btn.onclick = function(){ togglePhoto(p.id); updateFooter(); openZoom(idx); };
+
+    btn.onclick = function(){
+      togglePhoto(p.id);
+      updateFooter();
+      openZoom(idx);
+    };
+
     document.getElementById('lightbox').style.display = 'flex';
+    updateFooter();
     setTimeout(function(){ try { btn.focus(); } catch(e){} }, 80);
   }
 
@@ -1684,6 +1737,7 @@ function sendOrder() {
 
       document.getElementById('modalCheckout').style.display = 'none';
       document.getElementById('view-gallery').style.display = 'none';
+      document.getElementById('view-success').classList.remove('download-ready');
       document.getElementById('view-success').style.display = 'block';
 
       luxAlert("¡PEDIDO REGISTRADO!", "Presiona ACEPTAR para avisar por WhatsApp.");
@@ -1792,9 +1846,13 @@ function redeemDownloadCode() {
       document.getElementById('modalDownloadCode').style.display = 'none';
       document.getElementById('view-gallery').style.display = 'none';
       document.getElementById('view-events').style.display = 'none';
-      document.getElementById('view-success').style.display = 'block';
-      document.getElementById('downloadSection').style.display = 'block';
+      var vs = document.getElementById('view-success');
+      vs.classList.add('download-ready');
+      vs.style.display = 'block';
 
+      document.getElementById('downloadSection').style.display = 'block';
+      var h4 = document.querySelector('#downloadSection h4');
+      if(h4) h4.innerText = "DESCARGAS LISTAS:";
       document.getElementById('downloadList').innerHTML = files.map(function(p){
         return '<div class="download-item"><span>'+escapeHtml(p.name)+'</span> <a href="'+p.urlFull+'" target="_blank" download>BAJAR HQ</a></div>';
       }).join("");
@@ -1929,7 +1987,7 @@ function checkAdminPin() {
           '<button data-copy="'+attr(o.fotos || "")+'">📋 Copiar fotos</button>'+
           '<button data-row="'+o.row+'" data-field="pago" data-value="'+(pagoOk?'PENDIENTE':'PAGADO')+'">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+
           '<button data-row="'+o.row+'" data-field="entrega" data-value="'+(entregaOk?'PENDIENTE':'ENTREGADO')+'">'+(entregaOk?'↩ Entrega pend.':'📦 Entregado')+'</button>'+
-          '<button class="admin-delete-btn" onclick="deleteOrder('+o.row+', this)">🗑️ Eliminar</button>'+
+          '<button class="admin-delete-btn" data-delete-row="'+o.row+'">🗑️ Eliminar</button>'+
         '</div>'+
       '</div>';
     }).join("");
@@ -2112,6 +2170,28 @@ function attr(s) {
     }
   }, true);
 
+
+  // V32_DELETE_FORCE_CAPTURE
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if(!t) return;
+    var btn = (t.closest && (t.closest('[data-delete-row]') || t.closest('.admin-delete-btn'))) || null;
+    if(!btn && t.tagName === 'BUTTON' && (t.textContent || '').toLowerCase().indexOf('eliminar') > -1) btn = t;
+    if(btn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var row = btn.getAttribute('data-delete-row') || btn.getAttribute('data-row-delete') || btn.dataset.rowDelete || btn.dataset.deleteRow;
+      if(!row) {
+        var all = Array.prototype.slice.call(document.querySelectorAll('#adminOrders .order-row'));
+        var card = btn.closest('.order-row');
+        var idx = all.indexOf(card);
+        if(idx >= 0 && adminOrdersData && adminOrdersData[idx]) row = adminOrdersData[idx].row;
+      }
+      if(row) deleteOrder(row, btn);
+      else luxAlert("ERROR", "No pude identificar la fila del pedido para eliminar.");
+    }
+  }, true);
+
 </script>
 </body>
 </html
@@ -2132,11 +2212,6 @@ async function deleteOrder(row, btn) {
       var res = await apiPost({ action:"deleteOrder", pin:ADMIN_PIN, row:row });
       if(!res || res.success === false) throw new Error((res && res.msg) ? res.msg : "No se pudo eliminar.");
       toggleL(false);
-      if(btn) {
-        btn.classList.remove("is-loading");
-        btn.disabled = false;
-        btn.innerText = btn.dataset.originalText || "🗑️ Eliminar";
-      }
       showToast("Pedido eliminado");
       await loadAdminOrders();
     } catch(err) {
