@@ -926,7 +926,7 @@ button.is-loading,.btn-order.is-loading,.mini-btn.is-loading{opacity:.65!importa
   <div class="price-tag">Digital<b id="pDigTotal">0</b></div>
   <div class="price-tag">Impresa<b id="pImpTotal">0</b></div>
   <button class="btn-order" id="btnPackAlbum" style="background:var(--oro); color:black; font-size:9px" onclick="buyFullAlbum()">PACK ÁLBUM</button>
-  <button class="btn-order" id="btnConfirm" onclick="startReview()">CONFIRMAR (0)</button>
+  <button class="btn-order" id="btnConfirm" onclick="forceConfirmSelection()">CONFIRMAR (0)</button>
 </div>
 
 <div id="modalCheckout" class="modal">
@@ -1336,11 +1336,36 @@ function openZoom(idx) {
   function nextPhoto() { if(currentZoomIdx < allPhotos.length - 1) openZoom(currentZoomIdx + 1); }
   function prevPhoto() { if(currentZoomIdx > 0) openZoom(currentZoomIdx - 1); }
   function closeZoom() { document.getElementById('lightbox').style.display = 'none'; }
+
+  function forceConfirmSelection() {
+    try {
+      if(!selectedMainProduct) {
+        openModeModal();
+        return;
+      }
+      if(!selectedMainProduct.isFullAlbum && (!selectedPhotos || selectedPhotos.length === 0)) {
+        luxAlert("AVISO", "Seleccioná al menos una foto.");
+        return;
+      }
+      isFullAlbumMode = !!selectedMainProduct.isFullAlbum;
+      openCheckout();
+    } catch(err) {
+      luxAlert("ERROR", "No se pudo abrir el pedido: " + err.message);
+    }
+  }
+
+  function bindConfirmButtons() {
+    var btn = document.getElementById('btnConfirm');
+    if(btn) {
+      btn.onclick = function(e) {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        forceConfirmSelection();
+      };
+    }
+  }
+
 function startReview() {
-    if(!selectedMainProduct) return openModeModal();
-    if(!selectedMainProduct.isFullAlbum && selectedPhotos.length === 0) return luxAlert("AVISO", "Seleccioná al menos una foto.");
-    isFullAlbumMode = !!selectedMainProduct.isFullAlbum;
-    openCheckout();
+    forceConfirmSelection();
   }
 function buyFullAlbum() {
     var products = getProductsForEvent().filter(isStandardMainProduct);
@@ -1881,6 +1906,18 @@ function attr(s) {
       e.preventDefault();var sb=document.getElementById('zoomSelectBtn');if(sb)sb.click();
     }
   }, true);
+
+
+  // V27_CONFIRM_CAPTURE
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if(t && t.id === "btnConfirm") {
+      e.preventDefault();
+      e.stopPropagation();
+      forceConfirmSelection();
+    }
+  }, true);
+  setTimeout(bindConfirmButtons, 300);
 
 </script>
 </body>
