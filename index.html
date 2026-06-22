@@ -3031,163 +3031,7 @@ function attr(s) {
         return '<tr>'+[formatDate(o.fecha),o.cliente,o.whatsapp,o.evento,o.tipo,o.cantidad,o.total,o.fotos,o.observaciones,o.pago,o.entrega,o.clave].map(function(v){ return '<td>'+escXls(v)+'</td>'; }).join('')+'</tr>';
       }).join('')+
       '<tr class="total"><td colspan="6">TOTAL</td><td>'+escXls(money(total))+'</td><td colspan="5"></td></tr>'+
-      '</tbody></table>
-
-<!-- TOMAUNO VISOR COUNTER LAYOUT FIX V4 -->
-<style id="tomauno-visor-counter-fix-v4-css">
-  /* Visor grande: evita que el contador tape los botones y reduce cortes de fotos */
-  #lightbox{
-    justify-content:flex-start!important;
-    padding:48px 14px 22px!important;
-    overflow-y:auto!important;
-    gap:10px!important;
-  }
-  #lightbox > div[style*="position:relative"]{
-    order:1!important;
-    width:100%!important;
-    max-width:calc(100vw - 28px)!important;
-    max-height:calc(100vh - 220px)!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    flex:0 1 auto!important;
-  }
-  #zoomImg{
-    width:auto!important;
-    height:auto!important;
-    max-width:100%!important;
-    max-height:calc(100vh - 230px)!important;
-    object-fit:contain!important;
-  }
-  #lightbox > div[style*="margin-top:20px"]{
-    order:3!important;
-    margin-top:6px!important;
-    display:flex!important;
-    justify-content:center!important;
-    align-items:center!important;
-    flex-wrap:wrap!important;
-  }
-  #zoomCounter{
-    position:static!important;
-    left:auto!important;
-    bottom:auto!important;
-    transform:none!important;
-    order:4!important;
-    z-index:10020!important;
-    align-self:center!important;
-    margin:0 0 2px!important;
-    background:rgba(0,0,0,.72)!important;
-    border:1px solid rgba(255,255,255,.18)!important;
-    border-radius:999px!important;
-    padding:7px 13px!important;
-    color:#fff!important;
-    font-size:13px!important;
-    font-weight:800!important;
-    line-height:1!important;
-    letter-spacing:.2px!important;
-  }
-  #zoomHelp{order:5!important;margin-top:6px!important;}
-
-  @media(max-width:760px){
-    #lightbox{
-      padding:42px 8px 18px!important;
-      gap:8px!important;
-      justify-content:flex-start!important;
-    }
-    #lightbox > div[style*="position:relative"]{
-      max-width:100%!important;
-      max-height:calc(100dvh - 285px)!important;
-    }
-    #zoomImg{
-      max-width:100%!important;
-      max-height:calc(100dvh - 295px)!important;
-      object-fit:contain!important;
-    }
-    #zoomFileName{
-      bottom:8px!important;
-      left:8px!important;
-      max-width:58%!important;
-      font-size:10px!important;
-    }
-    #zoomCounter{
-      order:2!important;
-      align-self:flex-end!important;
-      margin:-2px 8px 0 0!important;
-      padding:6px 11px!important;
-      font-size:12px!important;
-    }
-    #lightbox > div[style*="margin-top:20px"]{
-      order:3!important;
-      width:100%!important;
-      margin-top:2px!important;
-      gap:8px!important;
-      padding:0!important;
-    }
-    #zoomSelectBtn,
-    #zoomConfirmBtn{
-      max-width:none!important;
-    }
-    #zoomHelp{
-      order:5!important;
-      margin-top:4px!important;
-      padding:0 12px!important;
-      font-size:12px!important;
-      line-height:1.35!important;
-    }
-  }
-</style>
-<script id="tomauno-visor-counter-fix-v4-js">
-(function(){
-  if(window.__TOMAUNO_VISOR_COUNTER_FIX_V4__) return;
-  window.__TOMAUNO_VISOR_COUNTER_FIX_V4__ = true;
-  function qs(id){ return document.getElementById(id); }
-  function placeCounter(){
-    var lb = qs('lightbox');
-    if(!lb) return;
-    var c = qs('zoomCounter');
-    if(!c){ c = document.createElement('div'); c.id = 'zoomCounter'; }
-    if(c.parentNode !== lb) lb.appendChild(c);
-  }
-  function updateCounter(idx){
-    placeCounter();
-    var c = qs('zoomCounter');
-    if(!c) return;
-    var arr = window.allPhotos || [];
-    if(!arr.length && typeof allPhotos !== 'undefined') arr = allPhotos;
-    var n = Number(idx);
-    if(!isFinite(n) && typeof currentZoomIdx !== 'undefined') n = Number(currentZoomIdx);
-    c.textContent = arr && arr.length ? ('Foto '+(n+1)+' de '+arr.length) : '';
-  }
-  var previousOpenZoom = window.openZoom;
-  if(typeof previousOpenZoom === 'function'){
-    window.openZoom = function(idx){
-      var r = previousOpenZoom.apply(this, arguments);
-      updateCounter(idx);
-      return r;
-    };
-  }
-  var previousNext = window.nextPhoto;
-  if(typeof previousNext === 'function'){
-    window.nextPhoto = function(){
-      var r = previousNext.apply(this, arguments);
-      setTimeout(function(){ updateCounter(typeof currentZoomIdx !== 'undefined' ? currentZoomIdx : 0); }, 0);
-      return r;
-    };
-  }
-  var previousPrev = window.prevPhoto;
-  if(typeof previousPrev === 'function'){
-    window.prevPhoto = function(){
-      var r = previousPrev.apply(this, arguments);
-      setTimeout(function(){ updateCounter(typeof currentZoomIdx !== 'undefined' ? currentZoomIdx : 0); }, 0);
-      return r;
-    };
-  }
-  document.addEventListener('DOMContentLoaded', placeCounter);
-})();
-</script>
-<!-- /TOMAUNO VISOR COUNTER LAYOUT FIX V4 -->
-
-</body></html>';
+      '</tbody></table></body></html>';
       // v44: productos desde hoja Productos_Tomauno + copiar aviso igual a WhatsApp admin
     var blob = new Blob(['\ufeff'+htmlXls], {type:'application/vnd.ms-excel;charset=utf-8;'});
     var a = document.createElement('a');
@@ -3728,6 +3572,61 @@ function attr(s) {
 </script>
 <!-- /TOMAUNO UX SAFE PATCH V3 -->
 
+
+
+<!-- TOMAUNO VISOR CONTROLADO V5: mueve contador sin tocar lógica -->
+<style id="tomauno-visor-controlado-v5-css">
+  #lightbox{padding:14px 12px 18px!important;justify-content:center!important;gap:8px!important;}
+  #lightbox > div[style*="position:relative"]{max-width:100vw!important;max-height:calc(100vh - 210px)!important;display:flex!important;align-items:center!important;justify-content:center!important;flex:0 1 auto!important;}
+  #lightbox img#zoomImg{max-width:96vw!important;max-height:calc(100vh - 220px)!important;object-fit:contain!important;width:auto!important;height:auto!important;}
+  #zoomCounter{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;top:auto!important;transform:none!important;z-index:10020!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0!important;max-width:max-content!important;margin:4px auto 0!important;background:rgba(0,0,0,.72)!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:999px!important;padding:7px 13px!important;color:#fff!important;font-size:13px!important;font-weight:800!important;line-height:1!important;pointer-events:none!important;}
+  #lightbox .zoom-mobile-meta-row{width:min(96vw,980px)!important;display:flex!important;justify-content:flex-end!important;align-items:center!important;margin:0 auto 2px!important;min-height:24px!important;flex:0 0 auto!important;}
+  @media(max-width:760px){
+    #lightbox{justify-content:flex-start!important;padding-top:54px!important;padding-bottom:12px!important;gap:6px!important;overflow:hidden!important;}
+    #lightbox > div[style*="position:relative"]{max-height:calc(100vh - 310px)!important;width:100%!important;}
+    #lightbox img#zoomImg{max-width:98vw!important;max-height:calc(100vh - 320px)!important;object-fit:contain!important;}
+    #zoomFileName{max-width:58vw!important;font-size:10px!important;padding:8px 10px!important;left:8px!important;bottom:8px!important;}
+    #zoomCounter{margin:0 8px 0 auto!important;font-size:12px!important;padding:7px 11px!important;}
+    #lightbox > div[style*="margin-top:20px"]{margin-top:2px!important;gap:8px!important;flex-wrap:wrap!important;justify-content:center!important;width:100%!important;}
+    #zoomSelectBtn{min-width:190px!important;max-width:270px!important;}
+    #zoomConfirmBtn{width:min(94vw,360px)!important;max-width:360px!important;}
+    #zoomHelp{font-size:13px!important;line-height:1.35!important;margin-top:4px!important;padding:0 14px!important;}
+  }
+</style>
+<script id="tomauno-visor-controlado-v5-js">
+(function(){
+  if(window.__TOMAUNO_VISOR_CONTROLADO_V5__) return;
+  window.__TOMAUNO_VISOR_CONTROLADO_V5__ = true;
+  function getPhotos(){ try { return window.allPhotos || (typeof allPhotos !== 'undefined' ? allPhotos : []); } catch(e){ return []; } }
+  function getCurrentIndex(fallback){ try { if(typeof currentZoomIdx !== 'undefined' && isFinite(Number(currentZoomIdx))) return Number(currentZoomIdx); } catch(e){} return isFinite(Number(fallback)) ? Number(fallback) : 0; }
+  function ensureCounter(){ var c=document.getElementById('zoomCounter'); if(!c){ c=document.createElement('div'); c.id='zoomCounter'; } return c; }
+  function placeCounter(idx){
+    var lb=document.getElementById('lightbox'); if(!lb) return;
+    var photos=getPhotos(); var n=getCurrentIndex(idx); var c=ensureCounter();
+    c.textContent=photos.length ? ('Foto '+(n+1)+' de '+photos.length) : '';
+    var isMobile=window.matchMedia && window.matchMedia('(max-width:760px)').matches;
+    var img=document.getElementById('zoomImg'); var photoWrap=img ? img.parentElement : null;
+    var confirmBtn=document.getElementById('zoomConfirmBtn'); var actionBar=confirmBtn ? confirmBtn.parentElement : null;
+    if(isMobile){
+      var row=document.getElementById('zoomMobileMetaRow');
+      if(!row){ row=document.createElement('div'); row.id='zoomMobileMetaRow'; row.className='zoom-mobile-meta-row'; }
+      row.appendChild(c);
+      if(photoWrap && photoWrap.parentNode===lb){ lb.insertBefore(row, photoWrap.nextSibling); }
+      else if(actionBar && actionBar.parentNode===lb){ lb.insertBefore(row, actionBar); }
+      else { lb.appendChild(row); }
+    } else {
+      var rowOld=document.getElementById('zoomMobileMetaRow'); if(rowOld && rowOld.parentNode) rowOld.parentNode.removeChild(rowOld);
+      if(actionBar && actionBar.parentNode===lb){ lb.insertBefore(c, actionBar.nextSibling); } else { lb.appendChild(c); }
+    }
+  }
+  var previousOpenZoom=window.openZoom;
+  if(typeof previousOpenZoom==='function'){
+    window.openZoom=function(idx){ var result=previousOpenZoom.apply(this, arguments); setTimeout(function(){ placeCounter(idx); },0); setTimeout(function(){ placeCounter(idx); },90); return result; };
+  }
+  window.addEventListener('resize', function(){ var lb=document.getElementById('lightbox'); if(lb && lb.style.display==='flex') placeCounter(); });
+})();
+</script>
+<!-- /TOMAUNO VISOR CONTROLADO V5 -->
 </body>
 </html>
 
