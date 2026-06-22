@@ -1009,6 +1009,18 @@ button.is-loading{opacity:.65!important;pointer-events:none!important}
 .zoom-watermark::after{content:none!important;display:none!important;}
 @media(max-width:700px){.zoom-watermark::before{font-size:64px!important;letter-spacing:-4px!important;}}
 
+
+/* V33 eliminar final */
+.admin-delete-btn{
+  position:relative!important;
+  z-index:99999!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  background:#4a0b0b!important;
+  color:#fff!important;
+  border:1px solid #ff3333!important;
+}
+
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1987,7 +1999,7 @@ function checkAdminPin() {
           '<button data-copy="'+attr(o.fotos || "")+'">📋 Copiar fotos</button>'+
           '<button data-row="'+o.row+'" data-field="pago" data-value="'+(pagoOk?'PENDIENTE':'PAGADO')+'">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+
           '<button data-row="'+o.row+'" data-field="entrega" data-value="'+(entregaOk?'PENDIENTE':'ENTREGADO')+'">'+(entregaOk?'↩ Entrega pend.':'📦 Entregado')+'</button>'+
-          '<button class="admin-delete-btn" data-delete-row="'+o.row+'">🗑️ Eliminar</button>'+
+          '<button type="button" class="admin-delete-btn" data-delete-row="'+o.row+'" onclick="deleteOrder('+o.row+', this); return false;">🗑️ Eliminar</button>'+
         '</div>'+
       '</div>';
     }).join("");
@@ -2008,7 +2020,11 @@ function checkAdminPin() {
       btn.onclick = function(){ setOrderStatus(btn.getAttribute('data-row'), btn.getAttribute('data-field'), btn.getAttribute('data-value'), btn); };
     });
     cont.querySelectorAll('[data-delete-row]').forEach(function(btn){
-      btn.onclick = function(){ deleteOrder(btn.getAttribute('data-delete-row'), btn); };
+      btn.onclick = function(ev){
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        deleteOrder(btn.getAttribute('data-delete-row'), btn);
+        return false;
+      };
     });
   }
 
@@ -2192,13 +2208,31 @@ function attr(s) {
     }
   }, true);
 
+
+  // V33_DELETE_LAST_RESORT
+  window.addEventListener('click', function(e){
+    var t = e.target;
+    if(!t || !t.closest) return;
+    var b = t.closest('.admin-delete-btn');
+    if(!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    deleteOrder(b.getAttribute('data-delete-row'), b);
+    return false;
+  }, true);
+
 </script>
 </body>
 </html
 async function deleteOrder(row, btn) {
     row = Number(row);
-    if(!row || row < 2) return luxAlert("ERROR", "Fila inválida.");
-    if(!confirm("¿Eliminar este pedido de la planilla? Esta acción no se puede deshacer.")) return;
+    if(!row || row < 2) {
+      alert("No pude identificar la fila del pedido.");
+      return;
+    }
+
+    var ok = confirm("¿Eliminar este pedido de la planilla? Esta acción no se puede deshacer.");
+    if(!ok) return;
 
     if(btn) {
       btn.classList.add("is-loading");
@@ -2210,18 +2244,26 @@ async function deleteOrder(row, btn) {
 
     try {
       var res = await apiPost({ action:"deleteOrder", pin:ADMIN_PIN, row:row });
-      if(!res || res.success === false) throw new Error((res && res.msg) ? res.msg : "No se pudo eliminar.");
+      if(!res || res.success === false) throw new Error((res && res.msg) ? res.msg : "No se pudo eliminar por POST.");
       toggleL(false);
       showToast("Pedido eliminado");
       await loadAdminOrders();
-    } catch(err) {
-      toggleL(false);
-      if(btn) {
-        btn.classList.remove("is-loading");
-        btn.disabled = false;
-        btn.innerText = btn.dataset.originalText || "🗑️ Eliminar";
+    } catch(errPost) {
+      try {
+        var res2 = await apiGet({ action:"deleteOrder", pin:ADMIN_PIN, row:row });
+        if(!res2 || res2.success === false) throw new Error((res2 && res2.msg) ? res2.msg : "No se pudo eliminar por GET.");
+        toggleL(false);
+        showToast("Pedido eliminado");
+        await loadAdminOrders();
+      } catch(errGet) {
+        toggleL(false);
+        if(btn) {
+          btn.classList.remove("is-loading");
+          btn.disabled = false;
+          btn.innerText = btn.dataset.originalText || "🗑️ Eliminar";
+        }
+        alert("No se pudo eliminar: " + (errGet && errGet.message ? errGet.message : errGet));
       }
-      luxAlert("ERROR", "No se pudo eliminar: " + (err && err.message ? err.message : err));
     }
   }
 
