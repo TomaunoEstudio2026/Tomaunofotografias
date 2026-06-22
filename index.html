@@ -2519,7 +2519,7 @@ function checkAdminPin() {
         '</div>'+
         '<div class="order-actions">'+
           '<button data-wa="'+waPhone+'">💬 WhatsApp</button>'+
-          '<button data-msg="'+attr(buildClientDownloadMsg(o))+'">📩 Copiar aviso</button>'+
+          '<button data-msg="'+attr(buildAdminWhatsappMsg(o))+'">📩 Copiar aviso</button>'+
           '<button data-copy="'+attr(o.whatsapp || "")+'">📋 Copiar cel</button>'+
           '<button data-copy="'+attr(o.fotos || "")+'">📋 Copiar fotos</button>'+
           '<button data-row="'+o.row+'" data-field="pago" data-value="'+(pagoOk?'PENDIENTE':'PAGADO')+'">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+
@@ -2988,7 +2988,7 @@ function attr(s) {
         '<div class="order-actions">'+
           '<button data-wa-msg="'+attr(waPhone)+'" data-wa-text="'+attr(buildAdminWhatsappMsg(o))+'">💬 WhatsApp</button>'+
           '<button data-ticket-row="'+attr(o.row)+'">🎫 Ticket</button>'+
-          '<button data-msg="'+attr(buildClientDownloadMsg(o))+'">📩 Copiar aviso</button>'+
+          '<button data-msg="'+attr(buildAdminWhatsappMsg(o))+'">📩 Copiar aviso</button>'+
           '<button data-copy="'+attr(o.fotos || '')+'">📋 Copiar fotos</button>'+
           '<button data-row="'+o.row+'" data-field="pago" data-value="'+(pagoOk?'PENDIENTE':'PAGADO')+'">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+
           '<button data-row="'+o.row+'" data-field="entrega" data-value="'+(entregaOk?'PENDIENTE':'ENTREGADO')+'">'+(entregaOk?'↩ Entrega pend.':'📦 Entregado')+'</button>'+
@@ -3166,5 +3166,7 @@ function attr(s) {
 </div>
 <div id="screenProtectOverlay" class="protect-overlay">Vista protegida por Tomauno</div>
 
+
+<!-- v45: productos desde hoja Productos_Tomauno + impresion 15x21 extra con precio del album -->
 </body>
 </html>
