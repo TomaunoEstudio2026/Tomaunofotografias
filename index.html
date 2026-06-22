@@ -3173,245 +3173,107 @@ function attr(s) {
 
 
 <!-- v44: productos desde hoja Productos_Tomauno + copiar aviso igual a WhatsApp admin -->
+
+<style>
+/* V49 UX: confirmación arriba de admin y carga progresiva */
+#modalConfirm{z-index:210000!important; align-items:center!important; justify-content:center!important;}
+#modalConfirm .modal-box{box-shadow:0 0 55px rgba(255,0,0,.38),0 0 0 9999px rgba(0,0,0,.72)!important;}
+#galleryStatus{font-size:13px!important;color:#ddd!important;line-height:1.4!important;min-height:22px;}
+#galleryStatus .progress-strong{color:var(--oro);font-weight:900;}
+#galleryStatus .progress-spin{display:inline-block;animation:tomaunoSpin 1s linear infinite;color:var(--rojo);margin-right:6px;}
+#btnLoadMore{display:none!important;}
+@media(max-width:700px){#galleryStatus{font-size:15px!important;padding:0 10px!important;}#modalConfirm .modal-box{max-width:calc(100vw - 26px)!important;}}
+</style>
+
 <script>
-/* V48 - integración completa de EXTRAS en admin, WhatsApp, ticket y reportes */
+/* V49 - Carga progresiva real de galería + confirm modal sobre panel admin */
 (function(){
-  function safeStr(v){ return String(v == null ? '' : v); }
-  function esc(v){
-    if(typeof escapeHtml === 'function') return escapeHtml(v);
-    return safeStr(v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
-  }
-  function at(v){
-    if(typeof attr === 'function') return attr(v);
-    return encodeURIComponent(safeStr(v));
-  }
-  function fmtMoney(n){
-    if(typeof money === 'function') return money(n);
-    return '$' + Number(n || 0).toLocaleString('es-AR');
-  }
-  function fmtDate(v){
-    if(typeof formatDate === 'function') return formatDate(v);
-    try{ var d=new Date(v); return isNaN(d.getTime()) ? safeStr(v) : d.toLocaleString('es-AR'); }catch(e){ return safeStr(v); }
-  }
-  function normalizeTxt(s){
-    try { return decodeURIComponent(safeStr(s)); } catch(e) { return safeStr(s); }
-  }
-  function extractExtrasFromOrder(o){
-    var obs = normalizeTxt(o && o.observaciones);
-    var tipo = normalizeTxt(o && o.tipo);
-    var found = '';
-    var idx = obs.toLowerCase().indexOf('extras:');
-    if(idx >= 0) found = obs.slice(idx + 7).trim();
-    found = found.replace(/^\|\s*/,'').trim();
-    if(!found && tipo.toLowerCase().indexOf('extras') >= 0) found = '';
-    return found;
-  }
-  function cleanObservations(o){
-    var obs = normalizeTxt(o && o.observaciones);
-    var idx = obs.toLowerCase().indexOf('| extras:');
-    if(idx >= 0) obs = obs.slice(0, idx).trim();
-    return obs || 'Sin observaciones';
-  }
-  function orderDetailText(o){
-    var extras = extractExtrasFromOrder(o);
-    var txt =
-      'Evento: ' + safeStr(o.evento || '') + '\n' +
-      'Pedido: ' + safeStr(o.tipo || '') + '\n' +
-      'Cantidad: ' + safeStr(o.cantidad || '0') + '\n' +
-      (extras ? 'Extras: ' + extras + '\n' : '') +
-      'Total: ' + fmtMoney(o.total || 0) + '\n' +
-      'Pago: ' + safeStr(o.pago || 'PENDIENTE') + '\n' +
-      'Entrega: ' + safeStr(o.entrega || 'PENDIENTE') + '\n' +
-      'Clave de descarga: ' + safeStr(o.clave || 'Sin clave') + '\n\n' +
-      'Fotos seleccionadas:\n' + safeStr(o.fotos || 'Sin detalle');
-    return txt;
-  }
-
-  window.buildAdminWhatsappMsg = function(o){
-    return 'Hola ' + safeStr(o.cliente || '') + ', te escribimos de Tomauno por tu pedido de fotos.\n\n' +
-      orderDetailText(o) + '\n\n' +
-      'Observaciones: ' + cleanObservations(o) + '\n\n' +
-      'Gracias por elegir Tomauno.';
-  };
-
-  function getFilteredAdminRowsV48(){
-    var q = ((document.getElementById('adminSearch') || {}).value || '').toLowerCase();
-    var evFilter = ((document.getElementById('adminEventFilter') || {}).value || '');
-    var stFilter = ((document.getElementById('adminStatusFilter') || {}).value || '');
-    var data = window.adminOrdersData || (typeof adminOrdersData !== 'undefined' ? adminOrdersData : []);
-    return (data || []).filter(function(o){
-      if(evFilter && o.evento !== evFilter) return false;
-      var pagoOk = safeStr(o.pago || '').toUpperCase() === 'PAGADO';
-      var entregaOk = safeStr(o.entrega || '').toUpperCase() === 'ENTREGADO';
-      if(stFilter === 'pagoPendiente' && pagoOk) return false;
-      if(stFilter === 'pagado' && !pagoOk) return false;
-      if(stFilter === 'entregaPendiente' && entregaOk) return false;
-      if(stFilter === 'entregado' && !entregaOk) return false;
-      if(stFilter === 'accion' && (pagoOk && entregaOk)) return false;
-      var hay = [o.cliente,o.whatsapp,o.evento,o.tipo,o.pago,o.entrega,o.observaciones,o.fotos,extractExtrasFromOrder(o)].join(' ').toLowerCase();
-      return hay.indexOf(q) > -1;
-    });
-  }
-
-  window.renderAdminOrders = function(){
-    var filtered = getFilteredAdminRowsV48();
-    window.__lastAdminFiltered = filtered;
-    var totalGeneral = filtered.reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
-    var totalPend = filtered.filter(function(o){ return safeStr(o.pago || 'PENDIENTE') !== 'PAGADO'; }).reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
-    var totalCob = filtered.filter(function(o){ return safeStr(o.pago || '') === 'PAGADO'; }).reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
-    var pendPago = filtered.filter(function(o){ return safeStr(o.pago || 'PENDIENTE') !== 'PAGADO'; }).length;
-    var pendEntrega = filtered.filter(function(o){ return safeStr(o.entrega || 'PENDIENTE') !== 'ENTREGADO'; }).length;
-    ['admTotalPedidos','admPendPago','admPendEntrega','admTotalGeneral','admTotalPendiente','admTotalCobrado'].forEach(function(id){ if(!document.getElementById(id)){} });
-    var el;
-    if(el=document.getElementById('admTotalPedidos')) el.innerText = filtered.length;
-    if(el=document.getElementById('admPendPago')) el.innerText = pendPago;
-    if(el=document.getElementById('admPendEntrega')) el.innerText = pendEntrega;
-    if(el=document.getElementById('admTotalGeneral')) el.innerText = fmtMoney(totalGeneral);
-    if(el=document.getElementById('admTotalPendiente')) el.innerText = fmtMoney(totalPend);
-    if(el=document.getElementById('admTotalCobrado')) el.innerText = fmtMoney(totalCob);
-
-    var htmlRows = filtered.map(function(o){
-      var pagoOk = safeStr(o.pago || '').toUpperCase() === 'PAGADO';
-      var entregaOk = safeStr(o.entrega || '').toUpperCase() === 'ENTREGADO';
-      var phoneClean = safeStr(o.whatsapp || '').replace(/\D/g,'');
-      var waPhone = phoneClean.indexOf('54') === 0 ? phoneClean : '54' + phoneClean;
-      var extras = extractExtrasFromOrder(o);
-      var waMsg = window.buildAdminWhatsappMsg(o);
-      return '<div class="order-row">'+
-        '<div class="order-head"><b>'+esc(o.cliente || 'Sin nombre')+'</b><b style="color:var(--rojo)">'+fmtMoney(o.total)+'</b></div>'+ 
-        '<div class="order-meta">'+
-          '🕒 '+esc(fmtDate(o.fecha))+'<br>'+ 
-          '📱 <a class="admin-phone-link" href="tel:'+at(phoneClean)+'">'+esc(o.whatsapp || '')+'</a> · 🎉 '+esc(o.evento || '')+'<br>'+ 
-          '🛒 '+esc(o.tipo || '')+' · 📷 '+esc(o.cantidad || '0')+' fotos<br>'+ 
-          (extras ? '➕ <b>Extras:</b> '+esc(extras)+'<br>' : '')+
-          '📝 '+esc(cleanObservations(o))+'<br>'+ 
-          '🔐 Clave descarga: '+esc(o.clave || 'Sin clave')+'<br>'+ 
-          '<span class="status-pill '+(pagoOk?'status-ok':'status-pending')+'">Pago: '+esc(o.pago || 'PENDIENTE')+'</span>'+ 
-          '<span class="status-pill '+(entregaOk?'status-ok':'status-pending')+'">Entrega: '+esc(o.entrega || 'PENDIENTE')+'</span>'+ 
-        '</div>'+ 
-        '<div class="order-actions">'+
-          '<button data-wa="'+at(waPhone)+'" data-wa-msg="'+at(waMsg)+'">💬 WhatsApp</button>'+ 
-          '<button data-msg="'+at(waMsg)+'">📩 Copiar aviso</button>'+ 
-          '<button data-copy="'+at(o.fotos || '')+'">📋 Copiar fotos</button>'+ 
-          '<button data-row="'+at(o.row)+'" data-field="pago" data-value="'+(pagoOk?'PENDIENTE':'PAGADO')+'">'+(pagoOk?'↩ Pago pend.':'✔ Pagado')+'</button>'+ 
-          '<button data-row="'+at(o.row)+'" data-field="entrega" data-value="'+(entregaOk?'PENDIENTE':'ENTREGADO')+'">'+(entregaOk?'↩ Entrega pend.':'📦 Entregado')+'</button>'+ 
-          '<button data-ticket-row="'+at(o.row)+'">🎫 Ticket</button>'+ 
-          '<button type="button" class="admin-delete-btn" data-delete-row="'+at(o.row)+'">🗑️ Eliminar</button>'+ 
-        '</div>'+ 
-      '</div>';
-    }).join('');
-    var cont = document.getElementById('adminOrders');
-    if(!cont) return;
-    cont.innerHTML = htmlRows || '<p style="color:#777;text-align:center">Sin pedidos para mostrar.</p>';
-    cont.querySelectorAll('[data-wa]').forEach(function(btn){ btn.onclick = function(){ window.open('https://wa.me/' + decodeURIComponent(btn.getAttribute('data-wa')) + '?text=' + btn.getAttribute('data-wa-msg'), '_blank'); }; });
-    cont.querySelectorAll('[data-copy]').forEach(function(btn){ btn.onclick = function(){ copyText(normalizeTxt(btn.getAttribute('data-copy') || '')); }; });
-    cont.querySelectorAll('[data-msg]').forEach(function(btn){ btn.onclick = function(){ copyText(normalizeTxt(btn.getAttribute('data-msg') || '')); }; });
-    cont.querySelectorAll('[data-row]').forEach(function(btn){ btn.onclick = function(){ setOrderStatus(btn.getAttribute('data-row'), btn.getAttribute('data-field'), btn.getAttribute('data-value'), btn); }; });
-    cont.querySelectorAll('[data-ticket-row]').forEach(function(btn){ btn.onclick = function(){ openPaymentTicket(decodeURIComponent(btn.getAttribute('data-ticket-row'))); }; });
-    cont.querySelectorAll('.admin-delete-btn').forEach(function(btn){ btn.onclick = function(e){ if(e) e.preventDefault(); deleteOrder(decodeURIComponent(btn.getAttribute('data-delete-row')), btn); }; });
-  };
-
-  window.exportAdminCsv = function(){
-    var rows = window.__lastAdminFiltered || getFilteredAdminRowsV48();
-    if(!rows.length) return luxAlert('SIN DATOS','No hay pedidos para exportar.');
-    var reportDate = new Date().toLocaleString('es-AR');
-    var evFilter = ((document.getElementById('adminEventFilter') || {}).value || 'Todos los eventos');
-    var statusFilter = ((document.getElementById('adminStatusFilter') || {}).value || 'Todos los estados');
-    var escXls = function(v){ return safeStr(v).replace(/[\r\n]+/g,' ').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-    var total = rows.reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
-    var headers = ['Fecha','Cliente','WhatsApp','Evento','Tipo','Cantidad','Extras','Total','Fotos','Observaciones','Pago','Entrega','ClaveDescarga'];
-    var htmlXls = '<html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;} h1{font-size:22px;} .meta{font-size:13px;color:#555;margin-bottom:14px;} table{border-collapse:collapse;width:100%;font-size:12px;} th{background:#e60000;color:#fff;font-weight:bold;} td,th{border:1px solid #ccc;padding:7px;vertical-align:top;} .total{font-weight:bold;background:#f2f2f2;}</style></head><body>'+ 
-      '<h1>Pedidos Registrados de Tomauno</h1>'+ 
-      '<div class="meta">Fecha del reporte: '+escXls(reportDate)+'<br>Filtro de evento: '+escXls(evFilter)+'<br>Filtro de estado: '+escXls(statusFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>'+ 
-      '<table><thead><tr>'+headers.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+ 
-      rows.map(function(o){
-        return '<tr>'+[fmtDate(o.fecha),o.cliente,o.whatsapp,o.evento,o.tipo,o.cantidad,extractExtrasFromOrder(o),o.total,o.fotos,cleanObservations(o),o.pago,o.entrega,o.clave].map(function(v){ return '<td>'+escXls(v)+'</td>'; }).join('')+'</tr>';
-      }).join('')+
-      '<tr class="total"><td colspan="7">TOTAL</td><td>'+escXls(fmtMoney(total))+'</td><td colspan="5"></td></tr>'+ 
-      '</tbody></table></body></html>';
-    var blob = new Blob(['\ufeff'+htmlXls], {type:'application/vnd.ms-excel;charset=utf-8;'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'Pedidos_Registrados_Tomauno_' + new Date().toISOString().slice(0,10) + '.xls';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
-  };
-
-  window.printAdminReport = function(){
-    var rows = window.__lastAdminFiltered || getFilteredAdminRowsV48();
-    if(!rows.length) return luxAlert('SIN DATOS','No hay pedidos para imprimir.');
-    var evFilter = ((document.getElementById('adminEventFilter') || {}).value || 'Todos los eventos');
-    var statusFilter = ((document.getElementById('adminStatusFilter') || {}).value || 'Todos los estados');
-    var w = window.open('', '_blank');
-    if(!w) return luxAlert('AVISO','El navegador bloqueó la ventana de impresión.');
-    var reportDate = new Date().toLocaleString('es-AR');
-    var total = rows.reduce(function(s,o){ return s + Number(o.total || 0); }, 0);
-    w.document.write('<html><head><title>Pedidos Registrados de Tomauno</title><style>body{font-family:Arial;padding:24px;color:#111}h1{margin:0 0 6px}.meta{color:#666;font-size:13px;margin-bottom:18px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border:1px solid #ddd;padding:6px;vertical-align:top}th{background:#e00;color:#fff}.total{font-weight:bold;background:#f2f2f2}@media print{button{display:none}}</style></head><body>');
-    w.document.write('<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+esc(reportDate)+'<br>Filtro de evento: '+esc(evFilter)+'<br>Filtro de estado: '+esc(statusFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>');
-    w.document.write('<table><thead><tr><th>Fecha</th><th>Cliente</th><th>WhatsApp</th><th>Evento</th><th>Tipo</th><th>Cant.</th><th>Extras</th><th>Total</th><th>Pago</th><th>Entrega</th><th>Fotos</th></tr></thead><tbody>');
-    rows.forEach(function(o){ w.document.write('<tr><td>'+esc(fmtDate(o.fecha))+'</td><td>'+esc(o.cliente||'')+'</td><td>'+esc(o.whatsapp||'')+'</td><td>'+esc(o.evento||'')+'</td><td>'+esc(o.tipo||'')+'</td><td>'+esc(o.cantidad||'')+'</td><td>'+esc(extractExtrasFromOrder(o))+'</td><td>'+fmtMoney(o.total)+'</td><td>'+esc(o.pago||'')+'</td><td>'+esc(o.entrega||'')+'</td><td>'+esc(o.fotos||'')+'</td></tr>'); });
-    w.document.write('<tr class="total"><td colspan="7">TOTAL</td><td>'+fmtMoney(total)+'</td><td colspan="3"></td></tr>');
-    w.document.write('</tbody></table></body></html>');
-    w.document.close(); w.focus(); setTimeout(function(){ w.print(); }, 400);
-  };
-
-  var oldDrawTicket = window.drawTicket;
-  window.drawTicket = function(o){
-    var c = document.getElementById('ticketCanvas'); if(!c) return;
-    var ctx = c.getContext('2d');
-    ctx.clearRect(0,0,c.width,c.height);
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
-    ctx.fillStyle = '#310005'; ctx.fillRect(0,0,c.width,190);
-    ctx.fillStyle = '#e00'; ctx.beginPath(); ctx.arc(770,0,210,0,Math.PI*2); ctx.fill();
-    ctx.font = 'bold 50px Arial'; ctx.fillStyle = '#fff'; ctx.fillText('TOMA',50,84); ctx.fillStyle='#f00'; ctx.fillText('UNO',205,84);
-    ctx.font = 'bold 38px Arial'; ctx.fillStyle = '#fff'; ctx.fillText('TICKET DE PAGOS',425,104);
-    ctx.font = 'bold 18px Arial'; ctx.fillStyle='#ddd'; ctx.fillText('Fotografías & Eventos',52,124);
-    ctx.strokeStyle = '#eee'; ctx.lineWidth=2; ctx.strokeRect(50,230,800,185);
-    ctx.font = 'bold 18px Arial'; ctx.fillStyle='#777'; ctx.fillText('CLIENTE',75,265); ctx.fillText('WHATSAPP',555,265);
-    ctx.font = 'bold 28px Arial'; ctx.fillStyle='#111'; ctx.fillText(safeStr(o.cliente||'Sin nombre').slice(0,28),75,300); ctx.fillText(safeStr(o.whatsapp||'').slice(0,18),555,300);
-    ctx.font = 'bold 18px Arial'; ctx.fillStyle='#777'; ctx.fillText('EVENTO',75,335); ctx.fillText('FECHA',555,335);
-    ctx.font = 'bold 25px Arial'; ctx.fillStyle='#111'; ctx.fillText(safeStr(o.evento||'').slice(0,32),75,368); ctx.fillText(fmtDate(o.fecha||'').slice(0,22),555,368);
-    ctx.fillStyle='#f00'; ctx.fillRect(50,440,800,44);
-    ctx.font='bold 18px Arial'; ctx.fillStyle='#fff'; ctx.fillText('CONCEPTO',72,468); ctx.fillText('ESTADO',410,468); ctx.fillText('CANT.',570,468); ctx.fillText('MONTO',735,468);
-    ctx.fillStyle='#f4f4f4'; ctx.fillRect(50,484,800,58);
-    ctx.font='bold 18px Arial'; ctx.fillStyle='#222'; ctx.fillText(safeStr(o.tipo||'Pedido').slice(0,30),72,520);
-    ctx.fillStyle=(safeStr(o.pago||'').toUpperCase()==='PAGADO')?'#058b3e':'#b18400'; ctx.fillText(o.pago||'PENDIENTE',410,520);
-    ctx.fillStyle='#222'; ctx.fillText(safeStr(o.cantidad||'0'),575,520); ctx.fillText(fmtMoney(o.total||0),735,520);
-    var y = 590;
-    var extras = extractExtrasFromOrder(o);
-    if(extras){
-      ctx.font='bold 17px Arial'; ctx.fillStyle='#e00'; ctx.fillText('Extras:',60,y); y += 24;
-      ctx.font='15px Arial'; ctx.fillStyle='#333';
-      var extraWords = extras.split(/\s+/), line='', maxW=760;
-      extraWords.forEach(function(w){ var test=line+w+' '; if(ctx.measureText(test).width>maxW){ ctx.fillText(line,60,y); y+=20; line=w+' '; } else line=test; });
-      if(line){ ctx.fillText(line,60,y); y+=26; }
+  var AUTO_BATCH_DELAY = 650;
+  var autoLoadTimer = null;
+  function $(id){ return document.getElementById(id); }
+  function setStatus(html){ var el=$('galleryStatus'); if(el) el.innerHTML = html || ''; }
+  function showConfirmOnTop(){
+    var modal=$('modalConfirm');
+    if(modal){
+      modal.style.zIndex = '210000';
+      modal.style.position = 'fixed';
+      modal.style.inset = '0';
+      if(modal.parentNode !== document.body) document.body.appendChild(modal);
     }
-    ctx.font='bold 17px Arial'; ctx.fillStyle='#555'; ctx.fillText('Fotos:',60,y); y += 28;
-    ctx.font='15px Arial'; ctx.fillStyle='#333';
-    var fotos = safeStr(o.fotos||'Sin detalle').replace(/,/g, ', ').slice(0,850);
-    var words=fotos.split(/\s+/), line2='';
-    words.forEach(function(w){ var test=line2+w+' '; if(ctx.measureText(test).width>760){ ctx.fillText(line2,60,y); y+=22; line2=w+' '; } else line2=test; }); if(line2) ctx.fillText(line2,60,y);
-    ctx.fillStyle='#111'; ctx.fillRect(520,940,330,78); ctx.fillStyle='#fff'; ctx.font='bold 22px Arial'; ctx.fillText('TOTAL REGISTRADO',545,973); ctx.fillStyle='#f00'; ctx.font='bold 34px Arial'; ctx.fillText(fmtMoney(o.total||0),690,1008);
-    ctx.font='bold 18px Arial'; ctx.fillStyle='#555'; ctx.fillText('Gracias por formar parte de Tomauno.',60,1035);
-    ctx.fillText('Pedro Méndez 2069 · Posadas · @tomaunomodels · 3764-354522',60,1075);
-    ctx.fillStyle='#f00'; ctx.beginPath(); ctx.arc(875,1195,210,0,Math.PI*2); ctx.fill();
-    try { var img=document.getElementById('ticketPreview'); if(img) img.src=c.toDataURL('image/png'); } catch(_e) {}
-  };
-
-  // Al abrir checkout, asegurar que el formulario actualice extras/resumen/precio.
-  var oldOpenCheckout = window.openCheckout;
-  if(typeof oldOpenCheckout === 'function'){
-    window.openCheckout = function(){
-      oldOpenCheckout.apply(this, arguments);
-      setTimeout(function(){
-        try{ if(typeof renderExtras === 'function') renderExtras(); }catch(e){}
-        try{ if(typeof renderOrderSummary === 'function') renderOrderSummary(); }catch(e){}
-        try{ if(typeof updateFinalPrice === 'function') updateFinalPrice(); }catch(e){}
-      }, 80);
-    };
   }
+  document.addEventListener('DOMContentLoaded', showConfirmOnTop);
+  window.luxConfirmAsync = function(title, body) {
+    return new Promise(function(resolve){
+      showConfirmOnTop();
+      var modal=$('modalConfirm'), t=$('confirmTitle'), b=$('confirmBody'), yes=$('confirmYesBtn'), no=$('confirmNoBtn');
+      if(!modal || !yes || !no) return resolve(confirm(body || '¿Confirmar?'));
+      if(t) t.innerText = title || 'CONFIRMAR';
+      if(b) b.innerText = body || '';
+      modal.style.display = 'flex';
+      var done=function(v){ modal.style.display='none'; yes.onclick=null; no.onclick=null; resolve(v); };
+      yes.onclick=function(){ done(true); };
+      no.onclick=function(){ done(false); };
+      setTimeout(function(){ try{ no.focus(); }catch(e){} },80);
+    });
+  };
+  function clearAutoLoad(){ if(autoLoadTimer){ clearTimeout(autoLoadTimer); autoLoadTimer=null; } }
+  function scheduleNextBatch(){
+    clearAutoLoad();
+    if(!window.hasMorePhotos || window.isLoadingMore) return;
+    autoLoadTimer=setTimeout(function(){
+      if(window.hasMorePhotos && !window.isLoadingMore && $('view-gallery') && $('view-gallery').style.display !== 'none') window.loadMorePhotos(false, true);
+    }, AUTO_BATCH_DELAY);
+  }
+  window.loadPhotos = async function(id, name) {
+    clearAutoLoad();
+    if(typeof toggleL==='function') toggleL(true, 'CARGANDO PRIMERAS FOTOS...');
+    try{
+      window.allPhotos=[]; window.selectedPhotos=[]; window.isFullAlbumMode=false; window.nextPhotoOffset=0; window.hasMorePhotos=true; window.isLoadingMore=false; window.PHOTO_BATCH=100;
+      var list=$('photoList'); if(list) list.innerHTML='';
+      setStatus('<span class="progress-spin">⏳</span> Preparando galería. Vamos a mostrar las primeras fotos mientras siguen cargando las demás...');
+      var btn=$('btnLoadMore'); if(btn) btn.style.display='none';
+      if($('view-events')) $('view-events').style.display='none';
+      if($('view-gallery')) $('view-gallery').style.display='block';
+      if(typeof forceMobileTop==='function') forceMobileTop();
+      if($('currentEventTitle')) $('currentEventTitle').innerText=name || '';
+      if($('footer')) $('footer').style.display='flex';
+      if(typeof updateFooter==='function') updateFooter();
+      window.scrollTo(0,0);
+      await window.loadMorePhotos(true, true);
+      if(typeof toggleL==='function') toggleL(false);
+    }catch(err){
+      if(typeof toggleL==='function') toggleL(false);
+      if(typeof luxAlert==='function') luxAlert('ERROR','No se pudieron cargar las fotos: '+(err&&err.message?err.message:err)); else alert('No se pudieron cargar las fotos');
+    }
+  };
+  window.loadMorePhotos = async function(firstLoad, autoMode) {
+    if(window.isLoadingMore || (!firstLoad && !window.hasMorePhotos)) return;
+    window.isLoadingMore=true;
+    var btn=$('btnLoadMore'); if(btn) btn.style.display='none';
+    var loadedBefore=(window.allPhotos||[]).length;
+    setStatus('<span class="progress-spin">⏳</span> '+(firstLoad?'Cargando primeras 100 fotografías...':'Cargando más fotografías en segundo plano...')+(loadedBefore?' <span class="progress-strong">Ya podés mirar '+loadedBefore+'.</span>':''));
+    try{
+      var limit=window.PHOTO_BATCH || 100;
+      var res=await apiGet({action:'photos', folderId:window.activeEvent.id, offset:window.nextPhotoOffset||0, limit:limit, paged:'1', t:Date.now()});
+      var photos=Array.isArray(res)?res:(res.photos||[]);
+      window.hasMorePhotos=Array.isArray(res)?false:!!res.hasMore;
+      window.nextPhotoOffset=Array.isArray(res)?photos.length:Number(res.nextOffset || ((window.nextPhotoOffset||0)+photos.length));
+      var baseIndex=(window.allPhotos||[]).length;
+      window.allPhotos=(window.allPhotos||[]).concat(photos);
+      if(typeof appendPhotos==='function') appendPhotos(photos, baseIndex);
+      var loaded=(window.allPhotos||[]).length;
+      if($('currentEventTitle')) $('currentEventTitle').innerText=(window.activeEvent&&window.activeEvent.displayName?window.activeEvent.displayName:'')+' · '+loaded+' fotos cargadas'+(window.hasMorePhotos?' +':'');
+      if(window.hasMorePhotos) setStatus('Mostrando <span class="progress-strong">'+loaded+'</span> fotografías. Seguimos cargando más automáticamente...');
+      else setStatus('Álbum cargado: <span class="progress-strong">'+loaded+'</span> fotografías.');
+      scheduleNextBatch();
+    }catch(err){
+      setStatus('No se pudieron cargar más fotografías. Tocá actualizar o volvé a entrar al álbum.');
+      if(typeof luxAlert==='function') luxAlert('ERROR','No se pudieron cargar más fotos: '+(err&&err.message?err.message:err));
+    }finally{ window.isLoadingMore=false; }
+  };
 })();
 </script>
+
 </body>
 </html>
 
