@@ -3219,21 +3219,25 @@ function attr(s) {
     <div id="freeTicketEditor" style="display:none">
       <div class="free-field full">
         <label>NOMBRE DEL CLIENTE / ALUMNO</label>
-        <input id="freeTicketClient" type="text" placeholder="Ej: Ana Pérez" autocomplete="off">
+        <input id="freeTicketClient" type="text" tabindex="1" placeholder="Ej: Ana Pérez" autocomplete="off">
       </div>
       <div class="free-field full">
         <label>CONCEPTO / SERVICIO</label>
-        <input id="freeTicketConcept" type="text" placeholder="Ej: Curso de Modelaje Nivel 1" autocomplete="off">
+        <input id="freeTicketConcept" type="text" tabindex="2" placeholder="Ej: Curso de Modelaje Nivel 1" autocomplete="off">
+      </div>
+      <div class="free-field full">
+        <label>DESCRIPCIÓN / DETALLE</label>
+        <textarea id="freeTicketDescription" rows="3" tabindex="3" placeholder="Opcional. Podés agregar 2 o 3 renglones con detalles del servicio."></textarea>
       </div>
       <div class="free-field">
         <label>FECHA</label>
-        <input id="freeTicketDate" type="date">
+        <input id="freeTicketDate" type="date" tabindex="4">
       </div>
       <div class="free-field">
         <label>IMPORTE</label>
-        <div class="money-entry"><span>$</span><input id="freeTicketAmount" type="text" inputmode="numeric" autocomplete="off" placeholder="0"></div>
+        <div class="money-entry"><span>$</span><input id="freeTicketAmount" type="text" tabindex="5" inputmode="numeric" autocomplete="off" placeholder="0"></div>
       </div>
-      <label class="free-paid"><input id="freeTicketPaid" type="checkbox"> <span>PAGADO</span></label>
+      <label class="free-paid"><input id="freeTicketPaid" type="checkbox" tabindex="6"> <span>PAGADO</span></label>
     </div>
 
     <div class="ticket-preview-wrap">
@@ -5157,7 +5161,7 @@ function attr(s) {
   #freeTicketEditor label,.free-field label{
     display:block;font-size:11px;font-weight:900;color:#555;margin-bottom:5px
   }
-  #freeTicketEditor input[type=text],#freeTicketEditor input[type=date]{
+  #freeTicketEditor input[type=text],#freeTicketEditor input[type=date],#freeTicketEditor textarea{
     width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;border-radius:8px;
     background:#fff;color:#111;font-size:14px
   }
@@ -5580,5 +5584,151 @@ function attr(s) {
 })();
 </script>
 <!-- /TOMAUNO V54 MERCADO PAGO - ETAPA 1 -->
+
+
+<!-- TOMAUNO V59 - DESCRIPCION + F2 + IMPRESION COMPACTA -->
+<style>
+  #freeTicketEditor textarea{
+    resize:vertical;min-height:72px;max-height:110px;font-family:inherit;line-height:1.35
+  }
+  /* El acceso oculto sigue invisible, pero da feedback de cursor al pasar por la esquina */
+  #secretAdminBtn{cursor:pointer!important}
+</style>
+<script>
+(function(){
+  'use strict';
+  function el(id){return document.getElementById(id)}
+
+  /* ---- Descripción / detalle libre ---- */
+  var oldDraw=window.drawTicket;
+  window.drawTicket=function(o){
+    if(!o || !o.__freeTicket) return oldDraw ? oldDraw(o) : undefined;
+
+    // Let the previous V58 free-ticket renderer draw first.
+    if(oldDraw) oldDraw(o);
+
+    var c=el('ticketCanvas'); if(!c) return;
+    var ctx=c.getContext('2d');
+    var desc=String(o.descripcion||'').trim();
+    if(desc){
+      ctx.fillStyle='#fff';
+      ctx.fillRect(50,585,800,120);
+      ctx.font='bold 17px Arial';ctx.fillStyle='#555';ctx.fillText('Detalle:',60,615);
+
+      ctx.font='17px Arial';ctx.fillStyle='#555';
+      var words=desc.split(/\s+/), lines=[], line='';
+      words.forEach(function(w){
+        var test=line ? line+' '+w : w;
+        if(ctx.measureText(test).width>735 && line){ lines.push(line); line=w; }
+        else line=test;
+      });
+      if(line) lines.push(line);
+      lines.slice(0,3).forEach(function(t,i){ ctx.fillText(t,60,648+(i*27)); });
+
+      try{var img=el('ticketPreview');if(img)img.src=c.toDataURL('image/png')}catch(e){}
+    }
+  };
+
+  function currentFreeDataV59(){
+    var raw=String((el('freeTicketAmount')||{}).dataset.raw||'');
+    var p=String((el('freeTicketDate')||{}).value||'').split('-');
+    return {
+      __freeTicket:true,
+      cliente:String((el('freeTicketClient')||{}).value||'').trim(),
+      tipo:String((el('freeTicketConcept')||{}).value||'').trim()||'Servicio',
+      descripcion:String((el('freeTicketDescription')||{}).value||'').trim(),
+      fechaTexto:p.length===3?(p[2]+'/'+p[1]+'/'+p[0]):String((el('freeTicketDate')||{}).value||''),
+      total:Number(raw||0),
+      pago:(el('freeTicketPaid')||{}).checked?'PAGADO':'PENDIENTE',
+      cantidad:1,fotos:''
+    }
+  }
+
+  function refreshV59(){
+    if(!el('ticketModal') || !el('ticketModal').classList.contains('is-free-ticket')) return;
+    var o=currentFreeDataV59();
+    window.__ticketOrder=o;
+    window.drawTicket(o);
+  }
+  var desc=el('freeTicketDescription');
+  if(desc){desc.addEventListener('input',refreshV59);desc.addEventListener('change',refreshV59)}
+
+  /* ---- TAB desde IMPORTE va directamente al check PAGADO ---- */
+  var amount=el('freeTicketAmount');
+  if(amount){
+    amount.addEventListener('keydown',function(e){
+      if(e.key==='Tab' && !e.shiftKey){
+        e.preventDefault();
+        var paid=el('freeTicketPaid');
+        if(paid) paid.focus();
+      }
+    });
+  }
+
+  /* ---- Impresión compacta y cerrable ---- */
+  window.printCurrentTicket=function(){
+    var c=el('ticketCanvas');if(!c)return;
+    var data=c.toDataURL('image/png');
+    var w=window.open('','_blank','width=720,height=900,resizable=yes,scrollbars=yes');
+    if(!w){
+      return window.luxAlert?luxAlert('AVISO','El navegador bloqueó la ventana de impresión.'):alert('El navegador bloqueó la ventana de impresión.');
+    }
+    w.document.open();
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Imprimir ticket Tomauno</title>'
+      +'<style>@page{size:A4 portrait;margin:12mm}html,body{margin:0;background:#ececec;font-family:Arial,sans-serif}.bar{position:sticky;top:0;background:#111;color:#fff;padding:10px;display:flex;justify-content:center;gap:10px;z-index:2}.bar button{border:0;border-radius:999px;padding:10px 18px;font-weight:800;cursor:pointer}.print{background:#e00;color:#fff}.close{background:#333;color:#fff}.sheet{width:min(520px,92vw);margin:18px auto;background:#fff;box-shadow:0 4px 20px #999;padding:12px}.sheet img{display:block;width:100%;height:auto}@media print{html,body{background:#fff}.bar{display:none}.sheet{width:150mm;margin:0 auto;padding:0;box-shadow:none}.sheet img{width:150mm}}</style>'
+      +'</head><body><div class="bar"><button class="print" onclick="window.print()">IMPRIMIR</button><button class="close" onclick="window.close()">CERRAR VENTANA</button></div>'
+      +'<div class="sheet"><img src="'+data+'" alt="Ticket Tomauno"></div></body></html>');
+    w.document.close();
+  };
+
+  /* ---- F2 abre Ticket Libre.
+     Si no hay sesión admin, primero pide PIN; luego abre Ticket Libre al validar. ---- */
+  var pendingFreeTicket=false;
+
+  var oldOpenAdminPin=window.openAdminPin;
+  window.openAdminPin=function(){
+    if(oldOpenAdminPin) return oldOpenAdminPin.apply(this,arguments);
+  };
+
+  var oldValidateAdminPin=window.validateAdminPin;
+  if(typeof oldValidateAdminPin==='function'){
+    window.validateAdminPin=function(){
+      var before=document.getElementById('modalAdminPin');
+      var r=oldValidateAdminPin.apply(this,arguments);
+      setTimeout(function(){
+        var pinModal=document.getElementById('modalAdminPin');
+        var hidden=!pinModal || pinModal.style.display==='none' || getComputedStyle(pinModal).display==='none';
+        if(pendingFreeTicket && hidden){
+          pendingFreeTicket=false;
+          if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+        }
+      },180);
+      return r;
+    };
+  }
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='F2'){
+      e.preventDefault();
+      e.stopPropagation();
+
+      // If Admin panel is already open, assume authenticated and open directly.
+      var admin=el('adminModal');
+      var adminOpen=admin && getComputedStyle(admin).display!=='none';
+
+      if(adminOpen){
+        if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+        return;
+      }
+
+      pendingFreeTicket=true;
+      if(typeof window.openAdminPin==='function') window.openAdminPin();
+    }
+  },true);
+
+})();
+</script>
+<!-- /TOMAUNO V59 -->
+
 </body>
 </html>
