@@ -89,18 +89,19 @@
     .order-actions button:hover, .mini-btn:hover { border-color:var(--rojo); }
 
 
-    #secretAdminBtn {
-      position: fixed;
-      right: 0;
-      bottom: 0;
-      width: 34px;
-      height: 34px;
-      z-index: 13000;
-      opacity: 0.02;
-      background: var(--rojo);
-      border: none;
-      border-radius: 10px 0 0 0;
-      cursor: pointer;
+    #secretAdminBtn{
+      position:fixed!important;
+      right:8px!important;
+      bottom:8px!important;
+      width:28px!important;
+      height:28px!important;
+      opacity:0!important;
+      background:transparent!important;
+      border:0!important;
+      padding:0!important;
+      margin:0!important;
+      z-index:9999!important;
+      cursor:default!important;
     }
     #secretAdminBtn:hover { opacity: 0.12; }
 
@@ -3247,7 +3248,7 @@ function attr(s) {
           <label style="display:block;font-size:11px;font-weight:900;color:#555;margin-bottom:4px">IMPORTE</label>
           <div style="display:flex;align-items:center;border:1px solid #ccc;border-radius:8px;background:#fff;overflow:hidden">
             <span style="padding:0 0 0 11px;font-weight:900;color:#111">$</span>
-            <input id="freeTicketAmount2" type="number" inputmode="decimal" min="0" step="1" placeholder="0"
+            <input id="freeTicketAmount2" type="text" inputmode="numeric" autocomplete="off" placeholder="$ 0"
               style="width:100%;box-sizing:border-box;padding:11px 11px 11px 5px;border:0;outline:0;background:#fff;color:#111">
           </div>
         </div>
@@ -3263,7 +3264,7 @@ function attr(s) {
     <p id="ticketHint">Para copiar sin descargar: clic derecho sobre el ticket y elegí <b>Copiar imagen</b>. Si tu navegador no lo permite, usá DESCARGAR PNG.</p>
     <div class="ticket-actions">
       <button class="btn-order" onclick="copyTicketPng()">COPIAR PNG</button>
-      <button class="btn-order" onclick="downloadTicketPng()">DESCARGAR PNG</button>
+      <button class="btn-order" onclick="downloadTicketPng()">IMPRIMIR</button>
       <button class="btn-order" style="background:#222" onclick="closeUnifiedTicket()">CERRAR</button>
     </div>
   </div>
@@ -5699,6 +5700,250 @@ function attr(s) {
 })();
 </script>
 <!-- /TOMAUNO V56 - TICKET UNIFICADO -->
+
+
+
+<!-- TOMAUNO V57 - TICKET PC HORIZONTAL + IMPORTE FORMATEADO + ACCESO CORREGIDO -->
+<style>
+  /* Ticket libre: desktop en dos columnas, móvil apilado */
+  @media (min-width: 900px){
+    #ticketModal.is-free-ticket .ticket-box{
+      width:min(1180px,96vw)!important;
+      max-width:1180px!important;
+      max-height:92vh!important;
+      overflow:hidden!important;
+      display:grid!important;
+      grid-template-columns:430px 1fr!important;
+      grid-template-rows:auto 1fr auto!important;
+      column-gap:22px!important;
+      align-items:start!important;
+      padding:22px!important;
+    }
+    #ticketModal.is-free-ticket #ticketModalTitle{
+      grid-column:1/-1!important;
+      margin:0 0 10px!important;
+      text-align:center!important;
+    }
+    #ticketModal.is-free-ticket #freeTicketEditor{
+      grid-column:1!important;
+      grid-row:2!important;
+      margin:0!important;
+      max-width:none!important;
+      align-self:start!important;
+    }
+    #ticketModal.is-free-ticket #ticketCanvas{
+      grid-column:2!important;
+      grid-row:2!important;
+      width:100%!important;
+      max-width:620px!important;
+      height:auto!important;
+      max-height:68vh!important;
+      object-fit:contain!important;
+      margin:0 auto!important;
+      display:block!important;
+    }
+    #ticketModal.is-free-ticket .ticket-actions{
+      grid-column:1/-1!important;
+      grid-row:3!important;
+      position:static!important;
+      margin-top:14px!important;
+      padding:10px 0 0!important;
+      display:flex!important;
+      justify-content:center!important;
+      gap:12px!important;
+      background:#fff!important;
+    }
+  }
+
+  @media (max-width: 899px){
+    #ticketModal.is-free-ticket .ticket-box{
+      max-height:92vh!important;
+      overflow:auto!important;
+    }
+  }
+
+  /* El botón secreto no debe verse ni reaccionar visualmente con un solo clic */
+  #secretAdminBtn{
+    position:fixed!important;
+    right:8px!important;
+    bottom:8px!important;
+    width:30px!important;
+    height:30px!important;
+    opacity:0!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    outline:none!important;
+    color:transparent!important;
+    font-size:0!important;
+    z-index:9999!important;
+    cursor:default!important;
+  }
+  #secretAdminBtn:focus,
+  #secretAdminBtn:active{
+    outline:none!important;
+    box-shadow:none!important;
+    background:transparent!important;
+  }
+</style>
+
+<script>
+(function(){
+  'use strict';
+  function el(id){return document.getElementById(id);}
+
+  /* ---- Importe: texto común, sin flechas, con punto de miles ---- */
+  var amount = el('freeTicketAmount2');
+  if(amount){
+    amount.type='text';
+    amount.inputMode='numeric';
+    amount.setAttribute('autocomplete','off');
+    amount.placeholder='$ 0';
+
+    function digits(v){ return String(v||'').replace(/\D/g,''); }
+    function pretty(v){
+      var d=digits(v);
+      if(!d) return '';
+      return Number(d).toLocaleString('es-AR');
+    }
+    amount.addEventListener('input',function(){
+      var raw=digits(this.value);
+      this.dataset.rawAmount=raw;
+      this.value=raw ? pretty(raw) : '';
+      if(typeof window.__refreshFreeTicketV57==='function') window.__refreshFreeTicketV57();
+    });
+    amount.addEventListener('focus',function(){
+      if(this.value==='0') this.value='';
+    });
+  }
+
+  /* ---- Sustituye la lectura de monto libre para usar valor real sin puntos ---- */
+  function freeTicketDataV57(){
+    var a=el('freeTicketAmount2');
+    var raw=(a&&a.dataset&&a.dataset.rawAmount)?a.dataset.rawAmount:String((a||{}).value||'').replace(/\D/g,'');
+    var d=el('freeTicketDate2');
+    var dateVal=(d&&d.value)||'';
+    var p=dateVal.split('-');
+    var fechaTxt=(p.length===3)?(p[2]+'/'+p[1]+'/'+p[0]):dateVal;
+    return {
+      __freeTicket:true,
+      cliente:String((el('freeTicketClient2')||{}).value||'').trim(),
+      tipo:String((el('freeTicketConcept2')||{}).value||'').trim() || 'Servicio',
+      fechaTexto:fechaTxt,
+      total:Number(raw||0),
+      pago:(el('freeTicketPaid2')||{}).checked?'PAGADO':'PENDIENTE',
+      cantidad:1,
+      fotos:''
+    };
+  }
+
+  window.__refreshFreeTicketV57=function(){
+    var o=freeTicketDataV57();
+    window.__ticketOrder=o;
+    if(typeof window.drawTicket==='function') window.drawTicket(o);
+  };
+
+  ['freeTicketClient2','freeTicketConcept2','freeTicketDate2','freeTicketPaid2'].forEach(function(id){
+    var n=el(id); if(!n) return;
+    n.addEventListener('input',window.__refreshFreeTicketV57);
+    n.addEventListener('change',window.__refreshFreeTicketV57);
+  });
+
+  /* ---- Ticket Libre: abrir limpio y sin scroll innecesario en PC ---- */
+  var oldOpenFree=window.openFreeTicket;
+  window.openFreeTicket=function(){
+    if(typeof oldOpenFree==='function') oldOpenFree();
+    var a=el('freeTicketAmount2');
+    if(a && !a.dataset.rawAmount){
+      a.value='';
+      a.dataset.rawAmount='';
+    }
+    setTimeout(window.__refreshFreeTicketV57,20);
+  };
+
+  /* ---- IMPRIMIR usa el ticket actual ---- */
+  window.printCurrentTicketV57=function(){
+    var canvas=el('ticketCanvas');
+    if(!canvas) return;
+    var url=canvas.toDataURL('image/png');
+    var w=window.open('','_blank','width=900,height=1200');
+    if(!w){
+      if(window.luxAlert) luxAlert('VENTANA BLOQUEADA','Permití ventanas emergentes para imprimir.');
+      else alert('Permití ventanas emergentes para imprimir.');
+      return;
+    }
+    w.document.open();
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Ticket Tomauno</title>'
+      +'<style>html,body{margin:0;background:#fff}img{display:block;max-width:100%;margin:0 auto}@media print{img{width:100%;height:auto}}</style>'
+      +'</head><body><img src="'+url+'" onload="setTimeout(function(){window.print()},250)"></body></html>');
+    w.document.close();
+  };
+
+  /* ---- Acceso secreto: 3 clics = Admin, 4 clics = Ticket libre.
+     Con 1 o 2 clics no pasa absolutamente nada. ---- */
+  var old=el('secretAdminBtn');
+  if(old && old.parentNode){
+    var fresh=old.cloneNode(true);
+    old.parentNode.replaceChild(fresh,old);
+
+    var count=0, resetTimer=null, actionTimer=null;
+    fresh.addEventListener('click',function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      count++;
+      clearTimeout(resetTimer);
+      clearTimeout(actionTimer);
+
+      if(count>=4){
+        count=0;
+        if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+        return;
+      }
+
+      if(count===3){
+        actionTimer=setTimeout(function(){
+          if(count===3){
+            count=0;
+            if(typeof window.openAdminPin==='function') window.openAdminPin();
+          }
+        },380);
+      }
+
+      resetTimer=setTimeout(function(){
+        count=0;
+      },900);
+    });
+  }
+
+  /* ---- Reetiquetar acciones del ticket sin tocar el sistema de COPIAR PNG ---- */
+  function retitle(){
+    var modal=el('ticketModal');
+    if(!modal) return;
+    var btns=modal.querySelectorAll('button,a');
+    btns.forEach(function(b){
+      var t=(b.textContent||'').trim().toUpperCase();
+      if(t==='DESCARGAR PNG'){
+        b.textContent='IMPRIMIR';
+        b.onclick=function(e){
+          e.preventDefault();
+          window.printCurrentTicketV57();
+        };
+      }
+    });
+  }
+
+  var mo=new MutationObserver(retitle);
+  var tm=el('ticketModal');
+  if(tm){ mo.observe(tm,{subtree:true,childList:true,characterData:true}); retitle(); }
+
+  /* ---- Ocultar cualquier aviso viejo de error de copia que haya quedado abajo ---- */
+  var hint=el('ticketHint');
+  if(hint){ hint.innerHTML=''; hint.style.display='none'; }
+
+})();
+</script>
+<!-- /TOMAUNO V57 -->
 
 </body>
 </html>
