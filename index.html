@@ -1529,25 +1529,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 
 
 
-<div id="modalFreeTicket" class="modal" style="z-index:12100">
-  <div class="modal-box free-ticket-box">
-    <h3 style="color:var(--rojo);margin:0 0 6px">🎫 TICKET LIBRE</h3>
-    <p style="font-size:11px;color:#888;margin:0 0 16px">Para trabajos o servicios que no nacen de un pedido de fotografías.</p>
-    <label class="free-ticket-label">Cliente</label>
-    <input type="text" id="freeTicketClient" placeholder="Nombre del cliente" autocomplete="name">
-    <label class="free-ticket-label">Servicio realizado</label>
-    <input type="text" id="freeTicketService" placeholder="Ej: Sesión fotográfica, edición, impresión...">
-    <div class="free-ticket-grid">
-      <div>
-        <label class="free-ticket-label">Fecha</label>
-        <input type="date" id="freeTicketDate">
-      </div>
-      <div>
-        <label class="free-ticket-label">Importe</label>
-        <input type="number" id="freeTicketAmount" inputmode="decimal" min="0" step="1" placeholder="0">
-      </div>
-    </div>
-    <label class="free-ticket-paid">
+<label class="free-ticket-paid">
       <input type="checkbox" id="freeTicketPaid">
       <span>✓ Marcar como PAGADO</span>
     </label>
@@ -3243,15 +3225,46 @@ function attr(s) {
 </script>
 
 <div id="ticketModal" class="modal">
-  <div class="modal-box ticket-box">
-    <h3 style="margin-top:0;color:#111">TICKET DE PAGO</h3>
+  <div class="modal-box ticket-box" style="position:relative">
+    <button type="button" id="ticketCloseX" onclick="closeUnifiedTicket()" aria-label="Cerrar"
+      style="position:absolute;right:14px;top:12px;width:34px;height:34px;border-radius:50%;border:1px solid #bbb;background:#222;color:#fff;font-weight:900;cursor:pointer;z-index:5">×</button>
+    <h3 id="ticketModalTitle" style="margin-top:0;color:#111">TICKET DE PAGO</h3>
+    <div id="freeTicketEditor" style="display:none;max-width:520px;margin:0 auto 14px;background:#f5f5f5;border:1px solid #ddd;border-radius:12px;padding:14px;text-align:left">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="grid-column:1/-1">
+          <label style="display:block;font-size:11px;font-weight:900;color:#555;margin-bottom:4px">NOMBRE DEL CLIENTE / ALUMNO</label>
+          <input id="freeTicketClient2" type="text" placeholder="Ej: Ana Pérez" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#111">
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="display:block;font-size:11px;font-weight:900;color:#555;margin-bottom:4px">CONCEPTO / SERVICIO</label>
+          <input id="freeTicketConcept2" type="text" placeholder="Ej: Curso de Modelaje Nivel 1" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#111">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;color:#555;margin-bottom:4px">FECHA</label>
+          <input id="freeTicketDate2" type="date" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#111">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:900;color:#555;margin-bottom:4px">IMPORTE</label>
+          <div style="display:flex;align-items:center;border:1px solid #ccc;border-radius:8px;background:#fff;overflow:hidden">
+            <span style="padding:0 0 0 11px;font-weight:900;color:#111">$</span>
+            <input id="freeTicketAmount2" type="number" inputmode="decimal" min="0" step="1" placeholder="0"
+              style="width:100%;box-sizing:border-box;padding:11px 11px 11px 5px;border:0;outline:0;background:#fff;color:#111">
+          </div>
+        </div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:12px;font-weight:900;color:#222;cursor:pointer">
+        <input id="freeTicketPaid2" type="checkbox" style="width:18px;height:18px;margin:0">
+        PAGADO
+      </label>
+      <div style="font-size:10px;color:#777;margin-top:8px">El ticket de abajo se actualiza mientras escribís.</div>
+    </div>
     <canvas id="ticketCanvas" width="900" height="1200"></canvas>
     <img id="ticketPreview" alt="Ticket Tomauno" oncontextmenu="event.stopPropagation()">
     <p id="ticketHint">Para copiar sin descargar: clic derecho sobre el ticket y elegí <b>Copiar imagen</b>. Si tu navegador no lo permite, usá DESCARGAR PNG.</p>
     <div class="ticket-actions">
       <button class="btn-order" onclick="copyTicketPng()">COPIAR PNG</button>
       <button class="btn-order" onclick="downloadTicketPng()">DESCARGAR PNG</button>
-      <button class="btn-order" style="background:#222" onclick="document.getElementById('ticketModal').style.display='none'">CERRAR</button>
+      <button class="btn-order" style="background:#222" onclick="closeUnifiedTicket()">CERRAR</button>
     </div>
   </div>
 </div>
@@ -5485,5 +5498,207 @@ function attr(s) {
 })();
 </script>
 <!-- /TOMAUNO V54 MERCADO PAGO - ETAPA 1 -->
+
+
+<!-- TOMAUNO V56 - TICKET UNIFICADO: MISMO DISEÑO PARA PEDIDOS Y TICKET LIBRE -->
+<style>
+  #ticketModal{z-index:300000!important}
+  #ticketModal .ticket-box{z-index:300001!important}
+  #ticketModal.is-free-ticket .ticket-actions{position:sticky;bottom:-18px;background:#fff;padding:12px 0 2px;z-index:4}
+  @media(max-width:700px){
+    #freeTicketEditor{grid-template-columns:1fr!important}
+    #ticketCloseX{right:8px!important;top:8px!important}
+  }
+</style>
+<script>
+(function(){
+  'use strict';
+
+  function el(id){ return document.getElementById(id); }
+  function todayLocal(){
+    var d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function dateForTicket(v){
+    if(!v) return new Date();
+    var p=String(v).split('-');
+    if(p.length===3) return p[2]+'/'+p[1]+'/'+p[0];
+    return v;
+  }
+
+  // Save original renderer and reuse it for the normal order ticket.
+  var originalDrawTicket = window.drawTicket;
+
+  // Extend the EXISTING renderer only for a free/general ticket.
+  window.drawTicket = function(o){
+    if(!o || !o.__freeTicket){
+      return originalDrawTicket ? originalDrawTicket(o) : undefined;
+    }
+
+    var c=el('ticketCanvas'); if(!c) return;
+    var ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+
+    // Same visual identity already used by Tomauno ticket.
+    ctx.fillStyle='#310005'; ctx.fillRect(0,0,c.width,190);
+    ctx.fillStyle='#e00'; ctx.beginPath(); ctx.arc(770,0,210,0,Math.PI*2); ctx.fill();
+    ctx.font='bold 50px Arial'; ctx.fillStyle='#fff'; ctx.fillText('TOMA',50,84);
+    ctx.fillStyle='#f00'; ctx.fillText('UNO',205,84);
+    ctx.font='bold 38px Arial'; ctx.fillStyle='#fff'; ctx.fillText('TICKET DE PAGOS',425,104);
+    ctx.font='bold 18px Arial'; ctx.fillStyle='#ddd'; ctx.fillText('Fotografías & Eventos',52,124);
+
+    ctx.strokeStyle='#eee'; ctx.lineWidth=2; ctx.strokeRect(50,230,800,185);
+    ctx.font='bold 18px Arial'; ctx.fillStyle='#777';
+    ctx.fillText('CLIENTE / ALUMNO',75,265);
+    ctx.fillText('FECHA',555,265);
+
+    ctx.font='bold 28px Arial'; ctx.fillStyle='#111';
+    ctx.fillText(String(o.cliente||'Sin nombre').slice(0,29),75,305);
+    ctx.fillText(String(o.fechaTexto||''),555,305);
+
+    ctx.font='bold 18px Arial'; ctx.fillStyle='#777';
+    ctx.fillText('CONCEPTO / SERVICIO',75,350);
+    ctx.font='bold 25px Arial'; ctx.fillStyle='#111';
+    ctx.fillText(String(o.tipo||'Servicio').slice(0,48),75,386);
+
+    ctx.fillStyle='#f00'; ctx.fillRect(50,440,800,44);
+    ctx.font='bold 18px Arial'; ctx.fillStyle='#fff';
+    ctx.fillText('CONCEPTO',72,468); ctx.fillText('ESTADO',410,468);
+    ctx.fillText('CANT.',570,468); ctx.fillText('MONTO',735,468);
+
+    ctx.fillStyle='#f4f4f4'; ctx.fillRect(50,484,800,58);
+    ctx.font='bold 18px Arial'; ctx.fillStyle='#222';
+    ctx.fillText(String(o.tipo||'Servicio').slice(0,30),72,520);
+    ctx.fillStyle=(String(o.pago||'').toUpperCase()==='PAGADO')?'#058b3e':'#b18400';
+    ctx.fillText(o.pago||'PENDIENTE',410,520);
+    ctx.fillStyle='#222'; ctx.fillText('1',575,520);
+    ctx.fillText(typeof money==='function'?money(o.total||0):('$'+Number(o.total||0).toLocaleString('es-AR')),735,520);
+
+    ctx.font='bold 17px Arial'; ctx.fillStyle='#555';
+    ctx.fillText('Detalle:',60,600);
+    ctx.font='17px Arial';
+    ctx.fillText(String(o.tipo||'Servicio realizado').slice(0,70),60,632);
+
+    ctx.fillStyle='#111'; ctx.fillRect(520,940,330,78);
+    ctx.fillStyle='#fff'; ctx.font='bold 22px Arial'; ctx.fillText('TOTAL REGISTRADO',545,973);
+    ctx.fillStyle='#f00'; ctx.font='bold 34px Arial';
+    ctx.fillText(typeof money==='function'?money(o.total||0):('$'+Number(o.total||0).toLocaleString('es-AR')),690,1008);
+
+    ctx.font='bold 18px Arial'; ctx.fillStyle='#555';
+    ctx.fillText('Gracias por formar parte de Tomauno.',60,1035);
+    ctx.fillText('Pedro Méndez 2069 · Posadas · @tomaunomodels · 3764-354522',60,1075);
+    ctx.fillStyle='#f00'; ctx.beginPath(); ctx.arc(875,1195,210,0,Math.PI*2); ctx.fill();
+
+    try{ var img=el('ticketPreview'); if(img) img.src=c.toDataURL('image/png'); }catch(_e){}
+  };
+
+  function freeData(){
+    return {
+      __freeTicket:true,
+      cliente:(el('freeTicketClient2')||{}).value||'',
+      tipo:(el('freeTicketConcept2')||{}).value||'Servicio',
+      fechaTexto:dateForTicket((el('freeTicketDate2')||{}).value||todayLocal()),
+      total:Number((el('freeTicketAmount2')||{}).value||0),
+      pago:(el('freeTicketPaid2')||{}).checked?'PAGADO':'PENDIENTE',
+      cantidad:1,
+      fotos:''
+    };
+  }
+
+  function refreshFree(){
+    var o=freeData();
+    window.__ticketOrder=o;
+    window.drawTicket(o);
+  }
+
+  window.openFreeTicket = function(){
+    var modal=el('ticketModal'); if(!modal) return;
+    modal.classList.add('is-free-ticket');
+    var editor=el('freeTicketEditor'); if(editor) editor.style.display='block';
+    var title=el('ticketModalTitle'); if(title) title.textContent='TICKET LIBRE';
+    var hint=el('ticketHint');
+    if(hint) hint.innerHTML='Completá los datos arriba. Después podés <b>COPIAR PNG</b> y pegar la imagen directamente en WhatsApp, o descargarla.';
+    var date=el('freeTicketDate2'); if(date && !date.value) date.value=todayLocal();
+    modal.style.display='flex';
+    refreshFree();
+    setTimeout(function(){ var c=el('freeTicketClient2'); if(c) c.focus(); },60);
+  };
+
+  // Normal order ticket keeps the same ticket modal but hides the free editor.
+  var oldOpenPaymentTicket=window.openPaymentTicket;
+  window.openPaymentTicket=function(row){
+    var modal=el('ticketModal');
+    if(modal) modal.classList.remove('is-free-ticket');
+    var editor=el('freeTicketEditor'); if(editor) editor.style.display='none';
+    var title=el('ticketModalTitle'); if(title) title.textContent='TICKET DE PAGO';
+    var hint=el('ticketHint');
+    if(hint) hint.innerHTML='Para copiar sin descargar: clic derecho sobre el ticket y elegí <b>Copiar imagen</b>. Si tu navegador no lo permite, usá DESCARGAR PNG.';
+    return oldOpenPaymentTicket ? oldOpenPaymentTicket(row) : undefined;
+  };
+
+  window.closeUnifiedTicket=function(){
+    var modal=el('ticketModal');
+    if(modal) modal.style.display='none';
+  };
+
+  ['freeTicketClient2','freeTicketConcept2','freeTicketDate2','freeTicketAmount2','freeTicketPaid2'].forEach(function(id){
+    var node=el(id); if(!node) return;
+    node.addEventListener('input',refreshFree);
+    node.addEventListener('change',refreshFree);
+  });
+
+  // Correct free-ticket WhatsApp text: real line breaks, not literal "\n".
+  window.copyFreeTicket = function(){
+    var o=freeData();
+    if(!String(o.cliente).trim() || !String(o.tipo).trim()){
+      return window.luxAlert ? luxAlert('FALTAN DATOS','Completá cliente y concepto / servicio.') : alert('Completá cliente y concepto / servicio.');
+    }
+    var txt =
+      '📸 *ESTUDIO TOMAUNO*\\n\\n' +
+      '🎫 *COMPROBANTE DE SERVICIO*\\n\\n' +
+      '👤 *Cliente:* ' + o.cliente + '\\n' +
+      '🛠️ *Concepto:* ' + o.tipo + '\\n' +
+      '📅 *Fecha:* ' + o.fechaTexto + '\\n' +
+      '💰 *Importe:* ' + (typeof money==='function'?money(o.total):('$'+Number(o.total||0).toLocaleString('es-AR'))) + '\\n' +
+      ((o.pago==='PAGADO') ? '✅ *Estado:* PAGADO' : '⏳ *Estado:* PENDIENTE DE PAGO') +
+      '\\n\\nGracias por elegir *Tomauno*.';
+    if(typeof copyText==='function') copyText(txt);
+    else if(navigator.clipboard) navigator.clipboard.writeText(txt);
+  };
+
+  // Secret access:
+  // 3 rapid clicks = normal Admin.
+  // 4 rapid clicks = Ticket Libre.
+  // We clone the button to remove the previous listener cleanly.
+  var oldSecret=el('secretAdminBtn');
+  if(oldSecret && oldSecret.parentNode){
+    var secret=oldSecret.cloneNode(true);
+    oldSecret.parentNode.replaceChild(secret,oldSecret);
+    var count=0, timer=null, tripleTimer=null;
+    secret.addEventListener('click',function(e){
+      e.preventDefault(); e.stopPropagation();
+      count++;
+      clearTimeout(timer);
+      if(count===3){
+        clearTimeout(tripleTimer);
+        tripleTimer=setTimeout(function(){
+          if(count===3){
+            count=0;
+            if(typeof openAdminPin==='function') openAdminPin();
+          }
+        },420);
+      } else if(count>=4){
+        clearTimeout(tripleTimer);
+        count=0;
+        openFreeTicket();
+      }
+      timer=setTimeout(function(){ count=0; },1050);
+    });
+  }
+})();
+</script>
+<!-- /TOMAUNO V56 - TICKET UNIFICADO -->
+
 </body>
 </html>
