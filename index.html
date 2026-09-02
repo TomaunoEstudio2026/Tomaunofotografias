@@ -5730,5 +5730,91 @@ function attr(s) {
 </script>
 <!-- /TOMAUNO V59 -->
 
+
+
+<!-- TOMAUNO V60 - CLAVE OCULTA + SESION ADMIN + IMPRESION COMPACTA -->
+<style>
+  /* Ventana de impresión conceptual: el popup real se genera por JS. */
+  #secretAdminBtn{cursor:pointer!important}
+</style>
+<script>
+(function(){
+  'use strict';
+  function el(id){return document.getElementById(id)}
+
+  /* Clave de acceso siempre oculta */
+  var pass=el('inputPass');
+  if(pass){
+    pass.type='password';
+    pass.inputMode='numeric';
+    pass.autocomplete='off';
+  }
+
+  /* Recordar autenticación durante esta pestaña */
+  var oldValidate=window.validateAdminPin;
+  if(typeof oldValidate==='function'){
+    window.validateAdminPin=function(){
+      var r=oldValidate.apply(this,arguments);
+      setTimeout(function(){
+        var m=el('modalAdminPin');
+        var hidden=!m || getComputedStyle(m).display==='none';
+        if(hidden){
+          try{sessionStorage.setItem('tomauno_admin_ok','1')}catch(e){}
+        }
+      },160);
+      return r;
+    };
+  }
+
+  /* F2: si ya validó PIN en esta pestaña, abre ticket directo */
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='F2') return;
+    e.preventDefault();e.stopPropagation();
+    var ok=false;
+    try{ok=sessionStorage.getItem('tomauno_admin_ok')==='1'}catch(_e){}
+    if(ok){
+      if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+    }else{
+      window.__openFreeAfterPinV60=true;
+      if(typeof window.openAdminPin==='function') window.openAdminPin();
+    }
+  },true);
+
+  /* Si el PIN se valida luego de F2, abrir ticket libre automáticamente */
+  var oldOpenAdmin=window.openAdmin;
+  if(typeof oldOpenAdmin==='function'){
+    window.openAdmin=function(){
+      var r=oldOpenAdmin.apply(this,arguments);
+      try{sessionStorage.setItem('tomauno_admin_ok','1')}catch(e){}
+      if(window.__openFreeAfterPinV60){
+        window.__openFreeAfterPinV60=false;
+        setTimeout(function(){
+          var adm=el('modalAdmin'); if(adm) adm.style.display='none';
+          if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+        },120);
+      }
+      return r;
+    };
+  }
+
+  /* Impresión más compacta y con X */
+  window.printCurrentTicket=function(){
+    var c=el('ticketCanvas');if(!c)return;
+    var data=c.toDataURL('image/png');
+    var w=window.open('','_blank','width=560,height=760,resizable=yes,scrollbars=no');
+    if(!w){
+      return window.luxAlert?luxAlert('AVISO','El navegador bloqueó la ventana de impresión.'):alert('El navegador bloqueó la ventana de impresión.');
+    }
+    w.document.open();
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Imprimir ticket Tomauno</title>'
+      +'<style>@page{size:A4 portrait;margin:10mm}html,body{margin:0;background:#ededed;font-family:Arial,sans-serif;overflow:hidden}.top{height:44px;background:#111;display:flex;align-items:center;justify-content:center;position:relative}.top button.print{border:0;border-radius:999px;padding:9px 20px;background:#e00;color:#fff;font-weight:900;cursor:pointer}.top button.x{position:absolute;right:10px;top:7px;width:30px;height:30px;border-radius:50%;border:1px solid #555;background:#222;color:#fff;font-size:18px;font-weight:900;cursor:pointer}.wrap{height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box}.sheet{height:100%;max-height:690px;aspect-ratio:3/4;background:#fff;box-shadow:0 3px 16px #999;display:flex;align-items:center;justify-content:center;overflow:hidden}.sheet img{display:block;max-width:100%;max-height:100%;object-fit:contain}@media print{html,body{background:#fff;overflow:visible}.top{display:none}.wrap{height:auto;padding:0}.sheet{box-shadow:none;width:150mm;height:auto;max-height:none;margin:0 auto}.sheet img{width:150mm;height:auto;max-height:none}}</style>'
+      +'</head><body><div class="top"><button class="print" onclick="window.print()">IMPRIMIR</button><button class="x" onclick="window.close()" title="Cerrar">×</button></div>'
+      +'<div class="wrap"><div class="sheet"><img src="'+data+'" alt="Ticket Tomauno"></div></div></body></html>');
+    w.document.close();
+  };
+})();
+</script>
+<!-- /TOMAUNO V60 -->
+
 </body>
 </html>
