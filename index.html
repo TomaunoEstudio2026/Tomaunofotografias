@@ -1562,7 +1562,22 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 </div>
 
 
-    <p class="report-note">Los reportes se generan con el filtro actual: todos los eventos o el evento elegido.</p>
+    
+<div id="v72AdminBar" class="v72-admin-bar">
+  <button type="button" class="v72-btn" onclick="loadAdminOrders(this)" title="Actualizar pedidos">↻ <span>Actualizar</span></button>
+  <button type="button" class="v72-btn" onclick="exportAdminCsv()" title="Exportar Excel / CSV">▦</button>
+  <button type="button" class="v72-btn" onclick="printAdminReport()" title="Imprimir / PDF">⎙</button>
+  <button type="button" class="v72-btn" onclick="openFreeTicket()" title="Ticket libre">🎫</button>
+  <button type="button" class="v72-btn" onclick="document.getElementById('modalAdminCheat').style.display='flex'" title="Machete">☷</button>
+  <button type="button" class="v72-btn" onclick="enterAlbumAdminMode()" title="Administrar álbumes">▣ <span>Álbumes</span></button>
+  <button type="button" class="v72-btn" onclick="toggleSelectVisibleOrders64();setTimeout(function(){if(window.updateCount70)window.updateCount70()},20)" title="Seleccionar visibles">☑ <span>Seleccionar</span></button>
+  <button type="button" class="v72-btn danger" onclick="deleteSelectedOrders64()" title="Eliminar marcados">⌫ <span>Eliminar marcados</span></button>
+  <button type="button" class="v72-btn danger" onclick="deleteSelectedEventOrders()" title="Vaciar evento">🗑 <span>Vaciar evento</span></button>
+  <span id="v72SelectedCount">0 seleccionados</span>
+  <button type="button" class="v72-adm" onclick="v71LogoutAdmin()" title="Cerrar sesión administrativa">ADM ACTIVO</button>
+</div>
+
+<p class="report-note">Los reportes se generan con el filtro actual: todos los eventos o el evento elegido.</p>
     <div id="adminOrders"></div>
   </div>
 </div>
@@ -7584,6 +7599,68 @@ if(adm){
 })();
 </script>
 <!-- /TOMAUNO V71 -->
+
+
+
+<!-- TOMAUNO V72 - BARRA ADMIN INDEPENDIENTE Y SIEMPRE VISIBLE -->
+<style>
+  #modalAdmin .admin-tools > button,
+  #modalAdmin .admin-tools > .admin-actions-row,
+  #modalAdmin .admin-tools > .v64-tools-row,
+  #modalAdmin .admin-tools > #v70AdminTools{display:none!important;}
+
+  #v72AdminBar{
+    display:flex!important;visibility:visible!important;opacity:1!important;
+    width:100%!important;box-sizing:border-box!important;align-items:center!important;
+    gap:7px!important;flex-wrap:wrap!important;margin:8px 0 4px!important;padding:0!important;
+  }
+  #v72AdminBar .v72-btn,#v72AdminBar .v72-adm{
+    display:inline-flex!important;visibility:visible!important;opacity:1!important;
+    align-items:center!important;justify-content:center!important;gap:6px!important;
+    height:38px!important;min-width:40px!important;padding:0 11px!important;
+    border:1px solid #323236!important;border-radius:11px!important;
+    background:linear-gradient(180deg,#19191b,#0b0b0d)!important;color:#f1f1f1!important;
+    font-size:10px!important;font-weight:850!important;white-space:nowrap!important;cursor:pointer!important;
+    box-shadow:0 5px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05)!important;
+  }
+  #v72AdminBar .v72-btn:hover{
+    border-color:#e01720!important;transform:translateY(-1px)!important;
+    box-shadow:0 7px 18px rgba(0,0,0,.42),0 0 12px rgba(224,23,32,.15)!important;
+  }
+  #v72AdminBar .v72-btn.danger{color:#ff6c72!important;border-color:#61272d!important}
+  #v72AdminBar .v72-adm{
+    margin-left:auto!important;color:#41d77d!important;border-color:rgba(65,215,125,.38)!important;
+    background:rgba(23,89,51,.16)!important;border-radius:999px!important;height:30px!important;padding:0 10px!important;
+  }
+  #v72SelectedCount{color:#8c8c8c!important;font-size:10px!important;white-space:nowrap!important}
+
+  @media(max-width:700px){
+    #v72AdminBar{flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:4px!important;scrollbar-width:none!important}
+    #v72AdminBar::-webkit-scrollbar{display:none!important}
+    #v72AdminBar .v72-btn{flex:0 0 38px!important;width:38px!important;min-width:38px!important;padding:0!important;font-size:14px!important}
+    #v72AdminBar .v72-btn span{display:none!important}
+    #v72SelectedCount{font-size:9px!important}
+    #v72AdminBar .v72-adm{flex:0 0 auto!important;margin-left:0!important;font-size:8px!important}
+  }
+</style>
+<script>
+(function(){
+  'use strict';
+  function sync72(){
+    var c=document.getElementById('v72SelectedCount');if(!c)return;
+    var n=document.querySelectorAll('#adminOrders .v64-order-check:checked').length;
+    c.textContent=n+' seleccionado'+(n===1?'':'s');
+  }
+  document.addEventListener('change',function(e){
+    if(e.target&&e.target.classList&&e.target.classList.contains('v64-order-check'))sync72();
+  });
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.closest&&e.target.closest('#v72AdminBar'))setTimeout(sync72,30);
+  });
+  window.addEventListener('load',function(){setTimeout(sync72,250)});
+})();
+</script>
+<!-- /TOMAUNO V72 -->
 
 </body>
 </html>
