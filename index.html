@@ -6125,5 +6125,526 @@ function attr(s) {
 </script>
 <!-- /TOMAUNO V62 -->
 
+
+
+<!-- TOMAUNO V63 - TOOLBAR ADMIN + BORRAR EVENTO + RETORNO MP -->
+<style>
+  /* Toolbar admin moderna/compacta */
+  #modalAdmin .admin-tools{
+    align-items:center!important;
+  }
+  #modalAdmin .admin-tools .admin-icon-btn{
+    width:42px!important;
+    min-width:42px!important;
+    height:38px!important;
+    padding:0!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border-radius:11px!important;
+    border:1px solid rgba(255,255,255,.14)!important;
+    background:linear-gradient(180deg,#202020,#111)!important;
+    color:#fff!important;
+    font-size:18px!important;
+    box-shadow:0 5px 15px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08)!important;
+    transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease!important;
+  }
+  #modalAdmin .admin-tools .admin-icon-btn:hover{
+    transform:translateY(-1px)!important;
+    border-color:rgba(255,45,45,.65)!important;
+    box-shadow:0 7px 18px rgba(0,0,0,.4),0 0 12px rgba(230,0,0,.18)!important;
+  }
+  #modalAdmin .admin-tools .admin-icon-btn.admin-danger{
+    border-color:rgba(255,70,70,.38)!important;
+    color:#ff6868!important;
+  }
+  #modalAdmin .admin-tools .admin-refresh-btn{
+    padding:9px 12px!important;
+    min-width:auto!important;
+    border-radius:10px!important;
+  }
+  @media(max-width:650px){
+    #modalAdmin .admin-tools{
+      grid-template-columns:1fr 1fr 42px 42px 42px!important;
+    }
+    #modalAdmin #adminEventFilter,
+    #modalAdmin #adminStatusFilter{grid-column:auto!important}
+    #modalAdmin #adminSearch{grid-column:1/-1!important}
+    #modalAdmin .admin-refresh-btn{grid-column:1/3!important;width:100%!important}
+    #modalAdmin .admin-icon-btn{width:42px!important;min-width:42px!important}
+  }
+</style>
+<script>
+(function(){
+  'use strict';
+  function el(id){return document.getElementById(id)}
+
+  function styleAdminToolbar(){
+    var tools=document.querySelector('#modalAdmin .admin-tools');
+    if(!tools) return;
+
+    var buttons=Array.from(tools.querySelectorAll('button'));
+    buttons.forEach(function(b){
+      var txt=(b.textContent||'').toLowerCase();
+
+      if(txt.indexOf('actualizar')>-1){
+        b.classList.add('admin-refresh-btn');
+        b.textContent='↻ ACTUALIZAR';
+        b.title='Actualizar pedidos';
+      }else if(txt.indexOf('excel')>-1 || txt.indexOf('csv')>-1){
+        b.classList.add('admin-icon-btn');
+        b.textContent='📊';
+        b.title='Exportar Excel / CSV';
+      }else if(txt.indexOf('imprimir')>-1 || txt.indexOf('pdf')>-1){
+        b.classList.add('admin-icon-btn');
+        b.textContent='🖨️';
+        b.title='Imprimir / PDF';
+      }else if(txt.indexOf('ticket')>-1){
+        b.classList.add('admin-icon-btn');
+        b.textContent='🎫';
+        b.title='Ticket libre';
+      }else if(txt.indexOf('machete')>-1){
+        b.classList.add('admin-icon-btn');
+        b.textContent='📚';
+        b.title='Machete / ayuda rápida';
+      }
+    });
+
+    if(!el('btnDeleteEventOrders')){
+      var del=document.createElement('button');
+      del.type='button';
+      del.id='btnDeleteEventOrders';
+      del.className='mini-btn admin-icon-btn admin-danger';
+      del.textContent='🗑️';
+      del.title='Eliminar todos los registros del evento seleccionado';
+      del.onclick=deleteSelectedEventOrders;
+      tools.appendChild(del);
+    }
+  }
+
+  async function deleteSelectedEventOrders(){
+    var sel=el('adminEventFilter');
+    var ev=sel ? String(sel.value||'').trim() : '';
+    if(!ev){
+      if(window.luxAlert) return luxAlert('ELEGÍ UN EVENTO','Primero seleccioná un evento específico en el filtro.');
+      return alert('Primero seleccioná un evento específico.');
+    }
+
+    var ok1=confirm('Vas a eliminar TODOS los registros del evento:\n\n'+ev+'\n\n¿Querés continuar?');
+    if(!ok1) return;
+    var ok2=confirm('ÚLTIMA CONFIRMACIÓN\n\nEsto eliminará definitivamente todos los pedidos registrados de "'+ev+'".\n\n¿ELIMINAR TODO EL EVENTO DEL PANEL?');
+    if(!ok2) return;
+
+    var btn=el('btnDeleteEventOrders');
+    if(btn){btn.disabled=true;btn.textContent='⌛';}
+    try{
+      var res=await apiPost({action:'clearEventOrders',pin:'3233',eventName:ev});
+      if(!res || !res.success) throw new Error((res&&res.msg)||'No se pudo eliminar el evento.');
+      if(sel) sel.value='';
+      if(typeof window.loadAdminOrders==='function') await window.loadAdminOrders();
+      if(window.luxAlert) luxAlert('EVENTO ELIMINADO','Se borraron todos los registros de "'+ev+'".');
+    }catch(err){
+      if(window.luxAlert) luxAlert('ERROR',String(err&&err.message?err.message:err));
+      else alert(String(err));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent='🗑️';}
+      setTimeout(styleAdminToolbar,100);
+    }
+  }
+  window.deleteSelectedEventOrders=deleteSelectedEventOrders;
+
+  /* Si Machete se agrega después, volvemos a compactar sin intervalos agresivos. */
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(styleAdminToolbar,150)});
+  window.addEventListener('load',function(){setTimeout(styleAdminToolbar,400)});
+  document.addEventListener('click',function(e){
+    if(e.target && e.target.id==='secretAdminBtn') setTimeout(styleAdminToolbar,350);
+  });
+
+  /* Mercado Pago: al volver/cancelar, nunca dejar el botón clavado en "CREANDO PAGO". */
+  function resetMpButton(){
+    var btn=document.querySelector('.t54-mp-pay');
+    if(btn){
+      btn.disabled=false;
+      btn.textContent='💳 PAGAR CON MERCADO PAGO';
+    }
+  }
+
+  window.addEventListener('pageshow',function(){setTimeout(resetMpButton,80)});
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden) setTimeout(resetMpButton,80);
+  });
+  window.addEventListener('focus',function(){setTimeout(resetMpButton,80)});
+
+  /* Reutilizar la última preferencia creada si el cliente volvió sin pagar.
+     Evita crear otro pedido/otra preferencia simplemente por haber cancelado. */
+  var oldPay=window.payWithMercadoPago;
+  if(typeof oldPay==='function'){
+    window.payWithMercadoPago=async function(){
+      var btn=document.querySelector('.t54-mp-pay');
+      var cached=null;
+      try{cached=JSON.parse(sessionStorage.getItem('TOMAUNO_LAST_MP_PREF')||'null')}catch(e){}
+      if(cached && cached.initPoint && cached.createdAt && (Date.now()-cached.createdAt)<7200000){
+        if(btn){btn.disabled=true;btn.textContent='ABRIENDO MERCADO PAGO...';}
+        location.href=cached.initPoint;
+        return;
+      }
+      return oldPay.apply(this,arguments);
+    };
+
+    /* Aseguramos que incluso botones creados por bloques anteriores usen la lógica V63. */
+    document.addEventListener('click',function(e){
+      var b=e.target && e.target.closest ? e.target.closest('.t54-mp-pay') : null;
+      if(!b) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      window.payWithMercadoPago();
+    },true);
+
+    /* Capturamos preferencias nuevas observando la respuesta de apiPost solo para createMpPreference. */
+    var originalApiPost=window.apiPost;
+    if(typeof originalApiPost==='function'){
+      window.apiPost=async function(data){
+        var res=await originalApiPost.apply(this,arguments);
+        try{
+          if(data && data.action==='createMpPreference' && res && res.success && res.initPoint){
+            sessionStorage.setItem('TOMAUNO_LAST_MP_PREF',JSON.stringify({
+              initPoint:res.initPoint,
+              row:res.row||data.row||'',
+              createdAt:Date.now()
+            }));
+          }
+          if(data && data.action==='verifyMpPayment' && res && res.approved){
+            sessionStorage.removeItem('TOMAUNO_LAST_MP_PREF');
+          }
+        }catch(e){}
+        return res;
+      };
+    }
+  }
+
+  /* Si el retorno dice failure/pending/cancelado, dejamos la preferencia reutilizable.
+     Si el usuario cierra la caja de aviso, el botón vuelve activo. */
+  document.addEventListener('click',function(e){
+    if(e.target && e.target.id==='mp54Close') setTimeout(resetMpButton,80);
+  });
+})();
+</script>
+<!-- /TOMAUNO V63 -->
+
+
+
+<!-- TOMAUNO V64 - ADMIN ALBUMES + ELIMINACION MULTIPLE -->
+<style>
+  /* Panel: filtros arriba; herramientas en una línea debajo */
+  #modalAdmin .admin-tools{
+    display:grid!important;
+    grid-template-columns:minmax(165px,1fr) minmax(165px,1fr) minmax(250px,2fr)!important;
+    gap:8px!important;
+  }
+  #modalAdmin #adminEventFilter{grid-column:1!important}
+  #modalAdmin #adminStatusFilter{grid-column:2!important}
+  #modalAdmin #adminSearch{grid-column:3!important;width:100%!important}
+  #modalAdmin .v64-tools-row{
+    grid-column:1/-1!important;
+    display:flex!important;
+    flex-wrap:wrap!important;
+    gap:7px!important;
+    align-items:center!important;
+    margin-top:2px!important;
+  }
+  #modalAdmin .v64-tool{
+    height:38px!important;
+    min-width:42px!important;
+    padding:0 11px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:6px!important;
+    border:1px solid #333!important;
+    border-radius:11px!important;
+    background:linear-gradient(180deg,#1d1d1d,#0d0d0d)!important;
+    color:#eee!important;
+    box-shadow:0 5px 14px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.06)!important;
+    transition:.15s ease!important;
+    font-weight:800!important;
+  }
+  #modalAdmin .v64-tool:hover{transform:translateY(-1px);border-color:#d71920!important;box-shadow:0 6px 18px rgba(0,0,0,.4),0 0 10px rgba(215,25,32,.18)!important}
+  #modalAdmin .v64-tool.danger{color:#ff6464!important;border-color:#5b2424!important}
+  #modalAdmin .v64-bulk-count{font-size:11px;color:#aaa;margin-left:auto}
+  #modalAdmin #adminOrders{scrollbar-width:thin;scrollbar-color:#b40000 #090909}
+  #modalAdmin #adminOrders::-webkit-scrollbar{width:9px}
+  #modalAdmin #adminOrders::-webkit-scrollbar-track{background:#090909;border-radius:10px}
+  #modalAdmin #adminOrders::-webkit-scrollbar-thumb{background:linear-gradient(#e00000,#750000);border:2px solid #090909;border-radius:10px}
+  .order-row.v64-selected{outline:1px solid rgba(255,40,40,.72);box-shadow:0 0 0 2px rgba(255,0,0,.08),0 0 16px rgba(255,0,0,.08)}
+  .v64-order-check{position:absolute;left:10px;top:10px;width:18px;height:18px;accent-color:#e00000;cursor:pointer}
+  #modalAdmin .order-row{position:relative!important;padding-left:38px!important}
+
+  /* Modo edición de álbumes */
+  body.v64-album-admin #eventList .event-card{position:relative!important;overflow:visible!important;padding-top:48px!important}
+  .v64-album-tools{
+    position:absolute;left:9px;right:9px;top:8px;
+    display:flex;gap:6px;justify-content:flex-end;z-index:5
+  }
+  .v64-album-tools button{
+    width:34px;height:32px;border-radius:9px;border:1px solid #333;background:#111;color:#fff;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.35);cursor:pointer
+  }
+  .v64-album-tools button:hover{border-color:#e00000;box-shadow:0 0 12px rgba(224,0,0,.18)}
+  .event-card.v64-hidden{opacity:.45;border-style:dashed!important}
+  .v64-hidden-badge{position:absolute;left:10px;top:13px;font-size:9px;font-weight:900;color:#ff6868;letter-spacing:.12em}
+  .v64-album-desc{font-size:11px;color:#8e8e8e;line-height:1.35;margin:6px 4px 0;min-height:15px}
+  .v64-editable-title{cursor:text}
+  .v64-editable-title[contenteditable="true"]{outline:1px solid #e00000;border-radius:7px;padding:3px 5px;background:#080808}
+  #v64AlbumAdminBar{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:2147482500;
+    background:rgba(10,10,10,.96);border:1px solid #3c3c3c;border-radius:999px;
+    padding:7px 9px 7px 14px;display:none;align-items:center;gap:10px;color:#ddd;
+    box-shadow:0 8px 28px rgba(0,0,0,.55),0 0 16px rgba(220,0,0,.10);backdrop-filter:blur(8px)
+  }
+  #v64AlbumAdminBar b{color:#ff2727;font-size:11px;letter-spacing:.08em}
+  #v64AlbumAdminBar button{border:1px solid #444;border-radius:999px;background:#191919;color:#fff;padding:8px 12px;font-weight:800}
+  @media(max-width:650px){
+    #modalAdmin .admin-tools{grid-template-columns:1fr 1fr!important}
+    #modalAdmin #adminEventFilter{grid-column:1!important}
+    #modalAdmin #adminStatusFilter{grid-column:2!important}
+    #modalAdmin #adminSearch{grid-column:1/-1!important}
+    #modalAdmin .v64-tools-row{grid-column:1/-1!important}
+    #modalAdmin .v64-tool{height:36px!important;padding:0 9px!important;font-size:11px!important}
+    #modalAdmin .v64-bulk-count{width:100%;margin:2px 0 0;text-align:right}
+    #v64AlbumAdminBar{bottom:8px;width:calc(100vw - 18px);box-sizing:border-box;justify-content:space-between}
+  }
+</style>
+
+<div id="v64AlbumAdminBar">
+  <b>✦ EDICIÓN DE ÁLBUMES</b>
+  <span style="font-size:10px;color:#888">doble clic en título para editar</span>
+  <button type="button" onclick="exitAlbumAdminMode()">SALIR</button>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  function el(id){return document.getElementById(id)}
+  function esc64(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function attr64(s){return esc64(s).replace(/`/g,'&#96;')}
+
+  /* ---------- TOOLBAR ADMIN ---------- */
+  function buildAdminToolbar64(){
+    var tools=document.querySelector('#modalAdmin .admin-tools');
+    if(!tools || tools.querySelector('.v64-tools-row')) return;
+
+    var row=document.createElement('div');
+    row.className='v64-tools-row';
+
+    var buttons=Array.from(tools.querySelectorAll(':scope > button'));
+    buttons.forEach(function(b){
+      var txt=(b.title||b.textContent||'').toLowerCase();
+      b.classList.add('v64-tool');
+      if(txt.indexOf('actualizar')>-1){b.innerHTML='↻ <span>Actualizar</span>';b.title='Actualizar pedidos'}
+      else if(txt.indexOf('excel')>-1 || txt.indexOf('csv')>-1){b.innerHTML='▦';b.title='Excel / CSV'}
+      else if(txt.indexOf('imprimir')>-1 || txt.indexOf('pdf')>-1){b.innerHTML='⎙';b.title='Imprimir / PDF'}
+      else if(txt.indexOf('ticket')>-1){b.innerHTML='🎫';b.title='Ticket libre'}
+      else if(txt.indexOf('machete')>-1){b.innerHTML='▤';b.title='Machete'}
+      else if(b.id==='btnDeleteEventOrders' || txt.indexOf('eliminar todos')>-1){b.innerHTML='⌫';b.title='Eliminar todos los pedidos del evento';b.classList.add('danger')}
+      row.appendChild(b);
+    });
+
+    var albums=document.createElement('button');
+    albums.type='button'; albums.className='v64-tool'; albums.innerHTML='◉ <span>Álbumes</span>';
+    albums.title='Administrar visibilidad, título, descripción y clave de álbumes';
+    albums.onclick=enterAlbumAdminMode;
+    row.appendChild(albums);
+
+    var select=document.createElement('button');
+    select.type='button';select.className='v64-tool';select.id='v64SelectVisible';
+    select.innerHTML='☑ <span>Seleccionar</span>';select.onclick=toggleSelectVisibleOrders64;
+    row.appendChild(select);
+
+    var del=document.createElement('button');
+    del.type='button';del.className='v64-tool danger';del.id='v64DeleteSelected';
+    del.innerHTML='⌫ <span>Eliminar marcados</span>';del.onclick=deleteSelectedOrders64;
+    row.appendChild(del);
+
+    var count=document.createElement('span');
+    count.id='v64BulkCount';count.className='v64-bulk-count';count.textContent='0 seleccionados';
+    row.appendChild(count);
+
+    tools.appendChild(row);
+  }
+
+  /* ---------- SELECCIÓN / BORRADO MÚLTIPLE ---------- */
+  function enhanceOrderRows64(){
+    var cont=el('adminOrders'); if(!cont) return;
+    cont.querySelectorAll('.order-row').forEach(function(row){
+      if(row.querySelector('.v64-order-check')) return;
+      var del=row.querySelector('[data-delete-row]');
+      var r=del ? del.getAttribute('data-delete-row') : '';
+      if(!r) return;
+      var cb=document.createElement('input');
+      cb.type='checkbox';cb.className='v64-order-check';cb.value=r;
+      cb.title='Seleccionar pedido';
+      cb.onclick=function(e){e.stopPropagation();row.classList.toggle('v64-selected',cb.checked);updateBulkCount64()};
+      row.insertBefore(cb,row.firstChild);
+    });
+    updateBulkCount64();
+  }
+  function selectedRows64(){
+    return Array.from(document.querySelectorAll('#adminOrders .v64-order-check:checked')).map(function(c){return Number(c.value)}).filter(Boolean);
+  }
+  function updateBulkCount64(){
+    var n=selectedRows64().length, c=el('v64BulkCount'); if(c)c.textContent=n+' seleccionado'+(n===1?'':'s');
+  }
+  function toggleSelectVisibleOrders64(){
+    var all=Array.from(document.querySelectorAll('#adminOrders .v64-order-check'));
+    var should=all.some(function(c){return !c.checked});
+    all.forEach(function(c){c.checked=should;var r=c.closest('.order-row');if(r)r.classList.toggle('v64-selected',should)});
+    updateBulkCount64();
+  }
+  window.toggleSelectVisibleOrders64=toggleSelectVisibleOrders64;
+
+  async function deleteSelectedOrders64(){
+    var rows=selectedRows64();
+    if(!rows.length) return window.luxAlert?luxAlert('SIN SELECCIÓN','Marcá uno o más pedidos para eliminarlos.'):alert('Marcá pedidos.');
+    var ok=window.luxConfirmAsync ? await luxConfirmAsync('ELIMINAR PEDIDOS','Vas a eliminar '+rows.length+' pedido(s) de la planilla. Esta acción no se puede deshacer.') : confirm('¿Eliminar '+rows.length+' pedidos?');
+    if(!ok)return;
+    var ok2=confirm('ÚLTIMA CONFIRMACIÓN\n\n¿Eliminar definitivamente los '+rows.length+' pedidos marcados?');
+    if(!ok2)return;
+    if(typeof toggleL==='function')toggleL(true,'ELIMINANDO '+rows.length+' PEDIDOS...');
+    try{
+      var res=await apiPost({action:'deleteOrdersBulk',pin:'3233',rows:rows});
+      if(!res || res.success===false) throw new Error((res&&res.msg)||'No se pudo completar la eliminación.');
+      if(typeof toggleL==='function')toggleL(false);
+      if(typeof showToast==='function')showToast((res.deleted||rows.length)+' pedidos eliminados');
+      await loadAdminOrders();
+    }catch(err){
+      if(typeof toggleL==='function')toggleL(false);
+      if(window.luxAlert)luxAlert('ERROR',err.message||String(err)); else alert(err.message||err);
+    }
+  }
+  window.deleteSelectedOrders64=deleteSelectedOrders64;
+
+  var oldRender64=window.renderAdminOrders;
+  if(typeof oldRender64==='function'){
+    window.renderAdminOrders=function(){
+      var r=oldRender64.apply(this,arguments);
+      setTimeout(function(){buildAdminToolbar64();enhanceOrderRows64()},0);
+      return r;
+    };
+  }
+
+  /* ---------- ADMINISTRAR ÁLBUMES DESDE LA GALERÍA ---------- */
+  window.__albumAdminMode=false;
+
+  function renderAlbumCards64(){
+    var list=el('eventList'); if(!list)return;
+    var admin=!!window.__albumAdminMode;
+    list.innerHTML=(window.eventsData||[]).map(function(ev){
+      var id=attr64(ev.id||'');
+      var bridge=attr64(ev.bridgeId||'');
+      var hidden=ev.visible===false;
+      return '<div class="event-card '+(hidden?'v64-hidden':'')+'" data-album="'+attr64(ev.displayName||'')+'" data-bridge="'+bridge+'" onclick="askPass(\''+String(ev.id||'').replace(/'/g,"\\'")+'\')">'+
+        (admin?'<div class="v64-album-tools" onclick="event.stopPropagation()">'+
+          (hidden?'<span class="v64-hidden-badge">OCULTO</span>':'')+
+          '<button type="button" title="'+(hidden?'Mostrar álbum':'Ocultar álbum')+'" onclick="toggleAlbumVisibility64(\''+bridge+'\','+(hidden?'true':'false')+')">'+(hidden?'◉':'◌')+'</button>'+
+          '<button type="button" title="Editar descripción" onclick="editAlbumDescription64(\''+bridge+'\')">≡</button>'+
+          '<button type="button" title="Cambiar clave" onclick="editAlbumPass64(\''+bridge+'\')">⌁</button>'+
+        '</div>':'')+
+        '<i class="fa fa-camera-retro"></i>'+
+        '<h3 class="'+(admin?'v64-editable-title':'')+'" '+(admin?'ondblclick="event.stopPropagation();editAlbumTitleInline64(this,\''+bridge+'\')"':'')+'>'+esc64(ev.displayName||'')+'</h3>'+
+        ((ev.description||admin)?'<div class="v64-album-desc" '+(admin?'ondblclick="event.stopPropagation();editAlbumDescription64(\''+bridge+'\')"':'')+'>'+esc64(ev.description|| (admin?'Doble clic para agregar descripción':'') )+'</div>':'')+
+      '</div>';
+    }).join('') || '<p>Sin eventos disponibles.</p>';
+    if(typeof window.filterAlbums==='function') window.filterAlbums();
+  }
+
+  async function reloadAlbums64(admin){
+    if(typeof toggleL==='function')toggleL(true,admin?'CARGANDO TODOS LOS ÁLBUMES...':'CARGANDO ÁLBUMES...');
+    try{
+      var res=await apiGet(admin?{action:'eventsAdmin',pin:'3233',t:Date.now()}:{action:'events',t:Date.now()});
+      window.eventsData=Array.isArray(res)?res:(res.events||[]);
+      if(typeof toggleL==='function')toggleL(false);
+      if(typeof window.ensureAlbumSearch==='function')window.ensureAlbumSearch();
+      renderAlbumCards64();
+    }catch(err){
+      if(typeof toggleL==='function')toggleL(false);
+      if(window.luxAlert)luxAlert('ERROR','No se pudieron cargar los álbumes: '+(err.message||err));
+    }
+  }
+
+  window.enterAlbumAdminMode=function(){
+    window.__albumAdminMode=true;
+    document.body.classList.add('v64-album-admin');
+    var adm=el('modalAdmin');if(adm)adm.style.display='none';
+    var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='flex';
+    reloadAlbums64(true);
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+  window.exitAlbumAdminMode=function(){
+    window.__albumAdminMode=false;
+    document.body.classList.remove('v64-album-admin');
+    var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='none';
+    reloadAlbums64(false);
+  };
+
+  function findAlbumByBridge64(bridge){
+    return (window.eventsData||[]).find(function(e){return String(e.bridgeId||'')===String(bridge||'')});
+  }
+  async function saveAlbum64(bridge,changes){
+    var payload={action:'updateAlbumConfig',pin:'3233',bridgeId:bridge};
+    Object.keys(changes||{}).forEach(function(k){payload[k]=changes[k]});
+    if(typeof toggleL==='function')toggleL(true,'GUARDANDO ÁLBUM...');
+    try{
+      var res=await apiPost(payload);
+      if(!res || res.success===false)throw new Error((res&&res.msg)||'No se pudo guardar.');
+      if(typeof toggleL==='function')toggleL(false);
+      await reloadAlbums64(true);
+      if(typeof showToast==='function')showToast('Álbum actualizado');
+    }catch(err){
+      if(typeof toggleL==='function')toggleL(false);
+      if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+    }
+  }
+  window.toggleAlbumVisibility64=function(bridge,isHidden){saveAlbum64(bridge,{visible:!!isHidden})};
+
+  window.editAlbumDescription64=function(bridge){
+    var ev=findAlbumByBridge64(bridge);if(!ev)return;
+    var v=prompt('Descripción corta del álbum:',ev.description||'');
+    if(v===null)return;
+    saveAlbum64(bridge,{description:v.trim()});
+  };
+  window.editAlbumPass64=function(bridge){
+    var ev=findAlbumByBridge64(bridge);if(!ev)return;
+    var v=prompt('Clave de acceso del álbum. Dejá vacío para quitarla:',ev.pass||'');
+    if(v===null)return;
+    saveAlbum64(bridge,{pass:v.trim()});
+  };
+  window.editAlbumTitleInline64=function(node,bridge){
+    if(!node || node.getAttribute('contenteditable')==='true')return;
+    var old=node.textContent.trim();
+    node.setAttribute('contenteditable','true');
+    node.focus();
+    var range=document.createRange();range.selectNodeContents(node);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+    function finish(save){
+      node.removeAttribute('contenteditable');
+      var val=node.textContent.trim();
+      if(!save || !val){node.textContent=old;return}
+      if(val!==old)saveAlbum64(bridge,{title:val});
+    }
+    node.onkeydown=function(e){
+      if(e.key==='Enter'){e.preventDefault();finish(true)}
+      if(e.key==='Escape'){e.preventDefault();finish(false)}
+    };
+    node.onblur=function(){finish(true)};
+  };
+
+  /* Cuando el admin se autentica, preparar toolbar. */
+  document.addEventListener('click',function(){
+    if(el('modalAdmin') && el('modalAdmin').style.display==='flex')setTimeout(function(){buildAdminToolbar64();enhanceOrderRows64()},80);
+  });
+  window.addEventListener('load',function(){setTimeout(function(){buildAdminToolbar64();enhanceOrderRows64()},500)});
+})();
+</script>
+<!-- /TOMAUNO V64 -->
+
 </body>
 </html>
