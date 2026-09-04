@@ -3247,6 +3247,7 @@ function attr(s) {
 
     <div class="ticket-actions">
       <button class="btn-order" onclick="copyTicketPng()">COPIAR PNG</button>
+      <button class="btn-order" onclick="downloadTicketPng()">DESCARGAR</button>
       <button class="btn-order" onclick="printCurrentTicket()">IMPRIMIR</button>
       <button class="btn-order" style="background:#222" onclick="closeUnifiedTicket()">CERRAR</button>
     </div>
@@ -5735,17 +5736,19 @@ function attr(s) {
 
 
 
-<!-- TOMAUNO V61 - ADMIN MOBILE + F2 TICKET + PIN OCULTO + BOTONES + TAB -->
+
+
+
+<!-- TOMAUNO V62 - ACCESOS ROBUSTOS + TICKET DIRECTO + MP ESTABLE -->
 <style>
-  /* Pago: identidad visual más clara */
+  /* Botones de pago */
   .t54-manual{
     background:#25D366 !important;
     border-color:#25D366 !important;
     color:#07150c !important;
     font-weight:900 !important;
-    box-shadow:0 8px 22px rgba(37,211,102,.20) !important;
+    box-shadow:0 8px 22px rgba(37,211,102,.18) !important;
   }
-  .t54-manual:hover{filter:brightness(1.05)}
   .t54-mp-pay{
     background:#009ee3 !important;
     border-color:#009ee3 !important;
@@ -5753,201 +5756,261 @@ function attr(s) {
     font-weight:900 !important;
   }
 
-  #secretAdminBtn{cursor:pointer!important}
-
-  /* Panel Admin: ningún control debe quedar fuera de pantalla */
-  #modalAdmin .modal-box{
-    width:min(980px,calc(100vw - 24px)) !important;
-    box-sizing:border-box !important;
-    overflow:hidden !important;
+  /* Zona secreta siempre fija en la esquina real de la pantalla */
+  #secretAdminBtn{
+    position:fixed!important;
+    right:2px!important;
+    bottom:2px!important;
+    width:42px!important;
+    height:42px!important;
+    z-index:2147483000!important;
+    opacity:0!important;
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+    padding:0!important;
+    margin:0!important;
+    cursor:pointer!important;
+    touch-action:manipulation!important;
+    -webkit-tap-highlight-color:transparent!important;
   }
-  #modalAdmin .admin-tools > *{max-width:100%;box-sizing:border-box}
-  #modalAdmin .order-row,
-  #modalAdmin .order-head,
-  #modalAdmin .order-meta,
-  #modalAdmin .order-actions{min-width:0;max-width:100%;box-sizing:border-box}
-  #modalAdmin .order-meta{overflow-wrap:anywhere}
-  #modalAdmin .order-head{flex-wrap:wrap}
-  #modalAdmin .order-actions button{white-space:normal}
 
+  /* Admin usable en celular */
+  #modalAdmin .modal-box{
+    width:min(980px,calc(100vw - 18px))!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
   @media(max-width:650px){
-    #modalAdmin{
-      padding:4px 0 !important;
-      overflow:hidden !important;
-      align-items:flex-start !important;
-    }
+    #modalAdmin{padding:2px 0!important;align-items:flex-start!important;overflow:hidden!important}
     #modalAdmin .modal-box{
-      width:calc(100vw - 8px) !important;
-      max-width:none !important;
-      max-height:calc(100dvh - 8px) !important;
-      margin:4px auto !important;
-      padding:10px !important;
-      border-radius:14px !important;
-      display:flex;
-      flex-direction:column;
+      width:calc(100vw - 6px)!important;
+      max-width:none!important;
+      max-height:calc(100dvh - 6px)!important;
+      margin:3px auto!important;
+      padding:8px!important;
+      border-radius:12px!important;
+      display:flex!important;
+      flex-direction:column!important;
     }
     #modalAdmin .admin-grid{
-      grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-      gap:5px !important;
-      margin:8px 0 !important;
+      grid-template-columns:repeat(3,minmax(0,1fr))!important;
+      gap:4px!important;
+      margin:6px 0!important;
     }
-    #modalAdmin .admin-card{
-      padding:7px 3px !important;
-      border-radius:10px !important;
-      min-width:0 !important;
-    }
-    #modalAdmin .admin-card b{font-size:14px !important;overflow-wrap:anywhere}
-    #modalAdmin .admin-card span{
-      font-size:7px !important;
-      line-height:1.15 !important;
-      letter-spacing:.25px !important;
-    }
+    #modalAdmin .admin-card{padding:6px 2px!important;min-width:0!important}
+    #modalAdmin .admin-card b{font-size:13px!important}
+    #modalAdmin .admin-card span{font-size:7px!important;line-height:1.1!important}
     #modalAdmin .admin-tools{
-      display:grid !important;
-      grid-template-columns:1fr 1fr !important;
-      gap:5px !important;
-      margin:5px 0 7px !important;
+      display:grid!important;
+      grid-template-columns:1fr 1fr!important;
+      gap:4px!important;
+      margin:4px 0 6px!important;
     }
-    #modalAdmin .admin-tools select,
-    #modalAdmin .admin-tools input,
-    #modalAdmin .admin-tools button{
-      width:100% !important;
-      min-width:0 !important;
-      max-width:none !important;
-      margin:0 !important;
-      font-size:9px !important;
-      padding:8px 6px !important;
+    #modalAdmin .admin-tools>*{
+      width:100%!important;
+      min-width:0!important;
+      max-width:none!important;
+      box-sizing:border-box!important;
+      margin:0!important;
+      font-size:9px!important;
+      padding:7px 5px!important;
     }
-    #modalAdmin #adminSearch{grid-column:1/-1 !important}
-    #modalAdmin .report-note{font-size:8px !important;margin:3px 0 5px !important}
+    #modalAdmin #adminSearch{grid-column:1/-1!important}
     #modalAdmin #adminOrders{
-      flex:1 1 auto !important;
-      min-height:0 !important;
-      max-height:none !important;
-      overflow-y:auto !important;
-      overflow-x:hidden !important;
-      padding-right:1px !important;
+      flex:1 1 auto!important;
+      min-height:0!important;
+      max-height:none!important;
+      overflow-y:auto!important;
+      overflow-x:hidden!important;
     }
-    #modalAdmin .order-row{
-      padding:8px !important;
-      margin:6px 0 !important;
-      border-radius:10px !important;
-    }
-    #modalAdmin .order-head b{font-size:11px !important}
-    #modalAdmin .order-meta{font-size:9px !important;line-height:1.4 !important}
-    #modalAdmin .status-pill{font-size:8px !important;padding:3px 6px !important}
+    #modalAdmin .order-row{padding:7px!important;margin:5px 0!important;max-width:100%!important;box-sizing:border-box!important}
+    #modalAdmin .order-head{flex-wrap:wrap!important;min-width:0!important}
+    #modalAdmin .order-meta{font-size:9px!important;overflow-wrap:anywhere!important}
     #modalAdmin .order-actions{
-      display:grid !important;
-      grid-template-columns:1fr 1fr !important;
-      gap:5px !important;
-      margin-top:7px !important;
+      display:grid!important;
+      grid-template-columns:1fr 1fr!important;
+      gap:4px!important;
     }
     #modalAdmin .order-actions button{
-      width:100% !important;
-      min-width:0 !important;
-      padding:7px 4px !important;
-      font-size:8px !important;
-      line-height:1.2 !important;
+      width:100%!important;
+      min-width:0!important;
+      padding:6px 3px!important;
+      font-size:8px!important;
+      white-space:normal!important;
     }
   }
 </style>
+
 <script>
 (function(){
   'use strict';
+
   function el(id){ return document.getElementById(id); }
-  var ADMIN_SESSION_KEY='TOMAUNO_ADMIN_OK';
-  var openTicketAfterPin=false;
+  var MASTER_PIN='3233';
+  var TICKET_PIN='1234';
+  var ADMIN_SESSION='TOMAUNO_ADMIN_OK';
+  var TICKET_SESSION='TOMAUNO_TICKET_OK';
+  var pinMode='admin';
 
-  /* PIN y claves visibles: forzar contraseña también en tiempo de ejecución. */
-  ['adminPinInput','inputPass'].forEach(function(id){
-    var x=el(id);
-    if(x){
-      x.type='password';
-      x.inputMode='numeric';
-      x.autocomplete='off';
+  function setPinText(mode){
+    var modal=el('modalAdminPin');
+    if(!modal) return;
+    var h=modal.querySelector('h3');
+    var p=modal.querySelector('p');
+    if(mode==='ticket'){
+      if(h) h.textContent='TICKET LIBRE';
+      if(p) p.textContent='Ingresá el PIN para acceder al generador de tickets.';
+    }else{
+      if(h) h.textContent='PANEL ADMIN';
+      if(p) p.textContent='Ingresá el PIN de administración.';
     }
-  });
+  }
 
-  /* Funciones de administración consistentes con la misma sesión que ya usa el sistema. */
+  function hasSession(key){
+    try{return sessionStorage.getItem(key)==='1';}catch(e){return false;}
+  }
+  function saveSession(key){
+    try{sessionStorage.setItem(key,'1');}catch(e){}
+  }
+
+  function showPin(mode){
+    pinMode=mode||'admin';
+    setPinText(pinMode);
+    var m=el('modalAdminPin'), inp=el('adminPinInput');
+    if(m) m.style.display='flex';
+    if(inp){
+      inp.type='password';
+      inp.inputMode='numeric';
+      inp.autocomplete='off';
+      inp.value='';
+      setTimeout(function(){inp.focus();},80);
+    }
+  }
+
+  function openTicketAccess(){
+    if(hasSession(TICKET_SESSION) || hasSession(ADMIN_SESSION)){
+      if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+    }else{
+      showPin('ticket');
+    }
+  }
+
   window.openAdminPin=function(){
-    var c=el('modalContact');
-    if(c) c.style.display='none';
-
-    var authenticated=false;
-    try{ authenticated=sessionStorage.getItem(ADMIN_SESSION_KEY)==='1'; }catch(e){}
-
-    if(authenticated){
+    if(hasSession(ADMIN_SESSION)){
       var adm=el('modalAdmin');
       if(adm) adm.style.display='flex';
       if(typeof window.loadAdminOrders==='function') window.loadAdminOrders();
       return;
     }
-    var pinModal=el('modalAdminPin');
-    var inp=el('adminPinInput');
-    if(pinModal) pinModal.style.display='flex';
-    if(inp){
-      inp.type='password';
-      inp.value='';
-      setTimeout(function(){ inp.focus(); },100);
-    }
+    showPin('admin');
   };
 
   window.checkAdminPin=function(){
     var inp=el('adminPinInput');
-    var pin=inp ? inp.value : '';
-    var expected=(typeof ADMIN_PIN!=='undefined') ? String(ADMIN_PIN) : '3233';
+    var pin=String(inp ? inp.value : '');
+    var modal=el('modalAdminPin');
 
-    if(String(pin)!==expected){
+    if(pinMode==='ticket'){
+      if(pin!==MASTER_PIN && pin!==TICKET_PIN){
+        if(typeof window.luxAlert==='function') return window.luxAlert('ERROR','PIN incorrecto.');
+        return alert('PIN incorrecto.');
+      }
+      saveSession(TICKET_SESSION);
+      if(pin===MASTER_PIN) saveSession(ADMIN_SESSION);
+      if(modal) modal.style.display='none';
+      if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+      return;
+    }
+
+    /* Si por error la socia entra por ADMIN y escribe 1234, la enviamos a Ticket Libre. */
+    if(pin===TICKET_PIN){
+      saveSession(TICKET_SESSION);
+      if(modal) modal.style.display='none';
+      if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+      return;
+    }
+
+    if(pin!==MASTER_PIN){
       if(typeof window.luxAlert==='function') return window.luxAlert('ERROR','PIN incorrecto.');
       return alert('PIN incorrecto.');
     }
 
-    try{ sessionStorage.setItem(ADMIN_SESSION_KEY,'1'); }catch(e){}
-    var pinModal=el('modalAdminPin');
-    if(pinModal) pinModal.style.display='none';
-
-    if(openTicketAfterPin){
-      openTicketAfterPin=false;
-      var adm=el('modalAdmin');
-      if(adm) adm.style.display='none';
-      if(typeof window.openFreeTicket==='function') window.openFreeTicket();
-      return;
-    }
-
-    var admin=el('modalAdmin');
-    if(admin) admin.style.display='flex';
+    saveSession(ADMIN_SESSION);
+    saveSession(TICKET_SESSION);
+    if(modal) modal.style.display='none';
+    var adm=el('modalAdmin');
+    if(adm) adm.style.display='flex';
     if(typeof window.loadAdminOrders==='function') window.loadAdminOrders();
   };
 
-  /* F2: autenticado => Ticket Libre directo. Sin autenticar => pide PIN y luego Ticket Libre. */
+  /* F2 siempre significa Ticket Libre. */
   document.addEventListener('keydown',function(e){
     if(e.key!=='F2') return;
     e.preventDefault();
     e.stopImmediatePropagation();
-
-    var authenticated=false;
-    try{ authenticated=sessionStorage.getItem(ADMIN_SESSION_KEY)==='1'; }catch(_e){}
-
-    if(authenticated){
-      if(typeof window.openFreeTicket==='function') window.openFreeTicket();
-      return;
-    }
-
-    openTicketAfterPin=true;
-    var pinModal=el('modalAdminPin');
-    var inp=el('adminPinInput');
-    if(pinModal) pinModal.style.display='flex';
-    if(inp){
-      inp.type='password';
-      inp.value='';
-      setTimeout(function(){ inp.focus(); },80);
-    }
+    openTicketAccess();
   },true);
 
-  /* El Tab del importe va directamente a PAGADO; la fecha sigue editable con mouse/touch. */
+  /* Reemplazamos completamente el detector anterior de clics/toques. */
+  var old=el('secretAdminBtn');
+  if(old && old.parentNode){
+    var btn=old.cloneNode(true);
+    old.parentNode.replaceChild(btn,old);
+
+    var taps=0;
+    var adminTimer=null;
+    var resetTimer=null;
+    var lastTap=0;
+
+    function tap(e){
+      var now=Date.now();
+      if(now-lastTap>1600) taps=0;
+      lastTap=now;
+      taps++;
+
+      clearTimeout(adminTimer);
+      clearTimeout(resetTimer);
+
+      if(taps>=4){
+        taps=0;
+        openTicketAccess();
+        return;
+      }
+
+      if(taps===3){
+        /* Espera suficiente para distinguir el cuarto toque en celular. */
+        adminTimer=setTimeout(function(){
+          if(taps===3){
+            taps=0;
+            window.openAdminPin();
+          }
+        },850);
+      }
+
+      resetTimer=setTimeout(function(){taps=0;},1900);
+    }
+
+    btn.addEventListener('pointerdown',function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      tap(e);
+    },{passive:false});
+  }
+
+  /* URL directa para la socia, sin configurar nada en Vercel:
+     https://tomaunofotografias.vercel.app/?ticket=1 */
+  window.addEventListener('load',function(){
+    var q=new URLSearchParams(location.search);
+    if(q.get('ticket')==='1'){
+      setTimeout(openTicketAccess,250);
+    }
+  });
+
+  /* Ticket: fecha queda visible pero Tab la salta. */
+  var date=el('freeTicketDate');
   var amount=el('freeTicketAmount');
   var paid=el('freeTicketPaid');
-  var date=el('freeTicketDate');
   if(date) date.tabIndex=-1;
   if(amount) amount.tabIndex=4;
   if(paid) paid.tabIndex=5;
@@ -5960,21 +6023,107 @@ function attr(s) {
     });
   }
 
-  /* Textos claros manteniendo los iconos. */
-  function refreshPaymentLabels(){
-    document.querySelectorAll('.t54-mp-pay').forEach(function(b){
-      b.textContent='💳 PAGAR CON MERCADO PAGO';
-    });
-    document.querySelectorAll('.t54-manual').forEach(function(b){
-      b.textContent='💬 CONTINUAR POR WHATSAPP';
-    });
+  /* Nombre del ticket descargado: AAAAMMDD_Cliente_Ticket-Tomauno.png */
+  window.downloadTicketPng=function(){
+    var c=el('ticketCanvas');
+    if(!c){
+      if(window.luxAlert) return luxAlert('ERROR','No se encontró el ticket para descargar.');
+      return;
+    }
+    try{
+      var o=window.__ticketOrder||{};
+      var d=new Date();
+      var ymd=String(d.getFullYear())+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+      var cliente=String(o.cliente||'Cliente')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'')||'Cliente';
+      var a=document.createElement('a');
+      a.download=ymd+'_'+cliente+'_Ticket-Tomauno.png';
+      a.href=c.toDataURL('image/png');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      if(typeof window.miniToast==='function') miniToast('Ticket descargado.');
+    }catch(err){
+      if(window.luxAlert) luxAlert('ERROR','No se pudo descargar el ticket: '+err.message);
+    }
+  };
+
+  /* Garantía final para el botón de Mercado Pago.
+     No usa MutationObserver para evitar el congelamiento detectado en V61. */
+  function selectedProduct(){
+    try{
+      if(typeof window.getSelectedProduct==='function'){
+        var p=window.getSelectedProduct();
+        if(p) return p;
+      }
+    }catch(e){}
+    try{ if(window.selectedMainProduct) return window.selectedMainProduct; }catch(e){}
+    return null;
   }
-  refreshPaymentLabels();
-  var obs=new MutationObserver(refreshPaymentLabels);
-  obs.observe(document.body,{childList:true,subtree:true});
+
+  function mpEligible(){
+    var p=selectedProduct();
+    if(!p) return false;
+    var label=String(p.label||p.name||'').toLowerCase();
+    if(/selecci[oó]n|fotolibro|edici[oó]n|impres|portarretrato|cuadro|papel/.test(label)) return false;
+    var digital=/digital|descarga/.test(label) || (!!p.isFullAlbum && !!p.includesDigital);
+    if(!digital) return false;
+
+    var extras=false;
+    try{
+      var q=window.extraQuantities||{};
+      extras=Object.keys(q).some(function(k){return Number(q[k]||0)>0;});
+    }catch(e){}
+    if(extras) return false;
+
+    var total=0;
+    try{
+      if(typeof window.getOrderTotal==='function') total=Number(window.getOrderTotal(p)||0);
+      else total=Number(p.price||0)*((window.selectedPhotos||[]).length||0);
+    }catch(e){}
+    return total>0;
+  }
+
+  function ensureMpButton(){
+    var modal=el('modalCheckout');
+    if(!modal || modal.style.display!=='flex' || !mpEligible()) return;
+
+    var actions=modal.querySelector('.t50-actions');
+    var submit=el('btnSubmit');
+    if(!actions || !submit) return;
+
+    submit.textContent='💬 CONTINUAR POR WHATSAPP';
+    submit.classList.add('t54-manual');
+
+    var mp=actions.querySelector('.t54-mp-pay');
+    if(!mp){
+      mp=document.createElement('button');
+      mp.type='button';
+      mp.className='btn-order t54-mp-pay';
+      mp.textContent='💳 PAGAR CON MERCADO PAGO';
+      mp.onclick=function(){
+        if(typeof window.payWithMercadoPago==='function') window.payWithMercadoPago();
+      };
+      actions.insertBefore(mp,submit);
+    }
+  }
+
+  var oldOpenCheckout=window.openCheckout;
+  if(typeof oldOpenCheckout==='function'){
+    window.openCheckout=function(){
+      var r=oldOpenCheckout.apply(this,arguments);
+      setTimeout(ensureMpButton,70);
+      setTimeout(ensureMpButton,220);
+      return r;
+    };
+  }
+
+  /* Por seguridad, si el formulario ya estaba abierto al cargar este parche. */
+  setTimeout(ensureMpButton,300);
 })();
 </script>
-<!-- /TOMAUNO V61 -->
+<!-- /TOMAUNO V62 -->
 
 </body>
 </html>
