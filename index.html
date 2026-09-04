@@ -4160,7 +4160,7 @@ function attr(s) {
 
   document.addEventListener('DOMContentLoaded', function(){ ensureAlbumSearch(); addAdminCheatButton(); ensureSelectionCheckoutFields(); });
   setTimeout(function(){ ensureAlbumSearch(); addAdminCheatButton(); ensureSelectionCheckoutFields(); }, 700);
-  setInterval(addAdminCheatButton, 1200);
+  /* V69: addAdminCheatButton periódico eliminado */
 })();
 </script>
 <!-- /TOMAUNO PRODUCCION PATCH V6 -->
@@ -4188,7 +4188,7 @@ function attr(s) {
   function isSel(){var p=product(), s=norm(p&&p.label); return !!(p&&(p.selectionOnly||s.indexOf('seleccion')>-1||s.indexOf('edicion')>-1||s.indexOf('fotolibro')>-1));}
   function sync(){document.body.classList.toggle('no-watermark-all',libreLibre());document.body.classList.toggle('selection-mode',isSel());document.body.classList.toggle('selection-free',isSel()&&libre());}
   window.tomaunoSyncWatermarkMode=sync;
-  setInterval(sync,800);
+  /* V69: sync periódico eliminado */
   document.addEventListener('click',function(e){
     var btn=e.target.closest&&e.target.closest('#selectionSignatureToggle');
     if(btn){setTimeout(function(){var h=qs('selectionSignaturePages'); if(h) h.value=(btn.getAttribute('data-on')==='1')?'Sí':'';},10);}
@@ -4272,7 +4272,7 @@ function attr(s) {
     if(t.indexOf('atencion')>-1){ yes.innerText='CONTINUAR'; if(no) no.innerText='CANCELAR'; }
     else if(t.indexOf('eliminar')>-1){ yes.innerText='SÍ, ELIMINAR'; if(no) no.innerText='CANCELAR'; }
   }
-  setInterval(fixConfirmButtons,250);
+  /* V69: fixConfirmButtons periódico eliminado */
 
   function backToAlbums(){
     var gal=qs('view-gallery'), ev=qs('view-events'), foot=qs('footer'), lb=qs('lightbox');
@@ -4395,7 +4395,7 @@ function attr(s) {
   function refreshAllBadges(){refreshZoomBadges();refreshGalleryBadges();}
   window.tomaunoRefreshBadges=refreshAllBadges;
   ['openZoom','nextPhoto','prevPhoto','togglePhoto'].forEach(function(fn){var old=window[fn]; if(typeof old==='function'){window[fn]=function(){var r=old.apply(this,arguments); setTimeout(refreshAllBadges,80); setTimeout(refreshZoomBadges,160); return r;};}});
-  setInterval(refreshAllBadges,700);
+  /* V69: refreshAllBadges periódico eliminado */
 
   document.addEventListener('click',function(e){
     var bz=e.target.closest&&e.target.closest('[data-zoom-action="comment"]'); if(!bz) return;
@@ -6939,12 +6939,17 @@ if(adm){
 
 
 
-<!-- TOMAUNO V68 - ADMIN LIMPIO + MOBILE CHECKOUT/GALERIA + MP FEEDBACK -->
-<style>
-  /* ===== ADMIN: una sola barra de herramientas ===== */
-  #modalAdmin .admin-tools > button,
-  #modalAdmin .v64-tools-row{display:none!important;}
 
+
+
+<!-- TOMAUNO V69 - ESTABILIZACION / UI CONSOLIDADA -->
+<style>
+  /* ADMIN: conservar controles reales, sin toolbar duplicada */
+  #modalAdmin .modal-box{
+    width:min(1180px,calc(100vw - 18px))!important;
+    max-width:1180px!important;
+    box-sizing:border-box!important;
+  }
   #modalAdmin .admin-tools{
     display:grid!important;
     grid-template-columns:minmax(190px,.9fr) minmax(190px,.9fr) minmax(320px,1.6fr)!important;
@@ -6954,267 +6959,143 @@ if(adm){
   #modalAdmin #adminEventFilter{grid-column:1!important}
   #modalAdmin #adminStatusFilter{grid-column:2!important}
   #modalAdmin #adminSearch{grid-column:3!important}
-  #modalAdmin .v68-tools-row{
+  #modalAdmin .v64-tools-row{
     grid-column:1/-1!important;
     display:flex!important;
-    gap:7px!important;
     flex-wrap:wrap!important;
+    gap:7px!important;
     align-items:center!important;
-    margin-top:2px!important;
+    padding:2px 0 4px!important;
+    overflow:visible!important;
   }
-  #modalAdmin .v68-tool{
+  #modalAdmin .v64-tool{
+    flex:0 0 auto!important;
+    min-width:38px!important;
     height:38px!important;
-    min-width:40px!important;
-    padding:0 11px!important;
-    border:1px solid #303030!important;
-    border-radius:11px!important;
-    background:linear-gradient(180deg,#171717,#090909)!important;
-    color:#f3f3f3!important;
+    padding:0 10px!important;
+    border-radius:10px!important;
+    border:1px solid #333!important;
+    background:linear-gradient(180deg,#181818,#090909)!important;
+    color:#eee!important;
     display:inline-flex!important;
     align-items:center!important;
     justify-content:center!important;
-    gap:7px!important;
-    font-size:11px!important;
+    gap:6px!important;
+    font-size:10px!important;
     font-weight:800!important;
     white-space:nowrap!important;
-    cursor:pointer!important;
-    box-shadow:0 5px 13px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05)!important;
-    transition:.15s ease!important;
-    position:relative!important;
+    box-shadow:0 5px 14px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.04)!important;
   }
-  #modalAdmin .v68-tool:hover{
-    transform:translateY(-1px)!important;
-    border-color:#d71920!important;
-    box-shadow:0 6px 17px rgba(0,0,0,.42),0 0 10px rgba(215,25,32,.15)!important;
-  }
-  #modalAdmin .v68-tool svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;display:block}
-  #modalAdmin .v68-tool.danger{color:#ff686d!important;border-color:#63272b!important}
-  #modalAdmin .v68-tool:after{
-    content:attr(data-help);
-    position:absolute;
-    left:50%;bottom:calc(100% + 7px);
-    transform:translateX(-50%) translateY(3px);
-    background:#050505;color:#ddd;border:1px solid #383838;border-radius:7px;
-    padding:5px 7px;font-size:9px;font-weight:700;white-space:nowrap;
-    opacity:0;pointer-events:none;transition:.12s ease;z-index:100;
-    box-shadow:0 8px 22px rgba(0,0,0,.45)
-  }
-  #modalAdmin .v68-tool:hover:after{opacity:1;transform:translateX(-50%) translateY(0)}
-  #modalAdmin .v68-selected-count{font-size:10px;color:#888;margin-left:2px;white-space:nowrap}
+  #modalAdmin .v64-tool:hover{border-color:#df1b22!important;transform:translateY(-1px)!important}
+  #modalAdmin .v64-tool svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8}
+  #modalAdmin #v64DeleteSelected{color:#ff666c!important;border-color:#61272a!important}
+  #modalAdmin .v64-bulk-count{font-size:10px!important;color:#888!important;white-space:nowrap!important}
 
-  /* ===== CHECKOUT ===== */
-  body.v68-checkout-open #floatingCart,
-  body.v68-checkout-open #footer{display:none!important}
+  /* CHECKOUT */
+  body.v69-checkout-open #floatingCart,
+  body.v69-checkout-open #footer{display:none!important}
 
   #modalCheckout .modal-box>h3{
-    text-align:center!important;
     width:100%!important;
+    text-align:center!important;
+  }
+  #modalCheckout .t50-price{
+    border-color:#492226!important;
+    box-shadow:inset 0 0 25px rgba(210,0,0,.035)!important;
   }
   #modalCheckout .t50-price:before{
     content:'TOTAL DEL PEDIDO';
     display:block;
-    color:#777;
-    font-size:9px;
-    font-weight:900;
-    letter-spacing:.12em;
-    margin-bottom:7px;
+    color:#777;font-size:9px;font-weight:900;letter-spacing:.12em;margin-bottom:6px
   }
   #modalCheckout .modal-box.t50-selection-mode .t50-price:before{display:none}
-  #modalCheckout .extra-row small{
-    color:#686868!important;
-    font-size:10px!important;
-    font-weight:500!important;
+  #modalCheckout .extra-row small{color:#666!important;font-size:10px!important}
+  #modalCheckout .extra-row small:before{content:'OPCIONAL · ';color:#555;font-weight:900}
+  #modalCheckout .t50-extra-help{color:#707070!important;font-size:10px!important}
+  #modalCheckout .t54-mp-pay,
+  #modalCheckout .t54-manual,
+  #modalCheckout .t50-actions .btn-order{
+    border-radius:12px!important;
+    box-shadow:0 7px 20px rgba(0,0,0,.34)!important;
+    transition:transform .14s ease,filter .14s ease!important;
   }
-  #modalCheckout .extra-row small:before{
-    content:'OPCIONAL · ';
-    color:#555;
-    font-weight:800;
-  }
-  #modalCheckout .t50-extra-help{
-    color:#777!important;
-    font-size:10px!important;
-    line-height:1.35!important;
-  }
-  #modalCheckout .t54-mp-pay{
-    white-space:normal!important;
-    line-height:1.05!important;
-    text-align:center!important;
-  }
+  #modalCheckout .t54-mp-pay:hover,
+  #modalCheckout .t54-manual:hover,
+  #modalCheckout .t50-actions .btn-order:hover{transform:translateY(-1px);filter:brightness(1.06)}
 
-  /* ===== OVERLAY INICIO MERCADO PAGO ===== */
-  #v68MpLoading{
-    display:none;
-    position:fixed;inset:0;z-index:2147483640;
-    background:rgba(0,0,0,.93);
-    align-items:center;justify-content:center;
-    text-align:center;padding:24px;
-    backdrop-filter:blur(6px)
+  #v69MpLoading{
+    display:none;position:fixed;inset:0;z-index:2147483640;background:rgba(0,0,0,.94);
+    align-items:center;justify-content:center;text-align:center;padding:24px;backdrop-filter:blur(6px)
   }
-  #v68MpLoading .box{max-width:420px}
-  #v68MpLoading .spinner{
+  #v69MpLoading .spin{
     width:44px;height:44px;margin:0 auto 16px;border-radius:50%;
-    border:3px solid #1f1f1f;border-top-color:#009ee3;
-    animation:v68spin .8s linear infinite
+    border:3px solid #202020;border-top-color:#009ee3;animation:v69spin .8s linear infinite
   }
-  #v68MpLoading b{display:block;color:#fff;font-size:17px;margin-bottom:7px}
-  #v68MpLoading span{color:#888;font-size:11px;line-height:1.45}
-  @keyframes v68spin{to{transform:rotate(360deg)}}
+  #v69MpLoading b{display:block;color:#fff;font-size:17px;margin-bottom:7px}
+  #v69MpLoading span{color:#888;font-size:11px;line-height:1.45}
+  @keyframes v69spin{to{transform:rotate(360deg)}}
 
-  /* ===== CELULAR ===== */
   @media(max-width:760px){
-    #modalAdmin .modal-box{
-      width:calc(100vw - 6px)!important;
-      max-width:none!important;
-      margin:3px auto!important;
-    }
-    #modalAdmin .admin-tools{
-      grid-template-columns:1fr 1fr!important;
-      gap:6px!important;
-    }
+    #modalAdmin .modal-box{width:calc(100vw - 6px)!important;max-width:none!important}
+    #modalAdmin .admin-tools{grid-template-columns:1fr 1fr!important;gap:6px!important}
     #modalAdmin #adminEventFilter{grid-column:1!important}
     #modalAdmin #adminStatusFilter{grid-column:2!important}
     #modalAdmin #adminSearch{grid-column:1/-1!important}
-    #modalAdmin .v68-tools-row{
-      grid-column:1/-1!important;
-      flex-wrap:nowrap!important;
-      overflow-x:auto!important;
-      padding-bottom:4px!important;
-      scrollbar-width:none!important;
+    #modalAdmin .v64-tools-row{
+      grid-column:1/-1!important;flex-wrap:nowrap!important;overflow-x:auto!important;
+      scrollbar-width:none!important;padding-bottom:4px!important
     }
-    #modalAdmin .v68-tools-row::-webkit-scrollbar{display:none}
-    #modalAdmin .v68-tool{width:38px!important;min-width:38px!important;padding:0!important}
-    #modalAdmin .v68-tool .lbl{display:none!important}
-    #modalAdmin .v68-selected-count{font-size:9px!important}
+    #modalAdmin .v64-tools-row::-webkit-scrollbar{display:none}
+    #modalAdmin .v64-tool{min-width:38px!important;width:38px!important;padding:0!important}
+    #modalAdmin .v64-tool span{display:none!important}
 
-    /* En la galería móvil dejamos de gastar ancho con los dos importes */
     #footer{
-      width:100%!important;
-      box-sizing:border-box!important;
-      padding:7px 8px!important;
-      gap:7px!important;
-      justify-content:center!important;
-      overflow:hidden!important;
+      width:100%!important;box-sizing:border-box!important;padding:7px 8px!important;
+      gap:7px!important;justify-content:center!important;overflow:hidden!important
     }
     #footer .price-tag{display:none!important}
     #footer #btnPackAlbum{
-      flex:0 1 38%!important;
-      width:auto!important;
-      min-width:0!important;
-      padding:10px 8px!important;
-      font-size:9px!important;
-      white-space:normal!important;
-      line-height:1.05!important;
+      flex:0 1 36%!important;width:auto!important;min-width:0!important;
+      padding:10px 6px!important;font-size:9px!important;white-space:normal!important;line-height:1.05!important
     }
     #footer #btnConfirm{
-      flex:1 1 62%!important;
-      min-width:0!important;
-      width:auto!important;
-      padding:11px 8px!important;
-      font-size:10px!important;
-      white-space:normal!important;
-      line-height:1.05!important;
+      flex:1 1 64%!important;width:auto!important;min-width:0!important;
+      padding:11px 6px!important;font-size:10px!important;white-space:normal!important;line-height:1.05!important
     }
 
-    /* Datos del pedido realmente adaptado al celular */
-    #modalCheckout{
-      padding:5px!important;
-      align-items:stretch!important;
-    }
+    #modalCheckout{padding:5px!important;align-items:stretch!important}
     #modalCheckout .modal-box{
-      width:100%!important;
-      height:100%!important;
-      max-width:none!important;
-      max-height:none!important;
-      padding:11px!important;
-      border-radius:15px!important;
-      gap:8px!important;
+      width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;
+      padding:11px!important;border-radius:15px!important;gap:8px!important
     }
-    #modalCheckout .modal-box>h3{
-      font-size:16px!important;
-      text-align:center!important;
-      margin:1px 0 3px!important;
-    }
-    #modalCheckout .t50-body{
-      display:block!important;
-      overflow-y:auto!important;
-      overflow-x:hidden!important;
-      padding-right:1px!important;
-    }
-    #modalCheckout .t50-left,
-    #modalCheckout .t50-right{gap:8px!important}
-    #modalCheckout .t50-price{
-      min-height:48px!important;
-      padding:8px!important;
-      margin-bottom:7px!important;
-    }
-    #modalCheckout .t50-price b{font-size:22px!important;margin-bottom:3px!important}
-    #modalCheckout .t50-price small{font-size:9px!important}
-    #modalCheckout #orderSummary{
-      max-height:31vh!important;
-      min-height:155px!important;
-      padding:9px!important;
-      margin-bottom:8px!important;
-    }
-    #modalCheckout .t50-summary-title{font-size:10px!important;margin-bottom:6px!important}
-    #modalCheckout .t50-photo-row{
-      grid-template-columns:55px minmax(0,1fr)!important;
-      gap:8px!important;
-      padding:7px!important;
-    }
-    #modalCheckout .t50-thumb{width:55px!important;height:44px!important}
-    #modalCheckout .t50-file{font-size:10px!important}
-    #modalCheckout .extra-row{padding:8px!important;margin:5px 0!important;font-size:11px!important}
-    #modalCheckout .t50-right input,
-    #modalCheckout .t50-right textarea{
-      font-size:13px!important;
-      padding:10px!important;
-    }
-    #modalCheckout #userNotes{min-height:62px!important}
-
+    #modalCheckout .modal-box>h3{font-size:16px!important;text-align:center!important;margin:2px 0 4px!important}
+    #modalCheckout .t50-body{display:block!important;overflow-y:auto!important;overflow-x:hidden!important}
+    #modalCheckout .t50-price{min-height:48px!important;padding:8px!important;margin-bottom:7px!important}
+    #modalCheckout .t50-price b{font-size:22px!important}
+    #modalCheckout #orderSummary{max-height:30vh!important;min-height:145px!important;padding:8px!important}
+    #modalCheckout .t50-photo-row{grid-template-columns:52px minmax(0,1fr)!important;gap:7px!important;padding:7px!important}
+    #modalCheckout .t50-thumb{width:52px!important;height:42px!important}
+    #modalCheckout .extra-row{padding:8px!important;margin:5px 0!important}
+    #modalCheckout .t50-right input,#modalCheckout .t50-right textarea{font-size:13px!important;padding:10px!important}
+    #modalCheckout #userNotes{min-height:58px!important}
     #modalCheckout .t50-actions{
-      position:sticky!important;
-      bottom:0!important;
-      display:grid!important;
-      grid-template-columns:1fr 1fr!important;
-      gap:6px!important;
-      padding-top:8px!important;
-      background:#080808!important;
+      position:sticky!important;bottom:0!important;display:grid!important;grid-template-columns:1fr 1fr!important;
+      gap:6px!important;padding:8px 0 2px!important;background:#080808!important
     }
     #modalCheckout .t50-actions .btn-order{
-      width:100%!important;
-      max-width:none!important;
-      min-width:0!important;
-      height:40px!important;
-      margin:0!important;
-      padding:7px 6px!important;
-      font-size:9px!important;
-      line-height:1.05!important;
+      width:100%!important;max-width:none!important;min-width:0!important;height:40px!important;
+      margin:0!important;padding:7px 5px!important;font-size:9px!important;line-height:1.05!important
     }
-    #modalCheckout .t54-mp-pay,
-    #modalCheckout .t54-manual{
-      grid-column:1/-1!important;
-      height:43px!important;
-      font-size:10px!important;
-      font-weight:900!important;
-      letter-spacing:0!important;
+    #modalCheckout .t54-mp-pay,#modalCheckout .t54-manual{
+      grid-column:1/-1!important;height:43px!important;font-size:10px!important;font-weight:900!important;
+      letter-spacing:0!important;white-space:normal!important;line-height:1.05!important
     }
-
-    /* Carrito más chico cuando sí corresponde verlo */
-    #floatingCart{
-      right:8px!important;
-      bottom:70px!important;
-      min-width:auto!important;
-      padding:7px 9px!important;
-      border-radius:999px!important;
-    }
-    #floatingCart .cart-icon{font-size:14px!important}
-    #floatingCart .cart-count{font-size:11px!important}
   }
 </style>
 
-<div id="v68MpLoading">
-  <div class="box">
-    <div class="spinner"></div>
+<div id="v69MpLoading">
+  <div>
+    <div class="spin"></div>
     <b>INICIANDO MERCADO PAGO</b>
     <span>Estamos preparando el pago seguro. En unos segundos vas a salir de Tomauno.</span>
   </div>
@@ -7224,148 +7105,86 @@ if(adm){
 (function(){
   'use strict';
   function el(id){return document.getElementById(id)}
-  var ico={
-    refresh:'<svg viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M18.5 9A7 7 0 1 0 19 15"/></svg>',
-    excel:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h8M11 8v8"/></svg>',
-    pdf:'<svg viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M8 15h8"/></svg>',
-    ticket:'<svg viewBox="0 0 24 24"><path d="M4 7h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4z"/><path d="M12 7v12"/></svg>',
-    help:'<svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
-    album:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m5 17 5-5 3 3 2-2 4 4"/></svg>',
-    select:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 3 3 5-6"/></svg>',
-    trash:'<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>',
-    folder:'<svg viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 12h6"/></svg>'
-  };
 
-  function tool(icon,label,help,fn,danger){
-    var b=document.createElement('button');
-    b.type='button';
-    b.className='v68-tool'+(danger?' danger':'');
-    b.innerHTML=(ico[icon]||'')+(label?'<span class="lbl">'+label+'</span>':'');
-    b.setAttribute('data-help',help||label||'');
-    b.onclick=fn;
-    return b;
+  /* Quitar el artefacto literal /n/n desde los nodos de texto que lo originan/renderizan. */
+  function sanitizeLiteralNewlines69(root){
+    root=root||document.body;
+    var walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),n,arr=[];
+    while((n=walker.nextNode()))arr.push(n);
+    arr.forEach(function(x){
+      var s=String(x.nodeValue||'');
+      var clean=s.replace(/(?:\/n|\\n){2,}/gi,'').replace(/\/n\/n/gi,'');
+      if(clean!==s)x.nodeValue=clean;
+    });
   }
 
-  function buildToolbar68(){
-    var tools=document.querySelector('#modalAdmin .admin-tools');
-    if(!tools || tools.querySelector('.v68-tools-row'))return;
-    var row=document.createElement('div');row.className='v68-tools-row';
-
-    row.appendChild(tool('refresh','Actualizar','Actualizar pedidos',function(){if(typeof loadAdminOrders==='function')loadAdminOrders(this)}));
-    row.appendChild(tool('excel','','Exportar Excel / CSV',function(){if(typeof exportAdminCsv==='function')exportAdminCsv()}));
-    row.appendChild(tool('pdf','','Imprimir / PDF',function(){if(typeof printAdminReport==='function')printAdminReport()}));
-    row.appendChild(tool('ticket','','Ticket libre',function(){if(typeof openFreeTicket==='function')openFreeTicket()}));
-    row.appendChild(tool('help','','Machete / ayuda rápida',function(){var m=el('modalAdminCheat');if(m)m.style.display='flex'}));
-    row.appendChild(tool('album','Álbumes','Administrar álbumes',function(){if(typeof enterAlbumAdminMode==='function')enterAlbumAdminMode()}));
-    row.appendChild(tool('select','Seleccionar','Seleccionar o deseleccionar todos los pedidos visibles',function(){if(typeof toggleSelectVisibleOrders64==='function')toggleSelectVisibleOrders64()}));
-    row.appendChild(tool('trash','Eliminar marcados','Eliminar los pedidos que marcaste',function(){if(typeof deleteSelectedOrders64==='function')deleteSelectedOrders64()},true));
-    row.appendChild(tool('folder','Vaciar evento','Eliminar todos los pedidos del evento elegido',function(){if(typeof deleteSelectedEventOrders==='function')deleteSelectedEventOrders()},true));
-
-    var count=document.createElement('span');count.id='v68SelectedCount';count.className='v68-selected-count';count.textContent='0 seleccionados';
-    row.appendChild(count);
-    tools.appendChild(row);
-  }
-
-  function syncCount68(){
-    var c=el('v68SelectedCount');
-    if(!c)return;
-    var n=document.querySelectorAll('#adminOrders .v64-order-check:checked').length;
-    c.textContent=n+' seleccionado'+(n===1?'':'s');
-  }
-  document.addEventListener('change',function(e){
-    if(e.target && e.target.classList && e.target.classList.contains('v64-order-check'))syncCount68();
-  });
-  document.addEventListener('click',function(e){
-    if(e.target && e.target.closest && e.target.closest('#v64SelectVisible'))setTimeout(syncCount68,20);
-  });
-
-  /* ===== limpiar cualquier /n/n o \n\n literal perdido al final de álbumes ===== */
-  function cleanAlbumArtifacts68(){
-    var root=el('view-events');if(!root)return;
-    var walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
-    var kill=[],n;
-    while((n=walker.nextNode())){
-      var t=String(n.nodeValue||'').trim();
-      if(/^(?:\\n|\/n){2,}$/i.test(t) || t==='/n/n' || t==='\\n\\n')kill.push(n);
+  /* Los controles ya existen: sólo los presentamos, nunca creamos una segunda toolbar. */
+  function polishAdmin69(){
+    var row=document.querySelector('#modalAdmin .v64-tools-row');
+    if(!row)return;
+    var map={
+      v64SelectVisible:['Seleccionar','Selecciona/deselecciona los pedidos visibles'],
+      v64DeleteSelected:['Eliminar','Elimina solamente los pedidos marcados']
+    };
+    Object.keys(map).forEach(function(id){
+      var b=el(id);if(!b)return;
+      b.setAttribute('data-tip',map[id][1]);
+      b.removeAttribute('title');
+    });
+    var search=el('adminSearch');
+    if(search){
+      search.type='search';search.autocomplete='off';
+      search.setAttribute('data-lpignore','true');search.setAttribute('data-1p-ignore','true');
+      search.setAttribute('data-form-type','other');
     }
-    kill.forEach(function(x){if(x.parentNode)x.parentNode.removeChild(x)});
   }
 
-  /* ===== checkout: ocultar carrito/footer mientras cliente escribe ===== */
-  var oldOpen=window.openCheckout;
-  if(typeof oldOpen==='function'){
-    window.openCheckout=function(){
-      var r=oldOpen.apply(this,arguments);
-      document.body.classList.add('v68-checkout-open');
-      setTimeout(adaptCheckout68,30);
-      return r;
-    };
-  }
-  var oldClose=window.closeCheckout;
-  if(typeof oldClose==='function'){
-    window.closeCheckout=function(){
-      document.body.classList.remove('v68-checkout-open');
-      return oldClose.apply(this,arguments);
-    };
+  function checkoutState69(){
+    var m=el('modalCheckout');
+    var open=!!(m && getComputedStyle(m).display!=='none');
+    document.body.classList.toggle('v69-checkout-open',open);
+    if(open){
+      var help=m.querySelector('.t50-extra-help');
+      if(help)help.textContent='OPCIONAL — estos importes no se suman al pedido hasta que uses + o los selecciones.';
+      var mp=m.querySelector('.t54-mp-pay');
+      if(mp && window.innerWidth<=760)mp.textContent='PAGAR CON MERCADO PAGO';
+      var wa=m.querySelector('.t54-manual');
+      if(wa && window.innerWidth<=760)wa.textContent='CONTINUAR POR WHATSAPP';
+    }
   }
 
-  function mobile68(){return window.matchMedia && window.matchMedia('(max-width:760px)').matches}
-  function adaptCheckout68(){
-    var m=el('modalCheckout');if(!m)return;
-    if(m.style.display==='flex')document.body.classList.add('v68-checkout-open');
-    var help=m.querySelector('.t50-extra-help');
-    if(help)help.textContent='OPCIONAL — estos importes no se suman al pedido hasta que uses + o los selecciones.';
-    var mp=m.querySelector('.t54-mp-pay');
-    if(mp && mobile68())mp.textContent='PAGAR CON MERCADO PAGO';
-    var wa=m.querySelector('.t54-manual');
-    if(wa && mobile68())wa.textContent='CONTINUAR POR WHATSAPP';
-  }
-
-  /* Si el checkout se cerró por otro flujo */
-  document.addEventListener('click',function(){
-    setTimeout(function(){
-      var m=el('modalCheckout');
-      if(!m || m.style.display!=='flex')document.body.classList.remove('v68-checkout-open');
-      adaptCheckout68();
-      cleanAlbumArtifacts68();
-      buildToolbar68();
-      syncCount68();
-    },60);
-  });
-
-  /* ===== Mercado Pago: solo feedback visual. NO tocamos la lógica de pago ===== */
-  function showMp68(){
-    var o=el('v68MpLoading');if(o)o.style.display='flex';
-  }
-  function hideMp68(){
-    var o=el('v68MpLoading');if(o)o.style.display='none';
-  }
+  /* Event-driven: un solo listener global, sin intervalos de 250/700/1200 ms. */
   document.addEventListener('click',function(e){
-    var b=e.target && e.target.closest ? e.target.closest('.t54-mp-pay') : null;
-    if(!b)return;
+    var mp=e.target && e.target.closest ? e.target.closest('.t54-mp-pay') : null;
+    if(mp){
+      setTimeout(function(){
+        var txt=String(mp.textContent||'').toLowerCase();
+        if(mp.disabled || /creando|abriendo|iniciando/.test(txt)){
+          var o=el('v69MpLoading');if(o)o.style.display='flex';
+        }
+      },80);
+    }
     setTimeout(function(){
-      var txt=String(b.textContent||'').toLowerCase();
-      if(b.disabled || txt.indexOf('creando')>-1 || txt.indexOf('abriendo')>-1 || txt.indexOf('iniciando')>-1){
-        showMp68();
-        setTimeout(hideMp68,20000);
-      }
-    },80);
+      checkoutState69();polishAdmin69();sanitizeLiteralNewlines69(el('view-events')||document.body);
+    },60);
   },false);
-  window.addEventListener('pageshow',hideMp68);
-  document.addEventListener('visibilitychange',function(){if(!document.hidden)hideMp68()});
 
-  /* Mantener el total real como protagonista; extras quedan secundarios. */
-  function refresh68(){
-    buildToolbar68();
-    adaptCheckout68();
-    cleanAlbumArtifacts68();
-    syncCount68();
-  }
-  window.addEventListener('load',function(){setTimeout(refresh68,350)});
-  window.addEventListener('resize',function(){setTimeout(adaptCheckout68,60)});
+  window.addEventListener('pageshow',function(){
+    var o=el('v69MpLoading');if(o)o.style.display='none';
+    checkoutState69();polishAdmin69();sanitizeLiteralNewlines69(el('view-events')||document.body);
+  });
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden){var o=el('v69MpLoading');if(o)o.style.display='none'}
+  });
+  window.addEventListener('resize',checkoutState69);
+  window.addEventListener('load',function(){
+    setTimeout(function(){
+      checkoutState69();polishAdmin69();sanitizeLiteralNewlines69(el('view-events')||document.body);
+    },350);
+  });
 })();
 </script>
-<!-- /TOMAUNO V68 -->
+<!-- /TOMAUNO V69 -->
 
 </body>
 </html>
