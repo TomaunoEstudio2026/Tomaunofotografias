@@ -7662,5 +7662,463 @@ if(adm){
 </script>
 <!-- /TOMAUNO V72 -->
 
+
+
+<!-- TOMAUNO V73 - ALBUMES SIN RECARGA + ENTER PIN + NOTIFICACIONES ADM -->
+<style>
+  /* Estado ADM / notificaciones */
+  #v73AdminDock{
+    display:none;
+    position:fixed;
+    left:14px;
+    top:14px;
+    z-index:2147482500;
+    align-items:center;
+    gap:6px;
+    font-family:inherit;
+  }
+  #v73AdminDock .adm-pill,
+  #v73AdminDock button{
+    height:31px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    border:1px solid #2d3430;
+    background:rgba(7,9,8,.94);
+    color:#d9d9d9;
+    box-shadow:0 7px 22px rgba(0,0,0,.42);
+    backdrop-filter:blur(8px);
+  }
+  #v73AdminDock .adm-pill{
+    padding:0 10px;
+    color:#43d77e;
+    border-color:rgba(67,215,126,.34);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.08em;
+  }
+  #v73AdminDock button{
+    position:relative;
+    width:31px;
+    padding:0;
+    cursor:pointer;
+    font-size:14px;
+  }
+  #v73BellBadge{
+    display:none;
+    position:absolute;
+    right:-5px;
+    top:-6px;
+    min-width:16px;
+    height:16px;
+    padding:0 4px;
+    border-radius:999px;
+    background:#e3000b;
+    color:#fff;
+    font-size:8px;
+    line-height:16px;
+    font-weight:900;
+    box-sizing:border-box;
+  }
+
+  #v73NotifyStack{
+    position:fixed;
+    left:16px;
+    top:55px;
+    z-index:2147482400;
+    width:min(330px,calc(100vw - 32px));
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    pointer-events:none;
+  }
+  .v73-note{
+    pointer-events:auto;
+    position:relative;
+    background:rgba(9,9,10,.97);
+    border:1px solid #d71920;
+    border-radius:15px;
+    padding:11px 38px 11px 14px;
+    color:#fff;
+    box-shadow:0 12px 30px rgba(0,0,0,.48);
+    cursor:pointer;
+    animation:v73in .18s ease-out;
+  }
+  .v73-note.paid{border-color:#2dbb6a}
+  .v73-note .type{
+    color:#ff3940;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    margin-bottom:5px;
+  }
+  .v73-note.paid .type{color:#49d787}
+  .v73-note .main{font-size:12px;font-weight:900;line-height:1.25;margin-bottom:4px}
+  .v73-note .sub{font-size:10px;color:#aaa;line-height:1.3}
+  .v73-note .time{font-size:9px;color:#5e5e5e;margin-top:5px}
+  .v73-note .x{
+    position:absolute;
+    right:8px;
+    top:8px;
+    width:23px;height:23px;
+    border:0;border-radius:50%;
+    background:#29292b;color:#ddd;
+    font-size:13px;font-weight:900;
+    cursor:pointer;
+  }
+  .v73-note.summary{
+    border-color:#3a3a3d;
+    text-align:center;
+    padding-right:14px;
+  }
+  @keyframes v73in{
+    from{opacity:0;transform:translateY(-7px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* Modo álbum admin: no mostrar loader global para operaciones rápidas */
+  body.v73-album-save #loader,
+  body.v73-album-save .loader-overlay{display:none!important}
+
+  @media(max-width:700px){
+    #v73AdminDock{left:8px;top:8px}
+    #v73NotifyStack{left:8px;top:47px;width:calc(100vw - 16px)}
+    .v73-note{padding:10px 36px 10px 12px}
+  }
+</style>
+
+<div id="v73AdminDock">
+  <button type="button" class="adm-pill" onclick="v73OpenAdmin()" style="width:auto;padding:0 10px">ADM</button>
+  <button type="button" id="v73Bell" onclick="v73OpenAdmin()" title="Novedades">
+    🔔<span id="v73BellBadge">0</span>
+  </button>
+  <button type="button" id="v73Mute" onclick="v73ToggleMute()" title="Silenciar notificaciones">🔊</button>
+</div>
+<div id="v73NotifyStack"></div>
+
+<script>
+(function(){
+  'use strict';
+  function el(id){return document.getElementById(id)}
+  function isAdmin73(){
+    try{return sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(e){return false}
+  }
+
+  /* ============================================================
+     1) ENTER EN PIN = ACEPTAR
+     ============================================================ */
+  function bindPinEnter73(){
+    var inp=el('adminPinInput');
+    if(!inp || inp.dataset.v73Enter==='1')return;
+    inp.dataset.v73Enter='1';
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){
+        e.preventDefault();
+        e.stopPropagation();
+        if(typeof window.checkAdminPin==='function')window.checkAdminPin();
+      }
+    });
+  }
+
+  /* ============================================================
+     2) PANEL ADMIN: cargar pedidos sin recargar álbumes de fondo
+     ============================================================ */
+  var oldOpenAdmin73=window.openAdminPin;
+  window.v73OpenAdmin=function(){
+    if(isAdmin73()){
+      var adm=el('modalAdmin');
+      if(adm)adm.style.display='flex';
+      if(typeof window.loadAdminOrders==='function')window.loadAdminOrders();
+      markAllSeen73();
+      return;
+    }
+    if(typeof window.openAdminPin==='function')window.openAdminPin();
+  };
+
+  /* ============================================================
+     3) CACHE ADMIN DE ÁLBUMES
+     - solo la primera entrada pide eventsAdmin
+     - salir NO vuelve a consultar backend
+     ============================================================ */
+  window.__v73AdminAlbumsLoaded=false;
+  window.__v73AdminAlbums=[];
+
+  async function fetchAdminAlbums73(){
+    if(window.__v73AdminAlbumsLoaded){
+      window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+      if(typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+      return;
+    }
+    try{
+      var res=await apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()});
+      var arr=Array.isArray(res)?res:(res.events||[]);
+      window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+      window.__v73AdminAlbumsLoaded=true;
+      window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+      if(typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+    }catch(err){
+      if(window.luxAlert)luxAlert('ERROR','No se pudieron cargar los datos de álbumes: '+(err.message||err));
+    }
+  }
+
+  window.enterAlbumAdminMode=function(){
+    window.__albumAdminMode=true;
+    document.body.classList.add('v64-album-admin');
+    var adm=el('modalAdmin');if(adm)adm.style.display='none';
+    var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='flex';
+    fetchAdminAlbums73();
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+
+  window.exitAlbumAdminMode=function(){
+    window.__albumAdminMode=false;
+    document.body.classList.remove('v64-album-admin');
+    var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='none';
+
+    /* Sin nueva llamada: usamos el mismo cache y quitamos los ocultos */
+    var source=window.__v73AdminAlbumsLoaded ? window.__v73AdminAlbums : (window.eventsData||[]);
+    window.eventsData=source.filter(function(x){return x.visible!==false}).map(function(x){return Object.assign({},x)});
+    if(typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+  };
+
+  /* Guardar config y actualizar TODOS los caches sin recargar */
+  window.saveAlbum64=async function(bridge,changes){
+    var payload={action:'updateAlbumConfig',pin:'3233',bridgeId:bridge};
+    Object.keys(changes||{}).forEach(function(k){payload[k]=changes[k]});
+    document.body.classList.add('v73-album-save');
+    try{
+      var res=await apiPost(payload);
+      if(!res || res.success===false)throw new Error((res&&res.msg)||'No se pudo guardar.');
+
+      function apply(arr){
+        (arr||[]).forEach(function(ev){
+          if(String(ev.bridgeId||'')!==String(bridge||''))return;
+          if(Object.prototype.hasOwnProperty.call(changes,'visible'))ev.visible=!!changes.visible;
+          if(Object.prototype.hasOwnProperty.call(changes,'title') && String(changes.title||'').trim())ev.displayName=String(changes.title||'').trim();
+          if(Object.prototype.hasOwnProperty.call(changes,'description'))ev.description=String(changes.description||'').trim();
+          if(Object.prototype.hasOwnProperty.call(changes,'pass'))ev.pass=String(changes.pass||'').trim();
+        });
+      }
+      apply(window.eventsData);
+      apply(window.__v73AdminAlbums);
+
+      if(typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+      if(typeof showToast==='function')showToast('Álbum actualizado');
+    }catch(err){
+      if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+    }finally{
+      document.body.classList.remove('v73-album-save');
+    }
+  };
+
+  /* No confiar en un booleano pasado por el HTML.
+     Calculamos el estado real desde el álbum actual. */
+  window.toggleAlbumVisibility64=function(bridge){
+    var pools=[window.__v73AdminAlbums,window.eventsData];
+    var ev=null;
+    for(var i=0;i<pools.length && !ev;i++){
+      ev=(pools[i]||[]).find(function(x){return String(x.bridgeId||'')===String(bridge||'')});
+    }
+    if(!ev)return;
+    var nextVisible=(ev.visible===false); // oculto -> mostrar / visible -> ocultar
+    window.saveAlbum64(bridge,{visible:nextVisible});
+  };
+
+  /* Reescribir onclick del ojo cuando se renderizan tarjetas */
+  function repairEyeButtons73(){
+    if(!window.__albumAdminMode)return;
+    document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+      var bridge=card.getAttribute('data-bridge');
+      var buttons=card.querySelectorAll('.v64-album-tools button');
+      if(buttons[0]){
+        buttons[0].onclick=function(e){
+          e.preventDefault();e.stopPropagation();
+          window.toggleAlbumVisibility64(bridge);
+        };
+      }
+    });
+  }
+
+  var oldRender73=window.renderAlbumCards64;
+  if(typeof oldRender73==='function'){
+    window.renderAlbumCards64=function(){
+      var r=oldRender73.apply(this,arguments);
+      repairEyeButtons73();
+      return r;
+    };
+  }
+
+  /* ============================================================
+     4) NOTIFICACIONES ADMIN - nuevos pedidos / pagos
+     ============================================================ */
+  var POLL_MS=30000;
+  var pollTimer73=null;
+  var activity73={
+    muted:false,
+    initialized:false,
+    map:{},
+    unread:0
+  };
+  try{
+    activity73.muted=localStorage.getItem('TOMAUNO_NOTIFY_MUTED')==='1';
+    var saved=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'null');
+    if(saved && saved.map){
+      activity73.map=saved.map;
+      activity73.initialized=true;
+      activity73.unread=Number(saved.unread||0);
+    }
+  }catch(e){}
+
+  function keyOrder73(o){
+    return [
+      o.fecha||'',o.cliente||'',o.whatsapp||'',o.evento||'',
+      o.tipo||'',o.total||'',o.fotos||''
+    ].join('|');
+  }
+  function paid73(o){return String(o.pago||'').toUpperCase()==='PAGADO'}
+
+  function saveActivity73(){
+    try{
+      sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify({
+        map:activity73.map,unread:activity73.unread
+      }));
+    }catch(e){}
+  }
+  function updateDock73(){
+    var dock=el('v73AdminDock'), badge=el('v73BellBadge'), mute=el('v73Mute');
+    if(dock)dock.style.display=isAdmin73()?'flex':'none';
+    if(badge){
+      badge.textContent=String(activity73.unread);
+      badge.style.display=activity73.unread>0?'block':'none';
+    }
+    if(mute){
+      mute.textContent=activity73.muted?'🔇':'🔊';
+      mute.title=activity73.muted?'Activar sonido':'Silenciar notificaciones';
+    }
+  }
+  function beep73(kind){
+    if(activity73.muted)return;
+    try{
+      var C=window.AudioContext||window.webkitAudioContext;
+      if(!C)return;
+      var ctx=new C(),osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.frequency.value=kind==='paid'?880:660;
+      gain.gain.setValueAtTime(.0001,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.10,ctx.currentTime+.015);
+      gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.17);
+      osc.start();osc.stop(ctx.currentTime+.18);
+      setTimeout(function(){try{ctx.close()}catch(e){}},300);
+    }catch(e){}
+  }
+
+  function notification73(kind,o){
+    activity73.unread++;
+    updateDock73();
+    beep73(kind);
+
+    var stack=el('v73NotifyStack');if(!stack)return;
+    var existing=stack.querySelectorAll('.v73-note:not(.summary)');
+    if(existing.length>=3){
+      var sum=stack.querySelector('.v73-note.summary');
+      if(!sum){
+        sum=document.createElement('div');
+        sum.className='v73-note summary';
+        sum.onclick=function(){window.v73OpenAdmin()};
+        stack.appendChild(sum);
+      }
+      sum.textContent='+'+(activity73.unread-3)+' novedades más · clic para abrir';
+      saveActivity73();
+      return;
+    }
+
+    var d=document.createElement('div');
+    d.className='v73-note'+(kind==='paid'?' paid':'');
+    var count=Number(o.cantidad||0);
+    var amount=Number(o.total||0);
+    var type=kind==='paid'?'PAGO APROBADO':'NUEVO PEDIDO';
+    var main=String(o.cliente||'Cliente')+(count?' · '+count+' foto'+(count===1?'':'s'):'');
+    if(kind==='paid' && amount)main=String(o.cliente||'Cliente')+' · $'+amount.toLocaleString('es-AR');
+    d.innerHTML=
+      '<button class="x" type="button">×</button>'+
+      '<div class="type">'+type+'</div>'+
+      '<div class="main">'+escapeHtml(main)+'</div>'+
+      '<div class="sub">'+escapeHtml(String(o.evento||''))+'</div>'+
+      '<div class="time">'+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+' · Clic para abrir</div>';
+    d.onclick=function(){window.v73OpenAdmin()};
+    d.querySelector('.x').onclick=function(e){e.stopPropagation();d.remove()};
+    stack.appendChild(d);
+    saveActivity73();
+  }
+
+  async function poll73(){
+    if(!isAdmin73())return;
+    try{
+      var res=await apiGet({action:'orders',pin:'3233',t:Date.now()});
+      var orders=res.orders||[];
+      var next={};
+
+      orders.forEach(function(o){
+        var k=keyOrder73(o);
+        next[k]={paid:paid73(o)};
+        if(activity73.initialized){
+          if(!activity73.map[k]){
+            notification73('order',o);
+            if(paid73(o))notification73('paid',o);
+          }else if(!activity73.map[k].paid && paid73(o)){
+            notification73('paid',o);
+          }
+        }
+      });
+
+      activity73.map=next;
+      activity73.initialized=true;
+      saveActivity73();
+    }catch(e){}
+  }
+
+  function startPolling73(){
+    updateDock73();
+    if(!isAdmin73())return;
+    if(pollTimer73)return;
+    poll73();
+    pollTimer73=setInterval(poll73,POLL_MS);
+  }
+
+  function markAllSeen73(){
+    activity73.unread=0;
+    var stack=el('v73NotifyStack');if(stack)stack.innerHTML='';
+    updateDock73();saveActivity73();
+  }
+
+  window.v73ToggleMute=function(){
+    activity73.muted=!activity73.muted;
+    try{localStorage.setItem('TOMAUNO_NOTIFY_MUTED',activity73.muted?'1':'0')}catch(e){}
+    updateDock73();
+    if(typeof miniToast==='function')miniToast(activity73.muted?'Notificaciones en silencio':'Sonido de notificaciones activado');
+  };
+  window.v73MarkAllSeen=markAllSeen73;
+
+  /* Detectar login exitoso sin tocar checkAdminPin */
+  document.addEventListener('click',function(){
+    setTimeout(function(){
+      bindPinEnter73();
+      if(isAdmin73())startPolling73();
+      updateDock73();
+      repairEyeButtons73();
+    },80);
+  });
+
+  window.addEventListener('load',function(){
+    bindPinEnter73();
+    updateDock73();
+    startPolling73();
+  });
+})();
+</script>
+<!-- /TOMAUNO V73 -->
+
 </body>
 </html>
