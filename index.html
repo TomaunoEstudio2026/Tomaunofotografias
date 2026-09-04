@@ -6230,9 +6230,9 @@ function attr(s) {
       return alert('Primero seleccioná un evento específico.');
     }
 
-    var ok1=confirm('Vas a eliminar TODOS los registros del evento:\n\n'+ev+'\n\n¿Querés continuar?');
+    var ok1=window.luxConfirmAsync ? await luxConfirmAsync('ELIMINAR EVENTO','Vas a eliminar TODOS los registros del evento "'+ev+'". ¿Querés continuar?') : confirm('¿Eliminar todos los registros de '+ev+'?');
     if(!ok1) return;
-    var ok2=confirm('ÚLTIMA CONFIRMACIÓN\n\nEsto eliminará definitivamente todos los pedidos registrados de "'+ev+'".\n\n¿ELIMINAR TODO EL EVENTO DEL PANEL?');
+    var ok2=window.luxConfirmAsync ? await luxConfirmAsync('ÚLTIMA CONFIRMACIÓN','Esto eliminará definitivamente todos los pedidos registrados de "'+ev+'".') : confirm('¿Eliminar definitivamente todo el evento?');
     if(!ok2) return;
 
     var btn=el('btnDeleteEventOrders');
@@ -6507,7 +6507,7 @@ function attr(s) {
     if(!rows.length) return window.luxAlert?luxAlert('SIN SELECCIÓN','Marcá uno o más pedidos para eliminarlos.'):alert('Marcá pedidos.');
     var ok=window.luxConfirmAsync ? await luxConfirmAsync('ELIMINAR PEDIDOS','Vas a eliminar '+rows.length+' pedido(s) de la planilla. Esta acción no se puede deshacer.') : confirm('¿Eliminar '+rows.length+' pedidos?');
     if(!ok)return;
-    var ok2=confirm('ÚLTIMA CONFIRMACIÓN\n\n¿Eliminar definitivamente los '+rows.length+' pedidos marcados?');
+    var ok2=window.luxConfirmAsync ? await luxConfirmAsync('ÚLTIMA CONFIRMACIÓN','¿Eliminar definitivamente los '+rows.length+' pedidos marcados?') : confirm('¿Eliminar definitivamente los '+rows.length+' pedidos marcados?');
     if(!ok2)return;
     if(typeof toggleL==='function')toggleL(true,'ELIMINANDO '+rows.length+' PEDIDOS...');
     try{
@@ -6597,7 +6597,14 @@ function attr(s) {
       var res=await apiPost(payload);
       if(!res || res.success===false)throw new Error((res&&res.msg)||'No se pudo guardar.');
       if(typeof toggleL==='function')toggleL(false);
-      await reloadAlbums64(true);
+      var ev=findAlbumByBridge64(bridge);
+      if(ev){
+        if(changes.hasOwnProperty('visible')) ev.visible=!!changes.visible;
+        if(changes.hasOwnProperty('title') && String(changes.title||'').trim()) ev.displayName=String(changes.title||'').trim();
+        if(changes.hasOwnProperty('description')) ev.description=String(changes.description||'').trim();
+        if(changes.hasOwnProperty('pass')) ev.pass=String(changes.pass||'').trim();
+      }
+      renderAlbumCards64();
       if(typeof showToast==='function')showToast('Álbum actualizado');
     }catch(err){
       if(typeof toggleL==='function')toggleL(false);
@@ -6606,15 +6613,15 @@ function attr(s) {
   }
   window.toggleAlbumVisibility64=function(bridge,isHidden){saveAlbum64(bridge,{visible:!!isHidden})};
 
-  window.editAlbumDescription64=function(bridge){
+  window.editAlbumDescription64=async function(bridge){
     var ev=findAlbumByBridge64(bridge);if(!ev)return;
-    var v=prompt('Descripción corta del álbum:',ev.description||'');
+    var v=await window.v65InputModal('DESCRIPCIÓN DEL ÁLBUM','Descripción corta',ev.description||'',false,'Podés dejarla vacía.');
     if(v===null)return;
     saveAlbum64(bridge,{description:v.trim()});
   };
-  window.editAlbumPass64=function(bridge){
+  window.editAlbumPass64=async function(bridge){
     var ev=findAlbumByBridge64(bridge);if(!ev)return;
-    var v=prompt('Clave de acceso del álbum. Dejá vacío para quitarla:',ev.pass||'');
+    var v=await window.v65InputModal('CLAVE DEL ÁLBUM','Clave de acceso',ev.pass||'',true,'Dejá vacío para quitar la clave.');
     if(v===null)return;
     saveAlbum64(bridge,{pass:v.trim()});
   };
@@ -6646,5 +6653,30 @@ function attr(s) {
 </script>
 <!-- /TOMAUNO V64 -->
 
-</body>
+\n<!-- TOMAUNO V65 - PULIDO ADMIN / EDICION -->
+<style>
+#modalAdmin .modal-box{width:min(1120px,calc(100vw - 24px))!important;max-width:1120px!important;box-sizing:border-box!important;margin-left:auto!important;margin-right:auto!important}
+#modalAdmin #adminOrders{padding-left:2px!important;padding-right:10px!important}
+#modalAdmin .v64-tools-row{display:flex!important;flex-wrap:nowrap!important;gap:7px!important;overflow-x:auto!important;padding-bottom:3px!important;scrollbar-width:none!important}
+#modalAdmin .v64-tools-row::-webkit-scrollbar{display:none!important}
+#modalAdmin .v64-tool{flex:0 0 auto!important;min-width:40px!important;height:38px!important;padding:0 10px!important;border-radius:10px!important;font-size:13px!important}
+#modalAdmin .v64-tool i{font-size:15px!important}#modalAdmin .v64-tool span{font-size:10px!important;letter-spacing:.02em}
+#modalAdmin .v64-bulk-count{white-space:nowrap!important;margin-left:4px!important;align-self:center!important}
+.v65-tip{position:relative!important}.v65-tip:after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(4px);background:#050505;color:#eee;border:1px solid #383838;border-radius:7px;padding:6px 8px;font-size:10px;font-weight:700;white-space:nowrap;opacity:0;pointer-events:none;transition:.14s ease;box-shadow:0 8px 22px rgba(0,0,0,.45);z-index:50}.v65-tip:hover:after{opacity:1;transform:translateX(-50%) translateY(0)}
+#v65InputOverlay{display:none;position:fixed;inset:0;z-index:2147483600;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:14px}
+#v65InputBox{width:min(460px,calc(100vw - 28px));background:#0d0d0d;border:1px solid #a40000;border-radius:16px;padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.62),0 0 25px rgba(210,0,0,.10)}
+#v65InputBox h3{margin:0 0 6px;color:#ff2929;font-size:16px}#v65InputBox p{margin:0 0 12px;color:#888;font-size:11px}#v65InputBox input{width:100%;box-sizing:border-box;background:#050505;color:#fff;border:1px solid #343434;border-radius:10px;padding:12px 13px;outline:none;font-size:14px}#v65InputBox input:focus{border-color:#d3151c;box-shadow:0 0 0 3px rgba(211,21,28,.10)}#v65InputActions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}#v65InputActions button{border:1px solid #333;border-radius:9px;background:#171717;color:#fff;padding:9px 13px;font-weight:800}#v65InputActions .ok{background:#d4151b;border-color:#d4151b}
+@media(max-width:650px){#modalAdmin .modal-box{width:calc(100vw - 6px)!important;max-width:none!important}#modalAdmin .v64-tools-row{gap:5px!important}#modalAdmin .v64-tool{height:35px!important;padding:0 8px!important}#modalAdmin .v64-tool span{display:none!important}#modalAdmin .v64-bulk-count{font-size:9px!important}}
+</style>
+<div id="v65InputOverlay" aria-hidden="true"><div id="v65InputBox"><h3 id="v65InputTitle">EDITAR</h3><p id="v65InputHelp"></p><input id="v65InputField" type="text" autocomplete="off" spellcheck="false"><div id="v65InputActions"><button type="button" id="v65InputCancel">CANCELAR</button><button type="button" class="ok" id="v65InputOk">GUARDAR</button></div></div></div>
+<script>
+(function(){'use strict';function el(id){return document.getElementById(id)}
+window.v65InputModal=function(title,label,value,isPassword,help){return new Promise(function(resolve){var ov=el('v65InputOverlay'),h=el('v65InputTitle'),p=el('v65InputHelp'),inp=el('v65InputField'),ok=el('v65InputOk'),cancel=el('v65InputCancel');h.textContent=title||'EDITAR';p.textContent=(label?label+'. ':'')+(help||'');inp.type=isPassword?'password':'text';inp.value=value||'';inp.autocomplete='off';ov.style.display='flex';ov.setAttribute('aria-hidden','false');setTimeout(function(){inp.focus();inp.select()},50);function close(val){ov.style.display='none';ov.setAttribute('aria-hidden','true');ok.onclick=null;cancel.onclick=null;inp.onkeydown=null;ov.onclick=null;resolve(val)}ok.onclick=function(){close(inp.value)};cancel.onclick=function(){close(null)};inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();close(inp.value)}if(e.key==='Escape'){e.preventDefault();close(null)}};ov.onclick=function(e){if(e.target===ov)close(null)}})};
+var eventList=el('eventList');if(eventList){eventList.addEventListener('click',function(e){if(!window.__albumAdminMode)return;var card=e.target.closest&&e.target.closest('.event-card');if(!card)return;e.preventDefault();e.stopImmediatePropagation()},true)}
+function hardenAdminSearch(){var s=el('adminSearch');if(!s)return;s.type='search';s.autocomplete='off';s.setAttribute('name','tomauno_busqueda_pedidos_'+Date.now());s.setAttribute('data-lpignore','true');s.setAttribute('data-1p-ignore','true');s.setAttribute('data-form-type','other');if(s.value&&s.value.toLowerCase()==='javi')s.value=''}
+function polishToolbar(){var row=document.querySelector('#modalAdmin .v64-tools-row');if(!row)return;row.querySelectorAll('button').forEach(function(b){var id=b.id||'',tip=(b.title||b.getAttribute('data-tip')||'').trim();if(id==='v64SelectVisible'){b.innerHTML='<i class="fa fa-check-square-o"></i><span>Seleccionar visibles</span>';tip='Selecciona o deselecciona todos los pedidos que estás viendo'}else if(id==='v64DeleteSelected'){b.innerHTML='<i class="fa fa-trash-o"></i><span>Eliminar marcados</span>';tip='Elimina los pedidos que marcaste'}else if(id==='btnDeleteEventOrders'){b.innerHTML='<i class="fa fa-folder-o"></i><span>Vaciar evento</span>';tip='Elimina todos los pedidos del evento elegido'}else{var t=(tip||b.textContent||'').toLowerCase();if(t.indexOf('actualizar')>-1)b.innerHTML='<i class="fa fa-refresh"></i><span>Actualizar</span>';else if(t.indexOf('excel')>-1||t.indexOf('csv')>-1)b.innerHTML='<i class="fa fa-file-excel-o"></i>';else if(t.indexOf('pdf')>-1||t.indexOf('imprimir')>-1)b.innerHTML='<i class="fa fa-file-pdf-o"></i>';else if(t.indexOf('ticket')>-1)b.innerHTML='<i class="fa fa-ticket"></i>';else if(t.indexOf('machete')>-1)b.innerHTML='<i class="fa fa-list-alt"></i>';else if(t.indexOf('álbum')>-1||t.indexOf('album')>-1)b.innerHTML='<i class="fa fa-picture-o"></i><span>Álbumes</span>'}b.removeAttribute('title');b.classList.add('v65-tip');b.setAttribute('data-tip',tip||'Herramienta')})}
+function refresh65(){hardenAdminSearch();polishToolbar()}window.addEventListener('load',function(){setTimeout(refresh65,650)});document.addEventListener('click',function(){setTimeout(refresh65,60)});var adm=el('modalAdmin');if(adm){var obs=new MutationObserver(function(){hardenAdminSearch();polishToolbar()});obs.observe(adm,{childList:true,subtree:true})}
+})();
+</script>
+<!-- /TOMAUNO V65 -->\n</body>
 </html>
