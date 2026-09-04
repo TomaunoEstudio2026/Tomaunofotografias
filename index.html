@@ -1467,7 +1467,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   <div class="modal-box">
     <h3 style="color:var(--rojo); margin-top:0">PANEL ADMIN</h3>
     <p style="font-size:11px; color:#aaa">Ingresá el PIN de administración.</p>
-    <input type="text" inputmode="numeric" autocomplete="off" id="adminPinInput" placeholder="PIN">
+    <input type="password" inputmode="numeric" autocomplete="off" id="adminPinInput" placeholder="PIN">
     <button class="btn-order" style="width:100%" onclick="checkAdminPin()">ENTRAR</button>
     <button onclick="document.getElementById('modalAdminPin').style.display='none'" style="background:none; border:none; color:#555; margin-top:12px; cursor:pointer">Cerrar</button>
   </div>
@@ -3231,13 +3231,13 @@ function attr(s) {
       </div>
       <div class="free-field">
         <label>FECHA</label>
-        <input id="freeTicketDate" type="date" tabindex="4">
+        <input id="freeTicketDate" type="date" tabindex="-1">
       </div>
       <div class="free-field">
         <label>IMPORTE</label>
-        <div class="money-entry"><span>$</span><input id="freeTicketAmount" type="text" tabindex="5" inputmode="numeric" autocomplete="off" placeholder="0"></div>
+        <div class="money-entry"><span>$</span><input id="freeTicketAmount" type="text" tabindex="4" inputmode="numeric" autocomplete="off" placeholder="0"></div>
       </div>
-      <label class="free-paid"><input id="freeTicketPaid" type="checkbox" tabindex="6"> <span>PAGADO</span></label>
+      <label class="free-paid"><input id="freeTicketPaid" type="checkbox" tabindex="5"> <span>PAGADO</span></label>
     </div>
 
     <div class="ticket-preview-wrap">
@@ -5732,89 +5732,249 @@ function attr(s) {
 
 
 
-<!-- TOMAUNO V60 - CLAVE OCULTA + SESION ADMIN + IMPRESION COMPACTA -->
+
+
+
+<!-- TOMAUNO V61 - ADMIN MOBILE + F2 TICKET + PIN OCULTO + BOTONES + TAB -->
 <style>
-  /* Ventana de impresión conceptual: el popup real se genera por JS. */
+  /* Pago: identidad visual más clara */
+  .t54-manual{
+    background:#25D366 !important;
+    border-color:#25D366 !important;
+    color:#07150c !important;
+    font-weight:900 !important;
+    box-shadow:0 8px 22px rgba(37,211,102,.20) !important;
+  }
+  .t54-manual:hover{filter:brightness(1.05)}
+  .t54-mp-pay{
+    background:#009ee3 !important;
+    border-color:#009ee3 !important;
+    color:#fff !important;
+    font-weight:900 !important;
+  }
+
   #secretAdminBtn{cursor:pointer!important}
+
+  /* Panel Admin: ningún control debe quedar fuera de pantalla */
+  #modalAdmin .modal-box{
+    width:min(980px,calc(100vw - 24px)) !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+  }
+  #modalAdmin .admin-tools > *{max-width:100%;box-sizing:border-box}
+  #modalAdmin .order-row,
+  #modalAdmin .order-head,
+  #modalAdmin .order-meta,
+  #modalAdmin .order-actions{min-width:0;max-width:100%;box-sizing:border-box}
+  #modalAdmin .order-meta{overflow-wrap:anywhere}
+  #modalAdmin .order-head{flex-wrap:wrap}
+  #modalAdmin .order-actions button{white-space:normal}
+
+  @media(max-width:650px){
+    #modalAdmin{
+      padding:4px 0 !important;
+      overflow:hidden !important;
+      align-items:flex-start !important;
+    }
+    #modalAdmin .modal-box{
+      width:calc(100vw - 8px) !important;
+      max-width:none !important;
+      max-height:calc(100dvh - 8px) !important;
+      margin:4px auto !important;
+      padding:10px !important;
+      border-radius:14px !important;
+      display:flex;
+      flex-direction:column;
+    }
+    #modalAdmin .admin-grid{
+      grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+      gap:5px !important;
+      margin:8px 0 !important;
+    }
+    #modalAdmin .admin-card{
+      padding:7px 3px !important;
+      border-radius:10px !important;
+      min-width:0 !important;
+    }
+    #modalAdmin .admin-card b{font-size:14px !important;overflow-wrap:anywhere}
+    #modalAdmin .admin-card span{
+      font-size:7px !important;
+      line-height:1.15 !important;
+      letter-spacing:.25px !important;
+    }
+    #modalAdmin .admin-tools{
+      display:grid !important;
+      grid-template-columns:1fr 1fr !important;
+      gap:5px !important;
+      margin:5px 0 7px !important;
+    }
+    #modalAdmin .admin-tools select,
+    #modalAdmin .admin-tools input,
+    #modalAdmin .admin-tools button{
+      width:100% !important;
+      min-width:0 !important;
+      max-width:none !important;
+      margin:0 !important;
+      font-size:9px !important;
+      padding:8px 6px !important;
+    }
+    #modalAdmin #adminSearch{grid-column:1/-1 !important}
+    #modalAdmin .report-note{font-size:8px !important;margin:3px 0 5px !important}
+    #modalAdmin #adminOrders{
+      flex:1 1 auto !important;
+      min-height:0 !important;
+      max-height:none !important;
+      overflow-y:auto !important;
+      overflow-x:hidden !important;
+      padding-right:1px !important;
+    }
+    #modalAdmin .order-row{
+      padding:8px !important;
+      margin:6px 0 !important;
+      border-radius:10px !important;
+    }
+    #modalAdmin .order-head b{font-size:11px !important}
+    #modalAdmin .order-meta{font-size:9px !important;line-height:1.4 !important}
+    #modalAdmin .status-pill{font-size:8px !important;padding:3px 6px !important}
+    #modalAdmin .order-actions{
+      display:grid !important;
+      grid-template-columns:1fr 1fr !important;
+      gap:5px !important;
+      margin-top:7px !important;
+    }
+    #modalAdmin .order-actions button{
+      width:100% !important;
+      min-width:0 !important;
+      padding:7px 4px !important;
+      font-size:8px !important;
+      line-height:1.2 !important;
+    }
+  }
 </style>
 <script>
 (function(){
   'use strict';
-  function el(id){return document.getElementById(id)}
+  function el(id){ return document.getElementById(id); }
+  var ADMIN_SESSION_KEY='TOMAUNO_ADMIN_OK';
+  var openTicketAfterPin=false;
 
-  /* Clave de acceso siempre oculta */
-  var pass=el('inputPass');
-  if(pass){
-    pass.type='password';
-    pass.inputMode='numeric';
-    pass.autocomplete='off';
-  }
+  /* PIN y claves visibles: forzar contraseña también en tiempo de ejecución. */
+  ['adminPinInput','inputPass'].forEach(function(id){
+    var x=el(id);
+    if(x){
+      x.type='password';
+      x.inputMode='numeric';
+      x.autocomplete='off';
+    }
+  });
 
-  /* Recordar autenticación durante esta pestaña */
-  var oldValidate=window.validateAdminPin;
-  if(typeof oldValidate==='function'){
-    window.validateAdminPin=function(){
-      var r=oldValidate.apply(this,arguments);
-      setTimeout(function(){
-        var m=el('modalAdminPin');
-        var hidden=!m || getComputedStyle(m).display==='none';
-        if(hidden){
-          try{sessionStorage.setItem('tomauno_admin_ok','1')}catch(e){}
-        }
-      },160);
-      return r;
-    };
-  }
+  /* Funciones de administración consistentes con la misma sesión que ya usa el sistema. */
+  window.openAdminPin=function(){
+    var c=el('modalContact');
+    if(c) c.style.display='none';
 
-  /* F2: si ya validó PIN en esta pestaña, abre ticket directo */
+    var authenticated=false;
+    try{ authenticated=sessionStorage.getItem(ADMIN_SESSION_KEY)==='1'; }catch(e){}
+
+    if(authenticated){
+      var adm=el('modalAdmin');
+      if(adm) adm.style.display='flex';
+      if(typeof window.loadAdminOrders==='function') window.loadAdminOrders();
+      return;
+    }
+    var pinModal=el('modalAdminPin');
+    var inp=el('adminPinInput');
+    if(pinModal) pinModal.style.display='flex';
+    if(inp){
+      inp.type='password';
+      inp.value='';
+      setTimeout(function(){ inp.focus(); },100);
+    }
+  };
+
+  window.checkAdminPin=function(){
+    var inp=el('adminPinInput');
+    var pin=inp ? inp.value : '';
+    var expected=(typeof ADMIN_PIN!=='undefined') ? String(ADMIN_PIN) : '3233';
+
+    if(String(pin)!==expected){
+      if(typeof window.luxAlert==='function') return window.luxAlert('ERROR','PIN incorrecto.');
+      return alert('PIN incorrecto.');
+    }
+
+    try{ sessionStorage.setItem(ADMIN_SESSION_KEY,'1'); }catch(e){}
+    var pinModal=el('modalAdminPin');
+    if(pinModal) pinModal.style.display='none';
+
+    if(openTicketAfterPin){
+      openTicketAfterPin=false;
+      var adm=el('modalAdmin');
+      if(adm) adm.style.display='none';
+      if(typeof window.openFreeTicket==='function') window.openFreeTicket();
+      return;
+    }
+
+    var admin=el('modalAdmin');
+    if(admin) admin.style.display='flex';
+    if(typeof window.loadAdminOrders==='function') window.loadAdminOrders();
+  };
+
+  /* F2: autenticado => Ticket Libre directo. Sin autenticar => pide PIN y luego Ticket Libre. */
   document.addEventListener('keydown',function(e){
     if(e.key!=='F2') return;
-    e.preventDefault();e.stopPropagation();
-    var ok=false;
-    try{ok=sessionStorage.getItem('tomauno_admin_ok')==='1'}catch(_e){}
-    if(ok){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    var authenticated=false;
+    try{ authenticated=sessionStorage.getItem(ADMIN_SESSION_KEY)==='1'; }catch(_e){}
+
+    if(authenticated){
       if(typeof window.openFreeTicket==='function') window.openFreeTicket();
-    }else{
-      window.__openFreeAfterPinV60=true;
-      if(typeof window.openAdminPin==='function') window.openAdminPin();
+      return;
+    }
+
+    openTicketAfterPin=true;
+    var pinModal=el('modalAdminPin');
+    var inp=el('adminPinInput');
+    if(pinModal) pinModal.style.display='flex';
+    if(inp){
+      inp.type='password';
+      inp.value='';
+      setTimeout(function(){ inp.focus(); },80);
     }
   },true);
 
-  /* Si el PIN se valida luego de F2, abrir ticket libre automáticamente */
-  var oldOpenAdmin=window.openAdmin;
-  if(typeof oldOpenAdmin==='function'){
-    window.openAdmin=function(){
-      var r=oldOpenAdmin.apply(this,arguments);
-      try{sessionStorage.setItem('tomauno_admin_ok','1')}catch(e){}
-      if(window.__openFreeAfterPinV60){
-        window.__openFreeAfterPinV60=false;
-        setTimeout(function(){
-          var adm=el('modalAdmin'); if(adm) adm.style.display='none';
-          if(typeof window.openFreeTicket==='function') window.openFreeTicket();
-        },120);
+  /* El Tab del importe va directamente a PAGADO; la fecha sigue editable con mouse/touch. */
+  var amount=el('freeTicketAmount');
+  var paid=el('freeTicketPaid');
+  var date=el('freeTicketDate');
+  if(date) date.tabIndex=-1;
+  if(amount) amount.tabIndex=4;
+  if(paid) paid.tabIndex=5;
+  if(amount && paid){
+    amount.addEventListener('keydown',function(e){
+      if(e.key==='Tab' && !e.shiftKey){
+        e.preventDefault();
+        paid.focus();
       }
-      return r;
-    };
+    });
   }
 
-  /* Impresión más compacta y con X */
-  window.printCurrentTicket=function(){
-    var c=el('ticketCanvas');if(!c)return;
-    var data=c.toDataURL('image/png');
-    var w=window.open('','_blank','width=560,height=760,resizable=yes,scrollbars=no');
-    if(!w){
-      return window.luxAlert?luxAlert('AVISO','El navegador bloqueó la ventana de impresión.'):alert('El navegador bloqueó la ventana de impresión.');
-    }
-    w.document.open();
-    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Imprimir ticket Tomauno</title>'
-      +'<style>@page{size:A4 portrait;margin:10mm}html,body{margin:0;background:#ededed;font-family:Arial,sans-serif;overflow:hidden}.top{height:44px;background:#111;display:flex;align-items:center;justify-content:center;position:relative}.top button.print{border:0;border-radius:999px;padding:9px 20px;background:#e00;color:#fff;font-weight:900;cursor:pointer}.top button.x{position:absolute;right:10px;top:7px;width:30px;height:30px;border-radius:50%;border:1px solid #555;background:#222;color:#fff;font-size:18px;font-weight:900;cursor:pointer}.wrap{height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box}.sheet{height:100%;max-height:690px;aspect-ratio:3/4;background:#fff;box-shadow:0 3px 16px #999;display:flex;align-items:center;justify-content:center;overflow:hidden}.sheet img{display:block;max-width:100%;max-height:100%;object-fit:contain}@media print{html,body{background:#fff;overflow:visible}.top{display:none}.wrap{height:auto;padding:0}.sheet{box-shadow:none;width:150mm;height:auto;max-height:none;margin:0 auto}.sheet img{width:150mm;height:auto;max-height:none}}</style>'
-      +'</head><body><div class="top"><button class="print" onclick="window.print()">IMPRIMIR</button><button class="x" onclick="window.close()" title="Cerrar">×</button></div>'
-      +'<div class="wrap"><div class="sheet"><img src="'+data+'" alt="Ticket Tomauno"></div></div></body></html>');
-    w.document.close();
-  };
+  /* Textos claros manteniendo los iconos. */
+  function refreshPaymentLabels(){
+    document.querySelectorAll('.t54-mp-pay').forEach(function(b){
+      b.textContent='💳 PAGAR CON MERCADO PAGO';
+    });
+    document.querySelectorAll('.t54-manual').forEach(function(b){
+      b.textContent='💬 CONTINUAR POR WHATSAPP';
+    });
+  }
+  refreshPaymentLabels();
+  var obs=new MutationObserver(refreshPaymentLabels);
+  obs.observe(document.body,{childList:true,subtree:true});
 })();
 </script>
-<!-- /TOMAUNO V60 -->
+<!-- /TOMAUNO V61 -->
 
 </body>
 </html>
