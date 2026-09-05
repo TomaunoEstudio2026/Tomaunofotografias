@@ -4718,7 +4718,7 @@ function attr(s) {
     buttons.forEach(function(b){row.appendChild(b);}); tools.appendChild(row);
   }
   document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){tuneAdminPanel();hideCart();},500);});
-  document.addEventListener('click',function(e){if(e.target&&/PANEL|ADMIN|ACTUALIZAR/i.test(e.target.textContent||'')) setTimeout(tuneAdminPanel,200);},true);
+  /* V77: tuneAdminPanel heredado desactivado; la barra V72 es la única barra administrativa. */
 
   function workSummary(o){
     var tipo=String(o.tipo||''), obs=String(o.observaciones||''), fotos=String(o.fotos||'');
@@ -8636,6 +8636,200 @@ document.addEventListener('click',function(){setTimeout(function(){harden75();ar
 })();
 </script>
 <!-- /TOMAUNO V76 -->
+
+
+
+<!-- TOMAUNO V77 - VISIBILIDAD DEDICADA + LOGOUT REAL + NOVEDADES CONSISTENTES -->
+<style>
+  #v77AlbumState{
+    display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    z-index:2147483600;padding:8px 13px;border-radius:999px;
+    background:#09090a;border:1px solid #343438;color:#eee;
+    font-size:10px;font-weight:850;box-shadow:0 10px 28px rgba(0,0,0,.5)
+  }
+  #v77AlbumState.ok{border-color:#286e45;color:#56d88a}
+  #v77AlbumState.err{border-color:#7a292e;color:#ff6b71}
+</style>
+<div id="v77AlbumState"></div>
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+
+function toast77(msg,kind){
+  var n=el('v77AlbumState');if(!n)return;
+  n.textContent=msg;n.className=kind||'';n.style.display='block';
+  clearTimeout(window.__v77ToastTimer);
+  window.__v77ToastTimer=setTimeout(function(){n.style.display='none'},1800);
+}
+
+function album77(bridge){
+  var pools=[window.__v73AdminAlbums,window.eventsData];
+  for(var i=0;i<pools.length;i++){
+    var a=(pools[i]||[]).find(function(x){return String(x.bridgeId||'')===String(bridge||'')});
+    if(a)return a;
+  }
+  return null;
+}
+function applyVisible77(bridge,visible){
+  [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+    (arr||[]).forEach(function(x){
+      if(String(x.bridgeId||'')===String(bridge||''))x.visible=!!visible;
+    });
+  });
+}
+
+/* VISIBILIDAD: endpoint dedicado, estado string, sin wrappers históricos. */
+window.toggleAlbumVisibility64=async function(bridge){
+  var ev=album77(bridge);
+  if(!ev){toast77('No se encontró el álbum','err');return}
+  var targetVisible=(ev.visible===false);
+  toast77(targetVisible?'Mostrando álbum...':'Ocultando álbum...','');
+
+  try{
+    var res=await apiPost({
+      action:'setAlbumVisibility',
+      pin:'3233',
+      bridgeId:String(bridge),
+      state:targetVisible?'VISIBLE':'OCULTO'
+    });
+    if(!res || res.success===false)throw new Error((res&&res.msg)||'No se pudo cambiar la visibilidad.');
+
+    applyVisible77(bridge,!!res.visible);
+
+    /* Confirmar con la lista liviana del backend */
+    var check=await apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()});
+    var arr=Array.isArray(check)?check:(check.events||[]);
+    window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+    window.__v73AdminAlbumsLoaded=true;
+    window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+
+    if(typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+    toast77(res.visible?'Álbum VISIBLE':'Álbum OCULTO','ok');
+  }catch(err){
+    toast77('No se pudo cambiar la visibilidad','err');
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }
+};
+
+/* Reasignar SIEMPRE el ojo después de cada render. */
+function bindEyes77(){
+  if(!window.__albumAdminMode)return;
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var bridge=card.getAttribute('data-bridge');
+    var btn=card.querySelector('.v64-album-tools button');
+    if(!btn)return;
+    btn.onclick=function(e){
+      e.preventDefault();e.stopPropagation();
+      window.toggleAlbumVisibility64(bridge);
+    };
+  });
+}
+var r77=window.renderAlbumCards64;
+if(typeof r77==='function'){
+  window.renderAlbumCards64=function(){
+    var r=r77.apply(this,arguments);
+    setTimeout(bindEyes77,0);
+    return r;
+  };
+}
+
+/* LOGOUT REAL: salir de modo edición, quitar ocultos y controles inmediatamente. */
+function logout77(){
+  try{
+    sessionStorage.removeItem('TOMAUNO_ADMIN_OK');
+    sessionStorage.removeItem('TOMAUNO_TICKET_OK');
+  }catch(e){}
+
+  window.__albumAdminMode=false;
+  document.body.classList.remove('v64-album-admin','v73-album-save');
+
+  var editBar=el('v64AlbumAdminBar');if(editBar)editBar.style.display='none';
+  var adm=el('modalAdmin');if(adm)adm.style.display='none';
+  var menu=el('v74AdmMenu');if(menu)menu.style.display='none';
+  var dock=el('v73AdminDock');if(dock)dock.style.display='none';
+  var stack=el('v73NotifyStack');if(stack)stack.innerHTML='';
+
+  var source=window.__v73AdminAlbumsLoaded?window.__v73AdminAlbums:(window.eventsData||[]);
+  window.eventsData=(source||[]).filter(function(x){return x.visible!==false}).map(function(x){return Object.assign({},x)});
+
+  if(typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+  if(typeof miniToast==='function')miniToast('Sesión administrativa cerrada');
+}
+window.v77Logout=logout77;
+window.v71LogoutAdmin=logout77;
+window.v74Logout=logout77;
+
+/* El botón ADM ACTIVO del panel también cierra sesión. */
+function bindLogout77(){
+  document.querySelectorAll('#v72AdminBar .v72-adm,.v71-logout').forEach(function(b){
+    b.onclick=logout77;
+    b.title='Cerrar sesión administrativa';
+  });
+}
+
+/* NOVEDADES: si hay contador viejo sin filas asociadas, limpiarlo. */
+function unreadRows77(){
+  try{return JSON.parse(sessionStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]').map(Number).filter(Boolean)}
+  catch(e){return []}
+}
+function reconcileUnread77(){
+  var rows=unreadRows77();
+  if(rows.length===0){
+    try{
+      var state=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
+      if(Number(state.unread||0)>0){
+        state.unread=0;
+        sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(state));
+      }
+    }catch(e){}
+    var badge=el('v73BellBadge');
+    if(badge){badge.textContent='0';badge.style.display='none'}
+  }
+}
+
+/* Resaltar filas NUEVO una vez que el panel terminó de renderizar. */
+function paintUnread77(){
+  var rows=unreadRows77();
+  document.querySelectorAll('#adminOrders .order-row').forEach(function(row){
+    var del=row.querySelector('[data-delete-row]');
+    var cb=row.querySelector('.v64-order-check');
+    var n=Number(cb?cb.value:(del?del.getAttribute('data-delete-row'):0));
+    row.classList.toggle('v74-unread',rows.indexOf(n)>=0);
+  });
+  var seen=el('v74SeenBtn');
+  if(seen)seen.classList.toggle('has-unread',rows.length>0);
+}
+window.v74HighlightUnread=paintUnread77;
+
+var load77=window.loadAdminOrders;
+if(typeof load77==='function'&&!load77.__v77){
+  var wrapped=async function(){
+    var r=await load77.apply(this,arguments);
+    setTimeout(function(){paintUnread77();bindLogout77()},60);
+    return r;
+  };
+  wrapped.__v77=true;
+  window.loadAdminOrders=wrapped;
+}
+
+/* tuneAdminPanel viejo: si creó una fila antigua, no permitir que mueva nuestra barra. */
+function neutralizeOldAdmin77(){
+  var legacy=el('adminActionsRow');
+  if(legacy)legacy.style.display='none';
+  var bar=el('v72AdminBar');
+  if(bar){bar.style.display='flex';bar.style.visibility='visible';bar.style.opacity='1'}
+}
+
+window.addEventListener('load',function(){
+  reconcileUnread77();bindLogout77();bindEyes77();neutralizeOldAdmin77();
+});
+document.addEventListener('click',function(){
+  setTimeout(function(){bindLogout77();bindEyes77();neutralizeOldAdmin77();paintUnread77()},50);
+});
+})();
+</script>
+<!-- /TOMAUNO V77 -->
 
 </body>
 </html>
