@@ -9010,5 +9010,183 @@ document.addEventListener('click',function(){setTimeout(function(){cleanSlashN78
 </script>
 <!-- /TOMAUNO V78 -->
 
+
+
+<!-- TOMAUNO V79 - ADMIN LIMPIO + GALERIA MOBILE ESTABLE -->
+<style>
+/* Quitar diagnóstico técnico V78 de las tarjetas */
+.v78-album-debug{display:none!important}
+
+/* Botón flotante para volver a álbumes durante galerías largas */
+#v79BackAlbums{
+  display:none;
+  position:fixed;
+  left:12px;
+  bottom:14px;
+  z-index:2147481000;
+  height:38px;
+  padding:0 13px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:999px;
+  background:rgba(8,8,9,.92);
+  color:#eee;
+  font:800 10px/1 inherit;
+  box-shadow:0 8px 24px rgba(0,0,0,.48);
+  backdrop-filter:blur(8px);
+  cursor:pointer;
+}
+body.v79-gallery-open #v79BackAlbums{display:inline-flex;align-items:center;gap:7px}
+
+/* Lightbox móvil: controles estables, sin depender de la proporción de la foto */
+@media(max-width:700px){
+  #modalViewer .modal-box,
+  #viewerModal .modal-box,
+  .viewer-modal .modal-box{
+    width:100vw!important;
+    max-width:100vw!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    margin:0!important;
+    border-radius:0!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+
+  #modalViewer img,
+  #viewerModal img,
+  .viewer-modal img{
+    max-width:100%!important;
+    max-height:calc(100dvh - 205px)!important;
+    object-fit:contain!important;
+    object-position:center center!important;
+  }
+
+  /* Carrito más compacto */
+  .floating-cart,
+  #floatingCart,
+  .cart-float{
+    max-width:145px!important;
+    min-width:0!important;
+    padding:8px 11px!important;
+    font-size:10px!important;
+    border-radius:999px!important;
+  }
+
+  /* La barra inferior no debe desbordar horizontalmente */
+  .gallery-bottom-bar,
+  .bottom-actions,
+  #galleryActions{
+    width:100%!important;
+    max-width:100vw!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+
+  /* Botones finales de galería: tipografía compacta */
+  .gallery-bottom-bar button,
+  .bottom-actions button,
+  #galleryActions button{
+    min-width:0!important;
+    white-space:normal!important;
+    line-height:1.15!important;
+    font-size:10px!important;
+  }
+
+  #v79BackAlbums{
+    left:8px;
+    bottom:9px;
+    height:35px;
+    padding:0 10px;
+    font-size:9px;
+  }
+}
+
+/* Si checkout está abierto, no mostrar carrito ni Volver a álbumes */
+body.v79-checkout-open #v79BackAlbums,
+body.v79-checkout-open .floating-cart,
+body.v79-checkout-open #floatingCart,
+body.v79-checkout-open .cart-float{
+  display:none!important;
+}
+</style>
+
+<button id="v79BackAlbums" type="button" title="Volver a la lista de álbumes">← ÁLBUMES</button>
+
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+
+/* El diagnóstico V78 cumplió su función: mantener lógica, esconder texto técnico. */
+function cleanDebug79(){
+  document.querySelectorAll('.v78-album-debug').forEach(function(n){
+    n.style.display='none';
+  });
+}
+
+/* Detectar cuándo estamos dentro de una galería sin hacer nuevas consultas. */
+function galleryState79(){
+  var photoList=el('photoList');
+  var eventList=el('eventList');
+  var galleryVisible=!!(photoList && photoList.children.length &&
+    getComputedStyle(photoList).display!=='none' &&
+    (!eventList || getComputedStyle(eventList).display==='none' || document.body.classList.contains('photos-open')));
+  document.body.classList.toggle('v79-gallery-open',galleryVisible);
+}
+
+/* Reutilizar la navegación existente: no recarga si ya existe una función de retorno. */
+window.v79GoAlbums=function(){
+  var candidates=['backToEvents','goBackToEvents','showEvents','backToAlbums','goHome'];
+  for(var i=0;i<candidates.length;i++){
+    if(typeof window[candidates[i]]==='function'){
+      window[candidates[i]]();
+      document.body.classList.remove('v79-gallery-open');
+      window.scrollTo({top:0,behavior:'smooth'});
+      return;
+    }
+  }
+  /* fallback seguro: usar el botón VOLVER existente de la galería */
+  var b=Array.from(document.querySelectorAll('button')).find(function(x){
+    return /VOLVER.*(ALBUM|EVENT)|ALBUMES/i.test((x.textContent||'').trim()) &&
+           x.id!=='v79BackAlbums';
+  });
+  if(b){b.click();document.body.classList.remove('v79-gallery-open')}
+};
+el('v79BackAlbums').onclick=window.v79GoAlbums;
+
+/* Checkout: ocultar elementos flotantes que pueden tapar datos/botones. */
+function checkoutState79(){
+  var m=el('modalCheckout');
+  var open=!!(m && getComputedStyle(m).display!=='none');
+  document.body.classList.toggle('v79-checkout-open',open);
+}
+
+/* Logout: asegurar salida visual completa sin recargar álbumes. */
+var logout79=window.v77Logout;
+if(typeof logout79==='function'){
+  window.v77Logout=function(){
+    logout79.apply(this,arguments);
+    document.body.classList.remove('v64-album-admin','v73-album-save');
+    cleanDebug79();
+  };
+  window.v71LogoutAdmin=window.v77Logout;
+  window.v74Logout=window.v77Logout;
+}
+
+/* No mostramos fila técnica aunque V78 la regenere. */
+var observer79=new MutationObserver(function(){
+  cleanDebug79();
+  galleryState79();
+  checkoutState79();
+});
+observer79.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+
+window.addEventListener('load',function(){
+  cleanDebug79();galleryState79();checkoutState79();
+});
+})();
+</script>
+<!-- /TOMAUNO V79 -->
+
 </body>
 </html>
