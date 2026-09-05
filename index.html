@@ -10340,5 +10340,219 @@ window.addEventListener('load',function(){
 </script>
 <!-- /TOMAUNO V95 -->
 
+
+
+<!-- TOMAUNO V96 - FILTRO CANALES POR SOLAPAS + BUSQUEDA SIN DUPLICAR -->
+<style>
+#v95Version{display:none!important}
+#v96Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
+}
+
+/* Ocultar select anterior V95; lo reemplazamos por solapas compactas */
+#v95PaymentFilter{display:none!important}
+
+#v96ChannelTabs{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:8px
+}
+#v96ChannelTabs button{
+  height:34px;padding:0 12px;border:1px solid #343438;border-radius:999px;
+  background:#151517;color:#999;font-size:9px;font-weight:900;cursor:pointer;
+  transition:.16s ease
+}
+#v96ChannelTabs button:hover{border-color:#555;color:#ddd}
+#v96ChannelTabs button.active{
+  background:#e0000b;border-color:#e0000b;color:#fff;
+  box-shadow:0 0 14px rgba(224,0,11,.18)
+}
+#v96ChannelTabs button .n{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;margin-left:5px;padding:0 4px;
+  border-radius:999px;background:rgba(255,255,255,.10);
+  font-size:8px;color:inherit
+}
+#v96ChannelEmpty{
+  display:none;
+  margin:8px 0 0;padding:10px 12px;border:1px solid #2e2e32;border-radius:10px;
+  background:#0c0c0d;color:#777;font-size:10px
+}
+
+/* Evitar duplicar descripción en búsquedas */
+.v95-parent-extra + .v95-parent-extra{display:none!important}
+.v96-search-parent .v95-parent-extra{display:none!important}
+
+@media(max-width:700px){
+  #v96ChannelTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+  #v96ChannelTabs button{width:100%;padding:0 7px;font-size:8px}
+}
+</style>
+
+<div id="v96Version">TOMAUNO FOTOS · V96</div>
+
+<script>
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+var currentChannel96='';
+
+/* -----------------------------
+   Búsqueda: padre sin duplicar descripción
+   ----------------------------- */
+var oldSearch95=window.search95;
+if(typeof oldSearch95==='function'){
+  /* no usamos esta vía porque search95 quedó local en V95 */
+}
+
+/* Interceptamos el DOM de resultados: si un padre de búsqueda ya tiene
+   descripción escrita directamente, no permitir que enrichParentCards95
+   agregue una segunda copia. */
+function dedupeSearchParent96(){
+  document.querySelectorAll('.v91-parent').forEach(function(card){
+    var extras=card.querySelectorAll('.v95-parent-extra');
+    if(extras.length>1){
+      for(var i=1;i<extras.length;i++)extras[i].remove();
+    }
+
+    /* Caso V95: meta directa + extra enriquecido */
+    var direct=card.querySelector(':scope > .v95-parent-desc');
+    var extra=card.querySelector(':scope > .v95-parent-extra .v95-parent-desc');
+    if(direct&&extra){
+      direct.remove();
+    }
+  });
+}
+
+/* -----------------------------
+   Solapas de canal
+   ----------------------------- */
+function isMP96(o){
+  return String(o&&o.canalPago||'').toUpperCase()==='MERCADOPAGO' ||
+         !!(o&&o.mpPaymentId) || !!(o&&o.mpPreferenceId);
+}
+function allOrders96(){
+  try{
+    return Array.isArray(window.adminOrdersData)?window.adminOrdersData:[];
+  }catch(e){return []}
+}
+function counts96(){
+  var all=allOrders96(),mp=0,manual=0;
+  all.forEach(function(o){isMP96(o)?mp++:manual++});
+  return {all:all.length,mp:mp,manual:manual};
+}
+function updateTabs96(){
+  var c=counts96();
+  var a=E('v96CountAll'),m=E('v96CountMP'),x=E('v96CountManual');
+  if(a)a.textContent=c.all;if(m)m.textContent=c.mp;if(x)x.textContent=c.manual;
+
+  document.querySelectorAll('#v96ChannelTabs button').forEach(function(b){
+    b.classList.toggle('active',String(b.dataset.channel||'')===currentChannel96);
+  });
+}
+function ensureTabs96(){
+  if(E('v96ChannelTabs')){updateTabs96();return}
+
+  var status=E('adminStatusFilter');
+  if(!status||!status.parentNode)return;
+
+  var wrap=document.createElement('div');
+  wrap.id='v96ChannelTabs';
+  wrap.innerHTML=
+    '<button type="button" data-channel="">TODOS <span class="n" id="v96CountAll">0</span></button>'+
+    '<button type="button" data-channel="MP">MERCADO PAGO <span class="n" id="v96CountMP">0</span></button>'+
+    '<button type="button" data-channel="MANUAL">MANUAL <span class="n" id="v96CountManual">0</span></button>';
+
+  var empty=document.createElement('div');
+  empty.id='v96ChannelEmpty';
+
+  status.parentNode.insertBefore(wrap,status.nextSibling);
+  wrap.insertAdjacentElement('afterend',empty);
+
+  wrap.querySelectorAll('button').forEach(function(b){
+    b.onclick=function(){
+      currentChannel96=String(b.dataset.channel||'');
+      var legacy=E('v95PaymentFilter');
+      if(legacy)legacy.value=currentChannel96;
+      updateTabs96();
+      if(typeof window.renderAdminOrders==='function')window.renderAdminOrders();
+      setTimeout(updateEmpty96,30);
+    };
+  });
+
+  updateTabs96();
+}
+function updateEmpty96(){
+  var empty=E('v96ChannelEmpty');if(!empty)return;
+  var c=counts96();
+  var n=currentChannel96==='MP'?c.mp:(currentChannel96==='MANUAL'?c.manual:c.all);
+  if(n===0 && currentChannel96){
+    empty.style.display='block';
+    empty.textContent=currentChannel96==='MP'
+      ? 'No hay pedidos de Mercado Pago para el filtro actual.'
+      : 'No hay pedidos manuales para el filtro actual.';
+  }else{
+    empty.style.display='none';
+  }
+}
+
+/* Mantener la solapa sincronizada con el filtro oculto V95 */
+function syncLegacy96(){
+  var legacy=E('v95PaymentFilter');
+  if(legacy)legacy.value=currentChannel96;
+}
+
+/* tras cada render admin */
+var oldRender96=window.renderAdminOrders;
+if(typeof oldRender96==='function'&&!oldRender96.__v96){
+  var wrapped=function(){
+    ensureTabs96();
+    syncLegacy96();
+    var r=oldRender96.apply(this,arguments);
+    setTimeout(function(){
+      ensureTabs96();
+      updateTabs96();
+      updateEmpty96();
+      dedupeSearchParent96();
+    },20);
+    return r;
+  };
+  wrapped.__v96=true;
+  window.renderAdminOrders=wrapped;
+}
+
+/* En V95 el filtro podía crearse antes: si existe, tomarlo como estado inicial */
+function initChannel96(){
+  var legacy=E('v95PaymentFilter');
+  if(legacy)currentChannel96=String(legacy.value||'');
+  ensureTabs96();
+  updateEmpty96();
+}
+
+/* Dedupe continuo suave sólo sobre resultados ya renderizados */
+var mo96=new MutationObserver(function(){
+  clearTimeout(window.__v96mut);
+  window.__v96mut=setTimeout(function(){
+    dedupeSearchParent96();
+    ensureTabs96();
+    updateTabs96();
+    updateEmpty96();
+  },30);
+});
+window.addEventListener('DOMContentLoaded',function(){
+  var list=E('eventList');if(list)mo96.observe(list,{childList:true,subtree:true});
+  var adm=E('adminOrders');if(adm)mo96.observe(adm,{childList:true,subtree:true});
+  initChannel96();
+});
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    initChannel96();
+    dedupeSearchParent96();
+  },500);
+});
+})();
+</script>
+<!-- /TOMAUNO V96 -->
+
 </body>
 </html>
