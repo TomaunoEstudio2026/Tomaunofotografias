@@ -1505,6 +1505,11 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   </select>
   <input id="adminSearch" type="search" autocomplete="off" data-lpignore="true" data-1p-ignore="true"
          placeholder="Buscar por cliente, celular, evento o estado..." oninput="renderAdminOrders()">
+  <div id="v97ChannelTabs" class="v97-channel-tabs">
+    <button type="button" data-v97channel="" class="active">TODOS</button>
+    <button type="button" data-v97channel="MP">MERCADO PAGO</button>
+    <button type="button" data-v97channel="MANUAL">MANUAL</button>
+  </div>
 
   <div id="v70AdminTools">
     <button type="button" class="v70-tool" data-tip="Actualizar pedidos" onclick="loadAdminOrders(this)">
@@ -3071,6 +3076,10 @@ function attr(s) {
     var stFilter = ((document.getElementById('adminStatusFilter') || {}).value || '');
     var filtered = adminOrdersData.filter(function(o){
       if(evFilter && o.evento !== evFilter) return false;
+      var channelFilter = String(window.__v97ChannelFilter || '');
+      var isMp = String(o.canalPago || '').toUpperCase() === 'MERCADOPAGO' || !!o.mpPaymentId || !!o.mpPreferenceId;
+      if(channelFilter === 'MP' && !isMp) return false;
+      if(channelFilter === 'MANUAL' && isMp) return false;
       var pagoOk = String(o.pago || '').toUpperCase() === 'PAGADO';
       var entregaOk = String(o.entrega || '').toUpperCase() === 'ENTREGADO';
       if(stFilter === 'pagoPendiente' && pagoOk) return false;
@@ -10553,6 +10562,214 @@ window.addEventListener('load',function(){
 })();
 </script>
 <!-- /TOMAUNO V96 -->
+
+
+
+<!-- TOMAUNO V97 - PANEL CANALES VISIBLE + CONTROLES ALBUM SIN FLOTAR -->
+<style>
+#v96Version{display:none!important}
+#v97Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
+}
+
+/* Ocultar filtros experimentales anteriores */
+#v95PaymentFilter,#v96ChannelTabs,#v96ChannelEmpty{display:none!important}
+
+/* Solapas de canal integradas realmente al Panel Admin */
+#modalAdmin .v97-channel-tabs{
+  grid-column:1/-1!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  flex-wrap:wrap!important;
+  margin:0!important;
+}
+#modalAdmin .v97-channel-tabs button{
+  height:34px!important;
+  min-height:34px!important;
+  padding:0 13px!important;
+  border:1px solid #343438!important;
+  border-radius:999px!important;
+  background:#151517!important;
+  color:#999!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+  transition:.15s ease!important;
+}
+#modalAdmin .v97-channel-tabs button:hover{
+  color:#eee!important;border-color:#555!important;
+}
+#modalAdmin .v97-channel-tabs button.active{
+  background:#e0000b!important;
+  border-color:#e0000b!important;
+  color:#fff!important;
+  box-shadow:0 0 14px rgba(224,0,11,.18)!important;
+}
+
+/* Los selectores de álbum jamás deben superar al modal Admin */
+#eventList .v91-check,
+#eventList .v94-child-check,
+#eventList .v93-check,
+#eventList .v89-check,
+#eventList .v88-check,
+#eventList .v87-select-album,
+#eventList .v82-select-album{
+  z-index:60!important;
+}
+
+/* Al abrir Panel de Pedidos ocultamos todos los controles de edición de álbumes que están detrás */
+body.v97-admin-panel-open #eventList .v91-check,
+body.v97-admin-panel-open #eventList .v94-child-check,
+body.v97-admin-panel-open #eventList .v93-check,
+body.v97-admin-panel-open #eventList .v89-check,
+body.v97-admin-panel-open #eventList .v88-check,
+body.v97-admin-panel-open #eventList .v87-select-album,
+body.v97-admin-panel-open #eventList .v82-select-album,
+body.v97-admin-panel-open #v91GroupBar,
+body.v97-admin-panel-open #v93AdminHint{
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+/* Asegurar que cada selector se posicione contra su tarjeta, no contra la página */
+#eventList .event-card{
+  position:relative!important;
+}
+
+@media(max-width:700px){
+  #modalAdmin .v97-channel-tabs{
+    display:grid!important;
+    grid-template-columns:repeat(3,1fr)!important;
+    width:100%!important;
+  }
+  #modalAdmin .v97-channel-tabs button{
+    width:100%!important;
+    padding:0 7px!important;
+    font-size:8px!important;
+  }
+}
+</style>
+
+<div id="v97Version">TOMAUNO FOTOS · V97</div>
+
+<script>
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+window.__v97ChannelFilter='';
+
+/* Solapas */
+function bindTabs97(){
+  var tabs=E('v97ChannelTabs');if(!tabs)return;
+  tabs.querySelectorAll('button[data-v97channel]').forEach(function(b){
+    if(b.dataset.v97bound==='1')return;
+    b.dataset.v97bound='1';
+    b.onclick=function(){
+      window.__v97ChannelFilter=String(b.getAttribute('data-v97channel')||'');
+
+      /* Neutralizar filtros experimentales V95/V96 para que no compitan */
+      var legacy=E('v95PaymentFilter');
+      if(legacy)legacy.value='';
+
+      tabs.querySelectorAll('button').forEach(function(x){
+        x.classList.toggle('active',x===b);
+      });
+
+      if(typeof window.renderAdminOrders==='function')window.renderAdminOrders();
+    };
+  });
+}
+
+/* Detectar si Panel Admin está abierto */
+function syncAdminPanelClass97(){
+  var modal=E('modalAdmin');
+  if(!modal)return;
+  var open=getComputedStyle(modal).display!=='none';
+  document.body.classList.toggle('v97-admin-panel-open',open);
+}
+
+/* Cuando se abre el panel, limpiar cualquier selector huérfano de versiones viejas */
+function cleanOrphanChecks97(){
+  document.querySelectorAll('.v91-check,.v94-child-check,.v93-check,.v89-check,.v88-check,.v87-select-album,.v82-select-album').forEach(function(n){
+    if(!n.closest('#eventList') && n.parentNode)n.remove();
+  });
+}
+
+/* Añadir detalle MP visible dentro de pedidos cuando exista */
+function enhanceMpRows97(){
+  var rows=window.__lastAdminFiltered||[];
+  var domRows=document.querySelectorAll('#adminOrders .order-row');
+  domRows.forEach(function(row,i){
+    var o=rows[i];if(!o)return;
+    var isMp=String(o.canalPago||'').toUpperCase()==='MERCADOPAGO' || !!o.mpPaymentId || !!o.mpPreferenceId;
+    if(!isMp || row.querySelector('.v95-mp-line'))return;
+
+    var meta=row.querySelector('.order-meta');if(!meta)return;
+    var bits=['Mercado Pago'];
+    if(o.mpStatus)bits.push(String(o.mpStatus).toUpperCase());
+    if(o.mpMetodo)bits.push(String(o.mpMetodo));
+    if(o.mpMonto)bits.push('$'+Number(o.mpMonto||0).toLocaleString('es-AR'));
+    if(o.mpPaymentId)bits.push('Pago '+o.mpPaymentId);
+
+    var d=document.createElement('div');
+    d.className='v95-mp-line';
+    d.textContent='💳 '+bits.join(' · ');
+    meta.appendChild(d);
+  });
+}
+
+/* Reaplicar tras render del panel */
+var oldRender97=window.renderAdminOrders;
+if(typeof oldRender97==='function'&&!oldRender97.__v97){
+  var wrapped=function(){
+    var r=oldRender97.apply(this,arguments);
+    setTimeout(function(){
+      bindTabs97();
+      syncAdminPanelClass97();
+      cleanOrphanChecks97();
+      enhanceMpRows97();
+    },20);
+    return r;
+  };
+  wrapped.__v97=true;
+  window.renderAdminOrders=wrapped;
+}
+
+/* Vigilar sólo el display del modal, sin redibujar álbumes */
+var modalObs97=null;
+function observeModal97(){
+  var modal=E('modalAdmin');if(!modal)return;
+  if(modalObs97)modalObs97.disconnect();
+  modalObs97=new MutationObserver(function(){
+    syncAdminPanelClass97();
+    if(document.body.classList.contains('v97-admin-panel-open')){
+      cleanOrphanChecks97();
+      bindTabs97();
+      setTimeout(enhanceMpRows97,30);
+    }
+  });
+  modalObs97.observe(modal,{attributes:true,attributeFilter:['style','class']});
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  bindTabs97();
+  observeModal97();
+  syncAdminPanelClass97();
+  cleanOrphanChecks97();
+});
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    bindTabs97();
+    syncAdminPanelClass97();
+    cleanOrphanChecks97();
+    enhanceMpRows97();
+  },400);
+});
+})();
+</script>
+<!-- /TOMAUNO V97 -->
 
 </body>
 </html>
