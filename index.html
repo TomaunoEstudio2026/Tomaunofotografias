@@ -9373,8 +9373,14 @@ window.addEventListener('DOMContentLoaded',bindSearch)
     <label>DESCRIPCIÓN</label>
     <textarea id="v92MetaDesc" placeholder="Ej.: Fotografías oficiales · @tomaunoestudio · 3764354522"></textarea>
     <label>FECHA / REFERENCIA</label>
-    <input id="v92MetaDate" type="text" autocomplete="off" placeholder="Ej.: 06/09/2026 · 08 a 22 hs">
-    <div class="v92-hint">@usuario se transforma en Instagram y un número de teléfono en acceso a WhatsApp.</div>
+    <input id="v92MetaDate" type="text" autocomplete="off" placeholder="Ej.: 05/09/2026">
+    <label>FOTÓGRAFO / CRÉDITO</label>
+    <input id="v95MetaPhotographer" type="text" autocomplete="off" placeholder="Ej.: PH: David Cuevas">
+    <label>INSTAGRAM</label>
+    <input id="v95MetaInstagram" type="text" autocomplete="off" placeholder="Ej.: @tomaunoestudio">
+    <label>WHATSAPP</label>
+    <input id="v95MetaWhatsapp" type="text" autocomplete="off" placeholder="Ej.: 3764354522">
+    <div class="v92-hint">Todos estos datos son opcionales. Instagram y WhatsApp se muestran como enlaces clickeables.</div>
     <div class="v92-actions">
       <button type="button" onclick="v92CloseMeta()">CANCELAR</button>
       <button type="button" class="save" onclick="v92SaveMeta()">GUARDAR</button>
@@ -10076,6 +10082,263 @@ window.addEventListener('load',function(){
 })();
 </script>
 <!-- /TOMAUNO V94 -->
+
+
+
+<!-- TOMAUNO V95 - BUSQUEDA JERARQUICA + METADATA ORDENADA + FILTRO MP -->
+<style>
+#v94Version{display:none!important}
+#v95Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
+}
+.v95-parent-desc{font-size:13px!important;color:#d4d4d6!important;font-weight:700!important;margin-top:6px!important}
+.v95-parent-secondary{font-size:9px!important;color:#7f7f84!important;line-height:1.55!important;margin-top:7px!important}
+.v95-parent-secondary a{font-weight:850;text-decoration:none}
+.v95-parent-secondary a.ig{color:#64baff}
+.v95-parent-secondary a.wa{color:#55d980}
+#v95PaymentFilter{
+  min-width:145px;background:#050505;color:#fff;border:1px solid #333;
+  border-radius:10px;padding:11px 10px
+}
+.v95-mp-line{
+  margin-top:5px;padding:5px 7px;border:1px solid rgba(50,145,230,.25);
+  border-radius:8px;background:rgba(40,130,220,.06);color:#76bfff;font-size:8px;line-height:1.4
+}
+</style>
+<div id="v95Version">TOMAUNO FOTOS · V95</div>
+
+<script>
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function M(){return window.__v91Model||null}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+/* ---------- Metadata padre ordenada ---------- */
+function whatsappHref(v){
+  var d=String(v||'').replace(/\D/g,'');
+  if(d.length===10)d='54'+d;
+  return d?'https://wa.me/'+d:'';
+}
+function enrichParentCards95(){
+  var m=M();if(!m)return;
+  document.querySelectorAll('.v91-parent[data-v91parent]').forEach(function(card){
+    var g=String(card.getAttribute('data-v91parent')||'');
+    var meta=(m.meta||{})[g]||{};
+    var old=card.querySelector('.v95-parent-extra');if(old)old.remove();
+
+    /* Ocultar texto repetitivo EVENTO / COLECCIÓN */
+    var tag=card.querySelector('.tag');if(tag)tag.style.display='none';
+
+    /* La descripción se trata como segundo título */
+    var existingMeta=card.querySelector('.meta');
+    if(existingMeta)existingMeta.style.display='none';
+
+    if(!(meta.description||meta.date||meta.photographer||meta.instagram||meta.whatsapp))return;
+
+    var x=document.createElement('div');
+    x.className='v95-parent-extra';
+
+    if(meta.description){
+      var d=document.createElement('div');d.className='v95-parent-desc';d.textContent=meta.description;x.appendChild(d);
+    }
+
+    var secondary=[];
+    if(meta.date)secondary.push(esc(meta.date));
+    if(meta.photographer)secondary.push(esc(meta.photographer));
+    if(meta.instagram){
+      var u=String(meta.instagram).replace(/^@/,'');
+      secondary.push('<a class="ig" href="https://www.instagram.com/'+encodeURIComponent(u)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">@'+esc(u)+'</a>');
+    }
+    if(meta.whatsapp){
+      secondary.push('<a class="wa" href="'+whatsappHref(meta.whatsapp)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(meta.whatsapp)+'</a>');
+    }
+    if(secondary.length){
+      var s=document.createElement('div');s.className='v95-parent-secondary';s.innerHTML=secondary.join(' · ');x.appendChild(s);
+    }
+    var count=card.querySelector('.count');
+    if(count)card.insertBefore(x,count);else card.appendChild(x);
+  });
+}
+
+/* Completar nuevos campos al abrir */
+var oldOpen95=window.v92OpenGroupMeta;
+window.v92OpenGroupMeta=function(group){
+  if(typeof oldOpen95==='function')oldOpen95(group);
+  var m=M(),meta=m&&m.meta?m.meta[group]||{}:{};
+  if(E('v95MetaPhotographer'))E('v95MetaPhotographer').value=meta.photographer||'';
+  if(E('v95MetaInstagram'))E('v95MetaInstagram').value=meta.instagram?('@'+String(meta.instagram).replace(/^@/,'')):'';
+  if(E('v95MetaWhatsapp'))E('v95MetaWhatsapp').value=meta.whatsapp||'';
+};
+
+/* Guardar título + metadata extendida */
+window.v92SaveMeta=async function(){
+  var m=M();if(!m)return;
+  var nameInput=E('v94MetaName');
+  var oldName=String(nameInput&&nameInput.dataset.oldName||'').trim();
+  var newName=String(nameInput&&nameInput.value||'').trim();
+  var desc=String((E('v92MetaDesc')||{}).value||'').trim();
+  var date=String((E('v92MetaDate')||{}).value||'').trim();
+  var photographer=String((E('v95MetaPhotographer')||{}).value||'').trim();
+  var instagram=String((E('v95MetaInstagram')||{}).value||'').trim().replace(/^@/,'');
+  var whatsapp=String((E('v95MetaWhatsapp')||{}).value||'').trim();
+
+  if(!newName){if(window.luxAlert)luxAlert('TÍTULO','El título no puede quedar vacío.');return}
+  if(!oldName)oldName=newName;
+
+  if(typeof window.toggleL==='function')window.toggleL(true,'GUARDANDO EVENTO…');
+  try{
+    if(oldName!==newName){
+      var rr=await apiPost({action:'renameAlbumGroup',pin:'3233',oldName:oldName,newName:newName});
+      if(!rr||rr.success===false)throw new Error((rr&&rr.msg)||'No se pudo renombrar');
+      (m.all||[]).forEach(function(a){if(String(a.group||'')===oldName)a.group=newName});
+      if(m.meta[oldName]){m.meta[newName]=m.meta[oldName];delete m.meta[oldName]}
+      if(m.parent===oldName)m.parent=newName;
+    }
+
+    var r=await apiPost({
+      action:'saveAlbumGroupMeta',pin:'3233',group:newName,
+      description:desc,date:date,photographer:photographer,
+      instagram:instagram,whatsapp:whatsapp
+    });
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+
+    m.meta[newName]={
+      name:newName,description:r.description||desc,date:r.date||date,
+      photographer:r.photographer||photographer,
+      instagram:r.instagram||instagram,whatsapp:r.whatsapp||whatsapp
+    };
+
+    var ov=E('v92MetaOverlay');if(ov)ov.classList.remove('open');
+    if(typeof window.v91Render==='function')window.v91Render();
+    setTimeout(enrichParentCards95,30);
+  }catch(err){
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }finally{
+    if(typeof window.toggleL==='function')window.toggleL(false);
+  }
+};
+
+/* ---------- Búsqueda jerárquica real ---------- */
+function search95(q){
+  var m=M(),list=E('eventList');if(!m||!list||m.admin)return;
+  q=String(q||'').trim().toLowerCase();
+
+  if(!q){
+    m.parent='';
+    if(typeof window.v91Render==='function')window.v91Render();
+    setTimeout(enrichParentCards95,20);
+    return;
+  }
+
+  var all=(m.all||[]).filter(function(a){return a.visible!==false});
+  var groups={};
+  all.forEach(function(a){var g=String(a.group||'').trim();if(g)(groups[g]||(groups[g]=[])).push(a)});
+
+  var out=[];
+
+  Object.keys(groups).forEach(function(g){
+    var meta=(m.meta||{})[g]||{};
+    var parentText=[g,meta.description,meta.date,meta.photographer,meta.instagram,meta.whatsapp].join(' ').toLowerCase();
+    if(parentText.indexOf(q)>=0){
+      var c=window.__v93GroupColors&&window.__v93GroupColors[g]||'#25cfe0';
+      out.push('<div class="v91-parent" data-v91parent="'+esc(g)+'" style="--gc:'+c+'">'+
+        '<div class="cam">📷</div><h3>'+esc(g)+'</h3>'+
+        (meta.description?'<div class="v95-parent-desc">'+esc(meta.description)+'</div>':'')+
+        '<div class="count">'+groups[g].length+' álbum'+(groups[g].length===1?'':'es')+'</div></div>');
+    }
+  });
+
+  all.forEach(function(a){
+    var text=[a.displayName,a.description].join(' ').toLowerCase();
+    if(text.indexOf(q)<0)return;
+    var g=String(a.group||'').trim();
+    out.push('<div class="event-card" data-v95open="'+esc(String(a.id||''))+'">'+
+      '<i class="fa fa-camera-retro"></i><h3>'+esc(a.displayName||'')+'</h3>'+
+      (a.description?'<div class="v64-album-desc">'+esc(a.description)+'</div>':'')+
+      (g?'<div class="v91-search-parent">Dentro de: '+esc(g)+'</div>':'')+
+      '</div>');
+  });
+
+  list.innerHTML=out.join('')||'<p style="grid-column:1/-1;text-align:center;color:#777">No encontramos álbumes.</p>';
+
+  list.querySelectorAll('[data-v95open]').forEach(function(card){
+    card.onclick=function(){var id=card.getAttribute('data-v95open');var a=all.find(function(x){return String(x.id||'')===String(id)});if(a)askPass(a.id)}
+  });
+  list.querySelectorAll('[data-v91parent]').forEach(function(card){
+    card.onclick=function(){if(typeof window.v91Render==='function'){m.parent=card.getAttribute('data-v91parent');window.v91Render();setTimeout(enrichParentCards95,20)}}
+  });
+}
+function bindSearch95(){
+  var s=E('albumSearchBox')||E('albumSearch');
+  if(!s)return;
+  s.oninput=function(){search95(s.value)};
+}
+
+/* ---------- Filtro Mercado Pago en Panel Admin ---------- */
+function ensureMpFilter95(){
+  if(E('v95PaymentFilter'))return;
+  var status=E('adminStatusFilter');
+  if(!status||!status.parentNode)return;
+  var sel=document.createElement('select');
+  sel.id='v95PaymentFilter';
+  sel.innerHTML='<option value="">Todos los canales</option><option value="MP">Mercado Pago</option><option value="MANUAL">Manual / WhatsApp</option>';
+  sel.onchange=function(){if(typeof window.renderAdminOrders==='function')window.renderAdminOrders()};
+  status.insertAdjacentElement('afterend',sel);
+}
+function isMP95(o){
+  return String(o.canalPago||'').toUpperCase()==='MERCADOPAGO' || !!o.mpPaymentId || !!o.mpPreferenceId;
+}
+
+var oldAdminRender95=window.renderAdminOrders;
+if(typeof oldAdminRender95==='function'){
+  window.renderAdminOrders=function(){
+    ensureMpFilter95();
+    var f=String((E('v95PaymentFilter')||{}).value||'');
+    if(!f)return oldAdminRender95.apply(this,arguments);
+
+    var original=adminOrdersData;
+    adminOrdersData=original.filter(function(o){return f==='MP'?isMP95(o):!isMP95(o)});
+    try{
+      return oldAdminRender95.apply(this,arguments);
+    }finally{
+      adminOrdersData=original;
+    }
+  };
+}
+
+/* Añadir detalle MP dentro de cada pedido mostrado */
+function enhanceMpRows95(){
+  var filtered=window.__lastAdminFiltered||[];
+  var rows=document.querySelectorAll('#adminOrders .order-row');
+  rows.forEach(function(row,i){
+    var o=filtered[i];if(!o||!isMP95(o)||row.querySelector('.v95-mp-line'))return;
+    var meta=row.querySelector('.order-meta');if(!meta)return;
+    var bits=['Mercado Pago'];
+    if(o.mpStatus)bits.push(String(o.mpStatus).toUpperCase());
+    if(o.mpMetodo)bits.push(o.mpMetodo);
+    if(o.mpMonto)bits.push('$'+Number(o.mpMonto||0).toLocaleString('es-AR'));
+    if(o.mpPaymentId)bits.push('Pago '+o.mpPaymentId);
+    var d=document.createElement('div');d.className='v95-mp-line';d.textContent='💳 '+bits.join(' · ');
+    meta.appendChild(d);
+  });
+}
+var mo95=new MutationObserver(function(){
+  clearTimeout(window.__v95mut);
+  window.__v95mut=setTimeout(function(){enrichParentCards95();enhanceMpRows95();ensureMpFilter95()},30);
+});
+window.addEventListener('DOMContentLoaded',function(){
+  if(E('eventList'))mo95.observe(E('eventList'),{childList:true,subtree:true});
+  if(E('adminOrders'))mo95.observe(E('adminOrders'),{childList:true,subtree:true});
+  bindSearch95();ensureMpFilter95();
+});
+window.addEventListener('load',function(){
+  setTimeout(function(){enrichParentCards95();bindSearch95();ensureMpFilter95();enhanceMpRows95()},500);
+});
+})();
+</script>
+<!-- /TOMAUNO V95 -->
 
 </body>
 </html>
