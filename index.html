@@ -8417,7 +8417,7 @@ if(adm){
 </script>
 <!-- /TOMAUNO V74 -->
 
-\n<!-- TOMAUNO V75 -->
+<!-- TOMAUNO V75 -->
 <style>
 @media(max-width:700px){
  #modalCheckout .t54-mp-pay,#modalCheckout .t54-manual{font-size:12px!important;font-weight:950!important;letter-spacing:0!important}
@@ -8830,6 +8830,185 @@ document.addEventListener('click',function(){
 })();
 </script>
 <!-- /TOMAUNO V77 -->
+
+
+
+<!-- TOMAUNO V78 - DIAGNOSTICO VISIBILIDAD + CAMPANA CONSISTENTE -->
+<style>
+  .v78-album-debug{
+    margin-top:6px;
+    min-height:14px;
+    font-size:9px;
+    line-height:1.25;
+    color:#777;
+    text-align:center;
+  }
+  .v78-album-debug.busy{color:#e8bd4d}
+  .v78-album-debug.ok{color:#43d77e}
+  .v78-album-debug.err{color:#ff666d}
+</style>
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+function esc78(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+function album78(bridge){
+  var pools=[window.__v73AdminAlbums,window.eventsData];
+  for(var i=0;i<pools.length;i++){
+    var a=(pools[i]||[]).find(function(x){return String(x.bridgeId||'')===String(bridge||'')});
+    if(a)return a;
+  }
+  return null;
+}
+function debugNode78(card){
+  if(!card)return null;
+  var n=card.querySelector('.v78-album-debug');
+  if(!n){
+    n=document.createElement('div');n.className='v78-album-debug';
+    card.appendChild(n);
+  }
+  return n;
+}
+function say78(card,msg,kind){
+  var n=debugNode78(card);if(!n)return;
+  n.textContent=msg;n.className='v78-album-debug '+(kind||'');
+}
+
+/* Captura delegada: funciona aunque otras versiones vuelvan a renderizar botones. */
+document.addEventListener('click',async function(e){
+  if(!window.__albumAdminMode)return;
+  var btn=e.target&&e.target.closest?e.target.closest('#eventList .v64-album-tools button'):null;
+  if(!btn)return;
+  var title=(btn.getAttribute('title')||'').toLowerCase();
+  if(title.indexOf('ocultar')<0 && title.indexOf('mostrar')<0)return;
+
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+
+  var card=btn.closest('.event-card');
+  var bridge=card?card.getAttribute('data-bridge'):'';
+  var ev=album78(bridge);
+  if(!bridge||!ev){say78(card,'No pude identificar este álbum.','err');return}
+
+  var targetVisible=(ev.visible===false);
+  btn.disabled=true;
+  say78(card,(targetVisible?'MOSTRANDO':'OCULTANDO')+'… enviando al servidor','busy');
+
+  try{
+    var res=await apiPost({
+      action:'setAlbumVisibility',
+      pin:'3233',
+      bridgeId:bridge,
+      state:targetVisible?'VISIBLE':'OCULTO'
+    });
+    if(!res||res.success===false)throw new Error((res&&res.msg)||'Sin respuesta válida');
+
+    /* Leer inmediatamente lo que quedó realmente en Albumes_Tomauno */
+    var state=await apiGet({action:'albumVisibilityState',pin:'3233',bridgeId:bridge,t:Date.now()});
+    if(!state||state.success===false)throw new Error((state&&state.msg)||'No pude verificar el estado');
+
+    if(Boolean(state.visible)!==Boolean(targetVisible)){
+      throw new Error('El servidor respondió, pero la planilla quedó en '+(state.visible?'VISIBLE':'OCULTO')+'.');
+    }
+
+    [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+      (arr||[]).forEach(function(x){
+        if(String(x.bridgeId||'')===String(bridge))x.visible=!!state.visible;
+      });
+    });
+
+    say78(card,'CONFIRMADO EN PLANILLA: '+(state.visible?'VISIBLE':'OCULTO')+' · fila '+(state.row||'-'),'ok');
+
+    /* Dar tiempo a leer el diagnóstico antes del render. */
+    setTimeout(async function(){
+      try{
+        var list=await apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()});
+        var arr=Array.isArray(list)?list:(list.events||[]);
+        window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+        window.__v73AdminAlbumsLoaded=true;
+        window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+        if(typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+      }catch(ignore){}
+    },700);
+  }catch(err){
+    say78(card,'ERROR: '+(err.message||String(err)),'err');
+    if(window.luxAlert)window.luxAlert('VISIBILIDAD DEL ÁLBUM',err.message||String(err));
+  }finally{
+    btn.disabled=false;
+  }
+},true);
+
+/* CAMPANA: el número visible sale exclusivamente de las filas NUEVO reales. */
+function rows78(){
+  try{
+    var a=JSON.parse(sessionStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]');
+    return Array.from(new Set((Array.isArray(a)?a:[]).map(Number).filter(function(n){return n>1})));
+  }catch(e){return []}
+}
+function syncBell78(){
+  var rows=rows78(),badge=el('v73BellBadge'),seen=el('v74SeenBtn');
+  if(badge){
+    badge.textContent=String(rows.length);
+    badge.style.display=rows.length?'block':'none';
+  }
+  if(seen)seen.classList.toggle('has-unread',rows.length>0);
+
+  /* Reparar contador histórico que quedó guardado sin filas asociadas. */
+  if(rows.length===0){
+    try{
+      var s=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
+      if(Number(s.unread||0)!==0){s.unread=0;sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(s))}
+    }catch(e){}
+  }
+}
+window.v78SyncBell=syncBell78;
+
+/* Marcar vistos: limpiar filas, contador y marcas visuales en una sola operación. */
+window.v74MarkSeen=function(){
+  try{
+    sessionStorage.setItem('TOMAUNO_UNREAD_ROWS','[]');
+    var s=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
+    s.unread=0;sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(s));
+  }catch(e){}
+  document.querySelectorAll('#adminOrders .v74-unread').forEach(function(r){r.classList.remove('v74-unread')});
+  var stack=el('v73NotifyStack');if(stack)stack.innerHTML='';
+  syncBell78();
+  if(typeof miniToast==='function')miniToast('Novedades marcadas como vistas');
+};
+
+/* Detectar las filas NUEVO aunque cambie el HTML interno del pedido. */
+function paint78(){
+  var rows=rows78();
+  document.querySelectorAll('#adminOrders .order-row').forEach(function(row){
+    var cb=row.querySelector('.v64-order-check');
+    var n=cb?Number(cb.value||0):0;
+    row.classList.toggle('v74-unread',rows.indexOf(n)>=0);
+  });
+  syncBell78();
+}
+window.v74HighlightUnread=paint78;
+
+/* Quitar cualquier texto literal /n o \n que haya quedado como nodo suelto. */
+function cleanSlashN78(){
+  var root=document.body;
+  if(!root)return;
+  var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  var kill=[],n;
+  while(n=w.nextNode()){
+    var s=String(n.nodeValue||'').trim();
+    if(/^(?:\\n|\/n)(?:\s*(?:\\n|\/n))*$/i.test(s))kill.push(n);
+  }
+  kill.forEach(function(n){if(n.parentNode)n.parentNode.removeChild(n)});
+}
+
+window.addEventListener('load',function(){
+  cleanSlashN78();syncBell78();setTimeout(paint78,250);
+  setInterval(syncBell78,1000);
+});
+document.addEventListener('click',function(){setTimeout(function(){cleanSlashN78();paint78()},80)});
+})();
+</script>
+<!-- /TOMAUNO V78 -->
 
 </body>
 </html>
