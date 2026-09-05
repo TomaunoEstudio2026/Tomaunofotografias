@@ -9555,5 +9555,269 @@ E('v92AlbumValue').addEventListener('keydown',function(e){
 </script>
 <!-- /TOMAUNO V92 -->
 
+
+
+<!-- TOMAUNO V93 - F3 + DRAGDROP + CHECK HIJOS + PASSWORD MANAGER FIX -->
+<style>
+#v92Version{display:none!important}
+#v93Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
+}
+.v93-masked{
+  -webkit-text-security:disc!important;
+  text-security:disc!important;
+  font-family:Arial,sans-serif!important;
+  letter-spacing:.14em!important;
+}
+.v91-check{
+  z-index:2147483000!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+@media(min-width:701px){
+  body.v91-album-admin .event-card[data-v91album]{cursor:grab!important}
+  body.v91-album-admin .event-card[data-v91album]:active{cursor:grabbing!important}
+}
+.v93-dragging{opacity:.38!important;transform:scale(.985)!important}
+.v91-parent.v93-drop-target{outline:1px dashed var(--gc,#e51b23)!important;outline-offset:-7px!important}
+.v91-parent.v93-drag-over{
+  transform:translateY(-4px) scale(1.012)!important;
+  box-shadow:0 0 0 2px var(--gc,#e51b23),0 0 30px color-mix(in srgb,var(--gc,#e51b23) 28%,transparent)!important
+}
+#v93AdminHint{
+  display:none;position:fixed;right:14px;top:12px;z-index:2147482000;
+  padding:6px 9px;border:1px solid #2e2e32;border-radius:999px;
+  background:rgba(8,8,9,.92);color:#777;font-size:8px;font-weight:800;
+  pointer-events:none
+}
+body.v91-album-admin #v93AdminHint{display:block}
+</style>
+
+<div id="v93Version">TOMAUNO FOTOS · V93</div>
+<div id="v93AdminHint">F3 · PANEL ADM</div>
+
+<script>
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function model(){return window.__v91Model||null}
+
+var P93=['#50d45b','#25cfe0','#f0b91c','#aa68ff','#ff6b42','#e64d8e','#4d8dff','#18c5a2','#ff8cc8','#8fd14f'];
+window.__v93GroupColors={};
+
+function rebuildColors93(){
+  var m=model();if(!m)return;
+  var names=[];
+  (m.all||[]).forEach(function(a){
+    var g=String(a.group||'').trim();
+    if(g&&names.indexOf(g)<0)names.push(g);
+  });
+  names.sort();
+  window.__v93GroupColors={};
+  names.forEach(function(g,i){window.__v93GroupColors[g]=P93[i%P93.length]});
+}
+function color93(g){
+  rebuildColors93();
+  return window.__v93GroupColors[g]||'#e51b23';
+}
+function recolor93(){
+  rebuildColors93();
+  document.querySelectorAll('.v91-parent[data-v91parent]').forEach(function(p){
+    p.style.setProperty('--gc',color93(p.getAttribute('data-v91parent')||''));
+  });
+  document.querySelectorAll('.v91-child-tag').forEach(function(t){
+    var g=(t.textContent||'').replace(/^↳\s*/,'').trim();
+    t.style.setProperty('--gc',color93(g));
+  });
+}
+
+/* CHECKS DE HIJOS: captura global antes de listeners heredados */
+document.addEventListener('pointerdown',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v91-check[data-v91check]'):null;
+  if(!b)return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+},true);
+
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v91-check[data-v91check]'):null;
+  if(!b)return;
+
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+
+  var m=model();if(!m)return;
+  var id=String(b.getAttribute('data-v91check')||'');
+
+  if(m.selected.has(id))m.selected.delete(id);
+  else m.selected.add(id);
+
+  if(typeof window.v91Render==='function')window.v91Render();
+  setTimeout(function(){recolor93();bindDrag93()},30);
+},true);
+
+/* DRAG & DROP - escritorio */
+var dragId93='';
+
+function bindDrag93(){
+  if(window.innerWidth<=700)return;
+  var m=model();if(!m||!m.admin)return;
+
+  document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){
+    card.setAttribute('draggable','true');
+
+    if(card.dataset.v93drag==='1')return;
+    card.dataset.v93drag='1';
+
+    card.addEventListener('dragstart',function(e){
+      dragId93=String(card.getAttribute('data-v91album')||'');
+      card.classList.add('v93-dragging');
+      try{
+        e.dataTransfer.effectAllowed='move';
+        e.dataTransfer.setData('text/plain',dragId93);
+      }catch(_){}
+    });
+    card.addEventListener('dragend',function(){
+      card.classList.remove('v93-dragging');
+      dragId93='';
+      document.querySelectorAll('.v93-drag-over').forEach(function(x){x.classList.remove('v93-drag-over')});
+    });
+  });
+
+  document.querySelectorAll('#eventList .v91-parent[data-v91parent]').forEach(function(parent){
+    parent.classList.add('v93-drop-target');
+
+    if(parent.dataset.v93drop==='1')return;
+    parent.dataset.v93drop='1';
+
+    parent.addEventListener('dragover',function(e){
+      if(!dragId93)return;
+      e.preventDefault();
+      parent.classList.add('v93-drag-over');
+      try{e.dataTransfer.dropEffect='move'}catch(_){}
+    });
+    parent.addEventListener('dragleave',function(){
+      parent.classList.remove('v93-drag-over');
+    });
+    parent.addEventListener('drop',async function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      parent.classList.remove('v93-drag-over');
+
+      var id=dragId93;
+      var group=String(parent.getAttribute('data-v91parent')||'');
+      if(!id||!group)return;
+
+      var w=E('v91Working');
+      if(w){
+        w.textContent='MOVIENDO A '+group.toUpperCase()+'…';
+        w.className='v91-working';
+        w.style.display='block';
+      }
+
+      try{
+        var r=await apiPost({
+          action:'setAlbumsGroup',
+          pin:'3233',
+          bridgeIds:[id],
+          group:group
+        });
+        if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo mover');
+
+        (m.all||[]).forEach(function(a){
+          if(String(a.bridgeId||'')===id)a.group=group;
+        });
+
+        if(typeof window.v91Render==='function')window.v91Render();
+        setTimeout(function(){recolor93();bindDrag93()},30);
+
+        if(w){
+          w.textContent='ÁLBUM MOVIDO A '+group;
+          w.className='v91-working ok';
+          w.style.display='block';
+          setTimeout(function(){w.style.display='none'},1400);
+        }
+      }catch(err){
+        if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+      }
+    });
+  });
+}
+
+/* F3 = PANEL ADM */
+document.addEventListener('keydown',function(e){
+  if(e.key!=='F3')return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  try{
+    var ok=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1';
+    if(ok){
+      var adm=E('modalAdmin');
+      if(adm)adm.style.display='flex';
+      if(typeof window.loadAdminOrders==='function')window.loadAdminOrders();
+    }else{
+      if(typeof window.openAdminPin==='function')window.openAdminPin();
+    }
+  }catch(_){
+    if(typeof window.openAdminPin==='function')window.openAdminPin();
+  }
+},true);
+
+/* Evitar popup guardar/cambiar contraseña */
+function hardenCodes93(){
+  ['adminPinInput','inputPass','v70KeyInput'].forEach(function(id){
+    var n=E(id);if(!n)return;
+    try{n.type='text'}catch(_){}
+    n.classList.add('v93-masked');
+    n.setAttribute('autocomplete','off');
+    n.setAttribute('name','tomauno_code_'+id);
+    n.setAttribute('data-lpignore','true');
+    n.setAttribute('data-1p-ignore','true');
+    n.setAttribute('data-form-type','other');
+  });
+}
+
+/* Reaplicar después de cualquier render V91 */
+var oldRender93=window.v91Render;
+if(typeof oldRender93==='function'){
+  window.v91Render=function(){
+    var r=oldRender93.apply(this,arguments);
+    setTimeout(function(){
+      recolor93();
+      bindDrag93();
+      hardenCodes93();
+    },20);
+    return r;
+  };
+}
+
+var mo93=new MutationObserver(function(){
+  clearTimeout(window.__v93mut);
+  window.__v93mut=setTimeout(function(){
+    recolor93();
+    bindDrag93();
+    hardenCodes93();
+  },25);
+});
+
+window.addEventListener('DOMContentLoaded',function(){
+  var l=E('eventList');
+  if(l)mo93.observe(l,{childList:true,subtree:true});
+  hardenCodes93();
+});
+window.addEventListener('load',function(){
+  setTimeout(function(){recolor93();bindDrag93();hardenCodes93()},400);
+});
+document.addEventListener('click',function(){
+  setTimeout(hardenCodes93,60);
+});
+})();
+</script>
+<!-- /TOMAUNO V93 -->
+
 </body>
 </html>
