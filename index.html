@@ -10478,5 +10478,354 @@ window.addEventListener('load',function(){
 </script>
 <!-- /TOMAUNO V84 -->
 
+
+
+<!-- TOMAUNO V85 - ADMIN POR PADRES + DRAGDROP + RENDER CONSISTENTE -->
+<style>
+#v84Version{display:none!important}
+#v85Version{
+  position:fixed;right:8px;bottom:5px;z-index:50;color:#555;font-size:8px;
+  font-weight:700;letter-spacing:.08em;pointer-events:none;user-select:none
+}
+
+/* volver compacto, sin heredarse como tarjeta */
+#v84GroupBack,#v80GroupBack{
+  width:auto!important;min-width:0!important;max-width:none!important;
+  height:34px!important;min-height:34px!important;
+  padding:0 12px!important;margin:0 0 12px!important;
+  border-radius:999px!important;display:inline-flex!important;
+  align-items:center!important;justify-content:center!important;
+  font-size:9px!important;line-height:1!important;
+  grid-column:auto!important;align-self:flex-start!important;
+}
+
+/* "OCULTO" desplazado para no chocar con selector */
+body.v64-album-admin .v64-hidden-badge{
+  left:42px!important;
+  top:12px!important;
+}
+
+/* Admin principal: padres + sueltos únicamente */
+#v85AdminHeader{
+  grid-column:1/-1;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:0 0 8px;padding:8px 10px;border:1px solid #29292d;border-radius:12px;background:#0b0b0c;
+}
+#v85AdminHeader .hint{color:#888;font-size:9px;line-height:1.35}
+#v85AdminHeader .hint b{color:#eee}
+#v85AdminHeader button{
+  height:32px;border:1px solid #343438;border-radius:9px;background:#151517;color:#eee;
+  padding:0 10px;font-size:9px;font-weight:850;cursor:pointer
+}
+
+/* Padre como destino de arrastre */
+.v80-group-card.v85-drop-target{
+  border-style:dashed!important;
+}
+.v80-group-card.v85-drag-over{
+  transform:translateY(-4px) scale(1.01)!important;
+  box-shadow:0 0 0 2px var(--v84-group-color,#d71920),0 0 26px color-mix(in srgb,var(--v84-group-color,#d71920) 28%,transparent)!important;
+}
+
+/* Álbum arrastrable en escritorio */
+@media(min-width:701px){
+  body.v64-album-admin .event-card[data-bridge]{cursor:grab!important}
+  body.v64-album-admin .event-card[data-bridge]:active{cursor:grabbing!important}
+}
+.v85-dragging{opacity:.45!important;transform:scale(.985)!important}
+
+/* Dentro de un padre: barra clara de administración */
+#v85InsideParentBar{
+  grid-column:1/-1;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin:0 0 10px;padding:9px 10px;border:1px solid #303035;border-radius:12px;background:#0b0b0c
+}
+#v85InsideParentBar .parent-name{font-size:11px;font-weight:900;color:#fff}
+#v85InsideParentBar .meta{font-size:9px;color:#888}
+#v85InsideParentBar button{
+  margin-left:auto;height:32px;border:1px solid #4c3034;border-radius:9px;background:#181113;color:#eee;
+  padding:0 10px;font-size:9px;font-weight:850;cursor:pointer
+}
+
+/* Feedback optimista: rápido */
+.event-card.v85-hide-preview{
+  opacity:.28!important;
+  filter:saturate(.3)!important;
+}
+.event-card.v85-show-preview{
+  opacity:.92!important;
+  filter:none!important;
+}
+.v85-mini-status{
+  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+  z-index:40;padding:5px 8px;border-radius:999px;background:#09090a;border:1px solid #66531f;
+  color:#f1cd5b;font-size:8px;font-weight:900;white-space:nowrap;pointer-events:none
+}
+
+@media(max-width:700px){
+  #v85AdminHeader{align-items:flex-start;flex-direction:column}
+  #v85InsideParentBar{align-items:flex-start}
+  #v85InsideParentBar button{margin-left:0}
+}
+</style>
+
+<div id="v85Version">TOMAUNO FOTOS · V85</div>
+
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+function esc85(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function attr85(s){return esc85(s).replace(/`/g,'&#96;')}
+
+var currentParent85='';
+var dragBridge85='';
+
+function all85(){
+  var seen={},out=[];
+  [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+    (arr||[]).forEach(function(x){
+      var k=String(x.bridgeId||x.id||'');
+      if(k&&!seen[k]){seen[k]=1;out.push(x)}
+    });
+  });
+  return out;
+}
+function groupMap85(){
+  var g={};
+  all85().forEach(function(x){
+    var n=String(x.group||'').trim();
+    if(n)(g[n]||(g[n]=[])).push(x)
+  });
+  return g;
+}
+function parentCard85(name,items){
+  var c=(typeof window.color84==='function')?window.color84(name):'#d71920';
+  return '<div class="v80-group-card v85-drop-target" data-group="'+attr85(name)+'" style="--v84-group-color:'+c+'" '+
+    'onclick="v85OpenParent('+JSON.stringify(name).replace(/"/g,'&quot;')+')">'+
+      '<div class="v83-group-camera">📷</div>'+
+      '<div class="v83-group-badge">◆ EVENTO / COLECCIÓN</div>'+
+      '<h3>'+esc85(name)+'</h3>'+
+      '<p class="v83-group-count">'+items.length+' álbum'+(items.length===1?'':'es')+'</p>'+
+    '</div>';
+}
+function albumCardAdmin85(ev){
+  var hidden=ev.visible===false;
+  return '<div class="event-card '+(hidden?'v64-hidden':'')+'" draggable="true" data-bridge="'+attr85(ev.bridgeId||'')+'" data-album="'+attr85(ev.displayName||'')+'">'+
+      (hidden?'<span class="v64-hidden-badge">OCULTO</span>':'')+
+      '<div class="v64-album-tools">'+
+        '<button type="button" title="'+(hidden?'Mostrar álbum':'Ocultar álbum')+'">'+(hidden?'◉':'◌')+'</button>'+
+        '<button type="button" title="Cambiar clave">⌁</button>'+
+      '</div>'+
+      '<i class="fa fa-camera-retro"></i>'+
+      '<h3 class="v64-editable-title" ondblclick="event.stopPropagation();editAlbumTitleInline64(this,\''+String(ev.bridgeId||'').replace(/'/g,"\\'")+'\')">'+esc85(ev.displayName||'')+'</h3>'+
+      '<div class="v64-album-desc" ondblclick="event.stopPropagation();editAlbumDescriptionInline67(this,\''+String(ev.bridgeId||'').replace(/'/g,"\\'")+'\')">'+
+        esc85(ev.description||'Doble clic para agregar descripción')+
+      '</div>'+
+    '</div>';
+}
+
+/* Admin principal: padres + álbumes sin grupo. No mezclar hijos. */
+function renderAdminRoot85(){
+  if(!window.__albumAdminMode)return;
+  currentParent85='';
+  var list=el('eventList');if(!list)return;
+  var groups=groupMap85();
+  var singles=all85().filter(function(x){return !String(x.group||'').trim()});
+
+  var html='<div id="v85AdminHeader"><div class="hint"><b>Administración de álbumes</b><br>Los álbumes agrupados se administran entrando en su padre. En PC también podés arrastrar un álbum suelto sobre un padre.</div></div>';
+  Object.keys(groups).sort().forEach(function(g){html+=parentCard85(g,groups[g])});
+  singles.forEach(function(ev){html+=albumCardAdmin85(ev)});
+  list.innerHTML=html;
+
+  bindAdminActions85();
+  bindDragDrop85();
+  if(typeof window.applyGroupColors84==='function')window.applyGroupColors84();
+}
+
+/* Dentro del padre: sólo sus hijos y acción enviar a portada */
+window.v85OpenParent=function(name){
+  currentParent85=name;
+  var list=el('eventList');if(!list)return;
+  var items=all85().filter(function(x){return String(x.group||'')===String(name)});
+  var admin=window.__albumAdminMode;
+
+  var head='<button id="v84GroupBack" type="button" onclick="'+(admin?'v85AdminRoot()':'v84CloseGroup()')+'">← VOLVER</button>';
+  if(admin){
+    head+='<div id="v85InsideParentBar">'+
+      '<div><div class="parent-name">'+esc85(name)+'</div><div class="meta">'+items.length+' álbum'+(items.length===1?'':'es')+'</div></div>'+
+      '<button type="button" onclick="event.stopPropagation();v81EditMeta('+JSON.stringify(name).replace(/"/g,'&quot;')+')">✎ DESCRIPCIÓN / FECHA</button>'+
+    '</div>';
+  }
+
+  list.innerHTML=head+items.map(function(ev){return admin?albumCardAdmin85(ev):
+    '<div class="event-card" data-album="'+attr85(ev.displayName||'')+'" onclick="askPass('+JSON.stringify(String(ev.id||'')).replace(/"/g,'&quot;')+')">'+
+      '<i class="fa fa-camera-retro"></i><h3>'+esc85(ev.displayName||'')+'</h3>'+
+      (ev.description?'<div class="v64-album-desc">'+esc85(ev.description)+'</div>':'')+
+    '</div>'
+  }).join('');
+
+  if(admin){
+    bindAdminActions85();
+    bindInsideParentSelectors85(name);
+  }
+};
+window.v85AdminRoot=renderAdminRoot85;
+
+/* Clicks de ojo/clave dentro de admin root o padre */
+function bindAdminActions85(){
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var bridge=card.getAttribute('data-bridge');
+    var buttons=card.querySelectorAll('.v64-album-tools button');
+    if(buttons[0]){
+      buttons[0].onclick=function(e){
+        e.preventDefault();e.stopPropagation();
+        optimisticVisibility85(card,bridge);
+      };
+    }
+    if(buttons[1]){
+      buttons[1].onmouseenter=function(){
+        var ev=all85().find(function(x){return String(x.bridgeId||'')===String(bridge)});
+        buttons[1].title=ev&&ev.pass?'Clave actual: '+ev.pass:'Sin clave configurada';
+      };
+      buttons[1].onclick=function(e){
+        e.preventDefault();e.stopPropagation();
+        if(typeof window.editAlbumPass64==='function')window.editAlbumPass64(bridge);
+      };
+    }
+  });
+}
+
+/* feedback instantáneo + llamada real V78 */
+async function optimisticVisibility85(card,bridge){
+  var ev=all85().find(function(x){return String(x.bridgeId||'')===String(bridge)});
+  if(!ev)return;
+  var willShow=ev.visible===false;
+  card.classList.add(willShow?'v85-show-preview':'v85-hide-preview');
+  var s=document.createElement('div');
+  s.className='v85-mini-status';
+  s.textContent=willShow?'MOSTRANDO…':'OCULTANDO…';
+  card.appendChild(s);
+
+  try{
+    await window.toggleAlbumVisibility64(bridge);
+  }finally{
+    setTimeout(function(){
+      if(s.parentNode)s.remove();
+      card.classList.remove('v85-show-preview','v85-hide-preview');
+      if(window.__albumAdminMode){
+        if(currentParent85)window.v85OpenParent(currentParent85); else renderAdminRoot85();
+      }
+    },250);
+  }
+}
+
+/* Desktop drag/drop: mover álbum suelto a padre existente */
+function bindDragDrop85(){
+  if(window.innerWidth<=700)return;
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    card.addEventListener('dragstart',function(e){
+      dragBridge85=card.getAttribute('data-bridge')||'';
+      card.classList.add('v85-dragging');
+      try{e.dataTransfer.setData('text/plain',dragBridge85);e.dataTransfer.effectAllowed='move'}catch(_){}
+    });
+    card.addEventListener('dragend',function(){
+      card.classList.remove('v85-dragging');dragBridge85='';
+      document.querySelectorAll('.v85-drag-over').forEach(function(x){x.classList.remove('v85-drag-over')});
+    });
+  });
+  document.querySelectorAll('.v85-drop-target[data-group]').forEach(function(parent){
+    parent.addEventListener('dragover',function(e){e.preventDefault();parent.classList.add('v85-drag-over')});
+    parent.addEventListener('dragleave',function(){parent.classList.remove('v85-drag-over')});
+    parent.addEventListener('drop',async function(e){
+      e.preventDefault();e.stopPropagation();parent.classList.remove('v85-drag-over');
+      var bridge=dragBridge85||'';
+      var group=parent.getAttribute('data-group')||'';
+      if(!bridge||!group)return;
+      await apiPost({action:'setAlbumsGroup',pin:'3233',bridgeIds:[bridge],group:group});
+      [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+        (arr||[]).forEach(function(x){if(String(x.bridgeId||'')===bridge)x.group=group})
+      });
+      if(typeof showToast==='function')showToast('Álbum movido a '+group);
+      renderAdminRoot85();
+    });
+  });
+}
+
+/* Dentro de padre: selector + enviar a portada */
+function bindInsideParentSelectors85(group){
+  var selected=new Set();
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var b=document.createElement('button');
+    b.className='v82-select-album';b.type='button';b.title='Seleccionar';
+    b.onclick=function(e){
+      e.preventDefault();e.stopPropagation();
+      var id=card.getAttribute('data-bridge');
+      if(selected.has(id))selected.delete(id);else selected.add(id);
+      b.classList.toggle('selected',selected.has(id));
+    };
+    card.appendChild(b);
+  });
+  var bar=el('v85InsideParentBar');
+  if(bar){
+    var btn=document.createElement('button');
+    btn.type='button';btn.textContent='ENVIAR SELECCIONADOS A PORTADA';
+    btn.onclick=async function(){
+      var ids=Array.from(selected);
+      if(!ids.length){if(window.luxAlert)luxAlert('SIN SELECCIÓN','Marcá uno o más álbumes.');return}
+      await apiPost({action:'setAlbumsGroup',pin:'3233',bridgeIds:ids,group:''});
+      [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+        (arr||[]).forEach(function(x){if(ids.indexOf(String(x.bridgeId||''))>=0)x.group=''})
+      });
+      window.v85OpenParent(group);
+    };
+    bar.appendChild(btn);
+  }
+}
+
+/* Entrar a edición: mostrar nueva administración jerárquica */
+var enter85=window.enterAlbumAdminMode;
+window.enterAlbumAdminMode=function(){
+  window.__albumAdminMode=true;
+  document.body.classList.add('v64-album-admin');
+  var adm=el('modalAdmin');if(adm)adm.style.display='none';
+  var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='flex';
+  if(window.__v73AdminAlbumsLoaded){
+    renderAdminRoot85();
+  }else if(typeof window.fetchAdminAlbums73==='function'){
+    window.fetchAdminAlbums73().then(renderAdminRoot85);
+  }else{
+    apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()}).then(function(res){
+      var arr=Array.isArray(res)?res:(res.events||[]);
+      window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+      window.__v73AdminAlbumsLoaded=true;
+      window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+      renderAdminRoot85();
+    });
+  }
+};
+
+/* Salir: siempre render público consistente */
+var exit85=window.exitAlbumAdminMode;
+window.exitAlbumAdminMode=function(){
+  window.__albumAdminMode=false;
+  document.body.classList.remove('v64-album-admin');
+  var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='none';
+  currentParent85='';
+  setTimeout(function(){
+    if(typeof window.v84RenderPublic==='function')window.v84RenderPublic();
+  },30);
+};
+
+/* primer render igual que los siguientes */
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    if(!window.__albumAdminMode && typeof window.v84RenderPublic==='function')window.v84RenderPublic();
+  },850);
+});
+})();
+</script>
+<!-- /TOMAUNO V85 -->
+
 </body>
 </html>
