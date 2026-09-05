@@ -9367,7 +9367,9 @@ window.addEventListener('DOMContentLoaded',bindSearch)
 <div id="v92MetaOverlay" class="v92-overlay">
   <div class="v92-box">
     <h3>EDITAR EVENTO / COLECCIÓN</h3>
-    <div class="sub" id="v92MetaTitle"></div>
+    <div class="sub">Podés cambiar título, descripción y fecha del evento.</div>
+    <label>TÍTULO DEL EVENTO / COLECCIÓN</label>
+    <input id="v94MetaName" type="text" autocomplete="off" placeholder="Nombre del evento / colección">
     <label>DESCRIPCIÓN</label>
     <textarea id="v92MetaDesc" placeholder="Ej.: Fotografías oficiales · @tomaunoestudio · 3764354522"></textarea>
     <label>FECHA / REFERENCIA</label>
@@ -9410,7 +9412,7 @@ window.v92OpenGroupMeta=function(group){
   var m=model92();if(!m)return;
   currentGroup92=String(group||'');
   var old=m.meta[currentGroup92]||{};
-  E('v92MetaTitle').textContent=currentGroup92;
+  var nameInput=E('v94MetaName');if(nameInput)nameInput.value=currentGroup92;
   E('v92MetaDesc').value=old.description||'';
   E('v92MetaDate').value=old.date||'';
   E('v92MetaOverlay').classList.add('open');
@@ -9818,6 +9820,262 @@ document.addEventListener('click',function(){
 })();
 </script>
 <!-- /TOMAUNO V93 -->
+
+
+
+<!-- TOMAUNO V94 - CHECKS HIJOS + LOGOUT PUBLICO + TITULO PADRE -->
+<style>
+#v93Version{display:none!important}
+#v94Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
+}
+
+/* selector interno: área táctil grande y encima de TODO */
+.v94-child-check{
+  position:absolute!important;left:11px!important;top:11px!important;
+  z-index:2147483640!important;width:30px!important;height:30px!important;
+  border-radius:8px!important;border:1px solid #888!important;
+  background:#f4f4f4!important;color:#111!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.45)!important
+}
+.v94-child-check.on{
+  background:#e0000b!important;border-color:#ff3741!important;color:#fff!important
+}
+.v94-child-check.on:after{content:"✓";font-size:17px;font-weight:1000}
+.event-card.v94-child-selected{
+  outline:1px solid #e0000b!important;
+  box-shadow:0 0 0 2px rgba(224,0,11,.08),0 0 16px rgba(224,0,11,.10)!important
+}
+</style>
+
+<div id="v94Version">TOMAUNO FOTOS · V94</div>
+
+<script>
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function M(){return window.__v91Model||null}
+
+/* ============================================================
+   1. Selector confiable DENTRO de padres
+   ============================================================ */
+function installChildChecks94(){
+  var m=M();if(!m||!m.admin||!m.parent)return;
+
+  document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){
+    var id=String(card.getAttribute('data-v91album')||'');
+    if(!id)return;
+
+    /* ocultar checkbox V91 si existe y usar uno propio */
+    var old=card.querySelector('.v91-check');
+    if(old)old.style.display='none';
+
+    var b=card.querySelector('.v94-child-check');
+    if(!b){
+      b=document.createElement('button');
+      b.type='button';
+      b.className='v94-child-check';
+      b.setAttribute('data-v94id',id);
+      b.title='Seleccionar álbum';
+      card.appendChild(b);
+    }
+
+    var on=m.selected.has(id);
+    b.classList.toggle('on',on);
+    card.classList.toggle('v94-child-selected',on);
+  });
+
+  var c=E('v91Count');
+  if(c)c.textContent=m.selected.size+' seleccionado'+(m.selected.size===1?'':'s');
+}
+
+/* captura en POINTERUP, para no quedar bloqueado por los listeners viejos */
+document.addEventListener('pointerup',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v94-child-check'):null;
+  if(!b)return;
+
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+
+  var m=M();if(!m)return;
+  var id=String(b.getAttribute('data-v94id')||'');
+
+  if(m.selected.has(id))m.selected.delete(id);
+  else m.selected.add(id);
+
+  installChildChecks94();
+},true);
+
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v94-child-check'):null;
+  if(!b)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+},true);
+
+/* ============================================================
+   2. Logout real: siempre vuelve a la portada jerárquica
+   ============================================================ */
+function logout94(){
+  var m=M();
+  try{
+    sessionStorage.removeItem('TOMAUNO_ADMIN_OK');
+    sessionStorage.removeItem('TOMAUNO_TICKET_OK');
+  }catch(_){}
+
+  if(m){
+    m.admin=false;
+    m.parent='';
+    m.selected.clear();
+    m.all=(m.all||[]).filter(function(a){return a.visible!==false});
+  }
+
+  document.body.classList.remove('v91-album-admin','v64-album-admin','v80-inside-group');
+
+  var adm=E('modalAdmin');if(adm)adm.style.display='none';
+  var dock=E('v73AdminDock');if(dock)dock.style.display='none';
+  var menu=E('v74AdmMenu');if(menu)menu.style.display='none';
+
+  if(typeof window.v91Render==='function')window.v91Render();
+  if(typeof miniToast==='function')miniToast('Sesión administrativa cerrada');
+}
+
+window.v77Logout=logout94;
+window.v71LogoutAdmin=logout94;
+window.v74Logout=logout94;
+
+/* botón ADM ACTIVO del panel */
+function bindLogout94(){
+  document.querySelectorAll('#v72AdminBar .v72-adm,.v71-logout').forEach(function(b){
+    b.onclick=logout94;
+    b.title='Cerrar sesión administrativa';
+  });
+}
+
+/* ============================================================
+   3. Título padre dentro del mismo modal Descripción / Fecha
+   ============================================================ */
+window.v92SaveMeta=async function(){
+  var m=M();if(!m)return;
+
+  var oldName=String(window.currentGroup92||'');
+  /* currentGroup92 es local al V92; recuperar desde input si hace falta */
+  if(!oldName){
+    var titleEl=E('v94MetaName');
+    oldName=titleEl&&titleEl.dataset.oldName?titleEl.dataset.oldName:String(titleEl&&titleEl.value||'').trim();
+  }
+
+  var newName=String((E('v94MetaName')||{}).value||'').trim();
+  var desc=String((E('v92MetaDesc')||{}).value||'').trim();
+  var date=String((E('v92MetaDate')||{}).value||'').trim();
+
+  if(!newName){
+    if(window.luxAlert)luxAlert('TÍTULO','El título del evento no puede quedar vacío.');
+    return;
+  }
+
+  /* inferir nombre original por metadata seleccionada si V92 no lo expone */
+  if(!oldName || !m.meta[oldName]){
+    var candidates=Object.keys(m.meta||{});
+    oldName=candidates.find(function(n){
+      var x=m.meta[n]||{};
+      return String(x.description||'')===String(E('v92MetaDesc').defaultValue||'') || n===newName;
+    }) || newName;
+  }
+
+  if(typeof window.toggleL==='function')window.toggleL(true,'GUARDANDO EVENTO…');
+
+  try{
+    if(oldName!==newName){
+      var rr=await apiPost({
+        action:'renameAlbumGroup',
+        pin:'3233',
+        oldName:oldName,
+        newName:newName
+      });
+      if(!rr||rr.success===false)throw new Error((rr&&rr.msg)||'No se pudo cambiar el título');
+
+      (m.all||[]).forEach(function(a){
+        if(String(a.group||'')===oldName)a.group=newName;
+      });
+
+      if(m.meta[oldName]){
+        m.meta[newName]=m.meta[oldName];
+        delete m.meta[oldName];
+      }
+      if(m.parent===oldName)m.parent=newName;
+    }
+
+    var r=await apiPost({
+      action:'saveAlbumGroupMeta',
+      pin:'3233',
+      group:newName,
+      description:desc,
+      date:date
+    });
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+
+    m.meta[newName]={name:newName,description:r.description||desc,date:r.date||date};
+
+    var ov=E('v92MetaOverlay');if(ov)ov.classList.remove('open');
+
+    if(typeof window.v91Render==='function')window.v91Render();
+    setTimeout(function(){installChildChecks94();bindLogout94()},30);
+
+    var n=E('v91Working');
+    if(n){
+      n.textContent='EVENTO ACTUALIZADO';
+      n.className='v91-working ok';
+      n.style.display='block';
+      setTimeout(function(){n.style.display='none'},1300);
+    }
+  }catch(err){
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }finally{
+    if(typeof window.toggleL==='function')window.toggleL(false);
+  }
+};
+
+/* Guardar nombre original en el input cuando se abre el modal */
+var oldOpen94=window.v92OpenGroupMeta;
+window.v92OpenGroupMeta=function(group){
+  if(typeof oldOpen94==='function')oldOpen94(group);
+  var n=E('v94MetaName');
+  if(n){
+    n.value=String(group||'');
+    n.dataset.oldName=String(group||'');
+  }
+};
+
+/* ============================================================
+   4. Reaplicar tras renders
+   ============================================================ */
+var oldRender94=window.v91Render;
+if(typeof oldRender94==='function'){
+  window.v91Render=function(){
+    var r=oldRender94.apply(this,arguments);
+    setTimeout(function(){installChildChecks94();bindLogout94()},20);
+    return r;
+  };
+}
+
+var mo94=new MutationObserver(function(){
+  clearTimeout(window.__v94m);
+  window.__v94m=setTimeout(function(){installChildChecks94();bindLogout94()},30);
+});
+window.addEventListener('DOMContentLoaded',function(){
+  var l=E('eventList');if(l)mo94.observe(l,{childList:true,subtree:true});
+  bindLogout94();
+});
+window.addEventListener('load',function(){
+  setTimeout(function(){installChildChecks94();bindLogout94()},400);
+});
+})();
+</script>
+<!-- /TOMAUNO V94 -->
 
 </body>
 </html>
