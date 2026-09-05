@@ -1413,7 +1413,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 </div>
 
 <div id="modalPass" class="modal">
-  <div class="modal-box" style="position:relative"><button type="button" class="pass-close-btn" onclick="document.getElementById('modalPass').style.display='none'" aria-label="Cerrar">&times;</button><h3 style="color:var(--rojo)">ÁLBUM PRIVADO</h3><input type="password" inputmode="numeric" autocomplete="off" id="inputPass" placeholder="Clave de acceso"><button class="btn-order" style="width:100%" onclick="checkPass()">ENTRAR</button></div>
+  <div class="modal-box" style="position:relative"><button type="button" class="pass-close-btn" onclick="document.getElementById('modalPass').style.display='none'" aria-label="Cerrar">&times;</button><h3 style="color:var(--rojo)">ÁLBUM PRIVADO</h3><input type="password" inputmode="numeric" autocomplete="new-password" id="inputPass" name="album_access_code" data-lpignore="true" data-1p-ignore="true" placeholder="Clave de acceso"><button class="btn-order" style="width:100%" onclick="checkPass()">ENTRAR</button></div>
 </div>
 
 <div id="lightbox">
@@ -1467,7 +1467,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   <div class="modal-box">
     <h3 style="color:var(--rojo); margin-top:0">PANEL ADMIN</h3>
     <p style="font-size:11px; color:#aaa">Ingresá el PIN de administración.</p>
-    <input type="password" inputmode="numeric" autocomplete="off" id="adminPinInput" placeholder="PIN">
+    <input type="password" inputmode="numeric" autocomplete="off" id="adminPinInput" name="tomauno_admin_pin" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" placeholder="PIN">
     <button class="btn-order" style="width:100%" onclick="checkAdminPin()">ENTRAR</button>
     <button onclick="document.getElementById('modalAdminPin').style.display='none'" style="background:none; border:none; color:#555; margin-top:12px; cursor:pointer">Cerrar</button>
   </div>
@@ -5546,7 +5546,7 @@ function attr(s) {
 
     var note=document.createElement('div');
     note.className='t54-pay-note';
-    note.textContent='Pago automático: al aprobarse, las fotografías quedan habilitadas para descargar.';
+    note.textContent='Al confirmar el pago, tus fotos quedan disponibles para descargar.';
     actions.appendChild(note);
   }
 
@@ -7381,7 +7381,7 @@ if(adm){
   <div id="v70KeyBox">
     <h3>CLAVE DEL ÁLBUM</h3>
     <p>Ingresá una clave para proteger el acceso. Dejá el campo vacío para quitarla.</p>
-    <input id="v70KeyInput" type="password" autocomplete="off" inputmode="numeric">
+    <input id="v70KeyInput" type="password" name="album_admin_code" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" inputmode="numeric">
     <div id="v70KeyActions">
       <button type="button" id="v70KeyCancel">CANCELAR</button>
       <button type="button" class="save" id="v70KeySave">GUARDAR</button>
@@ -7831,7 +7831,6 @@ if(adm){
       var adm=el('modalAdmin');
       if(adm)adm.style.display='flex';
       if(typeof window.loadAdminOrders==='function')window.loadAdminOrders();
-      markAllSeen73();
       return;
     }
     if(typeof window.openAdminPin==='function')window.openAdminPin();
@@ -8016,6 +8015,12 @@ if(adm){
 
   function notification73(kind,o){
     activity73.unread++;
+    try{
+      var rows=JSON.parse(sessionStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]');
+      var rr=Number(o&&o.row||0);
+      if(rr && rows.indexOf(rr)<0) rows.push(rr);
+      sessionStorage.setItem('TOMAUNO_UNREAD_ROWS',JSON.stringify(rows));
+    }catch(e){}
     updateDock73();
     beep73(kind);
 
@@ -8119,6 +8124,299 @@ if(adm){
 })();
 </script>
 <!-- /TOMAUNO V73 -->
+
+
+
+<!-- TOMAUNO V74 - VISIBILIDAD REAL + ADM MENU + PEDIDOS NUEVOS + CHECKOUT MOBILE -->
+<style>
+  /* Checkout móvil: mensaje final centrado y respirado */
+  #modalCheckout .t54-pay-note{
+    grid-column:1/-1!important;
+    width:100%!important;
+    box-sizing:border-box!important;
+    text-align:center!important;
+    color:#8c8c8c!important;
+    font-size:10px!important;
+    line-height:1.35!important;
+    padding:8px 12px 3px!important;
+    margin:0!important;
+  }
+
+  /* Menú compacto del indicador ADM */
+  #v74AdmMenu{
+    display:none;
+    position:fixed;
+    left:14px;
+    top:51px;
+    z-index:2147483000;
+    width:170px;
+    padding:7px;
+    border:1px solid #303033;
+    border-radius:13px;
+    background:rgba(8,8,9,.98);
+    box-shadow:0 14px 38px rgba(0,0,0,.58);
+    backdrop-filter:blur(8px);
+  }
+  #v74AdmMenu button{
+    width:100%;height:34px;margin:2px 0;
+    border:1px solid #29292c;border-radius:9px;
+    background:#121214;color:#eee;
+    font-size:10px;font-weight:850;text-align:left;padding:0 10px;cursor:pointer;
+  }
+  #v74AdmMenu button:hover{border-color:#d71920}
+  #v74AdmMenu .logout{color:#ff656b;border-color:#552126}
+
+  /* Pedidos que todavía no fueron marcados como vistos */
+  #adminOrders .order-row.v74-unread{
+    border-color:#e51b24!important;
+    box-shadow:0 0 0 1px rgba(229,27,36,.28),0 0 18px rgba(229,27,36,.12)!important;
+  }
+  #adminOrders .order-row.v74-unread:before{
+    content:'NUEVO';
+    position:absolute;
+    right:10px;
+    top:34px;
+    z-index:4;
+    padding:3px 7px;
+    border-radius:999px;
+    background:#e0000b;
+    color:#fff;
+    font-size:8px;
+    font-weight:950;
+    letter-spacing:.08em;
+  }
+  #v74SeenBtn{
+    display:none!important;
+    color:#fff!important;
+    border-color:#6a272b!important;
+  }
+  #v74SeenBtn.has-unread{display:inline-flex!important}
+
+  @media(max-width:700px){
+    #v74AdmMenu{left:8px;top:45px}
+    #modalCheckout .t54-pay-note{
+      font-size:10px!important;
+      padding:8px 18px 2px!important;
+      text-align:center!important;
+    }
+  }
+</style>
+
+<div id="v74AdmMenu">
+  <button type="button" onclick="v74OpenPanel()">▣ &nbsp; PANEL DE PEDIDOS</button>
+  <button type="button" onclick="v74OpenAlbums()">◉ &nbsp; ADMINISTRAR ÁLBUMES</button>
+  <button type="button" class="logout" onclick="v74Logout()">⏻ &nbsp; CERRAR SESIÓN ADM</button>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  function el(id){return document.getElementById(id)}
+  function isAdm(){
+    try{return sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(e){return false}
+  }
+
+  /* ------------------------------------------------------------
+     VISIBILIDAD:
+     eventsAdmin puede devolver ocultos, pero la portada pública
+     jamás debe renderizar visible:false.
+     ------------------------------------------------------------ */
+  window.loadEvents=async function(){
+    if(typeof toggleL==='function')toggleL(true);
+    try{
+      var events=await apiGet({action:'events',t:Date.now()});
+      if(typeof toggleL==='function')toggleL(false);
+      var all=Array.isArray(events)?events:(events.events||[]);
+      window.eventsData=all.filter(function(ev){return ev.visible!==false});
+      if(typeof window.ensureAlbumSearch==='function')window.ensureAlbumSearch();
+
+      var esc=window.escapeHtml||function(s){
+        return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+          return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+        })
+      };
+      var attr=function(s){return esc(s).replace(/"/g,'&quot;')};
+      var list=el('eventList');
+      if(list){
+        list.innerHTML=(window.eventsData||[]).map(function(ev){
+          return '<div class="event-card" data-album="'+attr(ev.displayName||'')+'" onclick="askPass(\''+String(ev.id||'').replace(/'/g,"\\'")+'\')">'+
+            '<i class="fa fa-camera-retro"></i>'+
+            '<h3>'+esc(ev.displayName||'')+'</h3>'+
+            (ev.description?'<div class="v64-album-desc">'+esc(ev.description)+'</div>':'')+
+          '</div>';
+        }).join('')||'<p>Sin eventos disponibles.</p>';
+      }
+      if(typeof window.filterAlbums==='function')window.filterAlbums();
+    }catch(err){
+      if(typeof toggleL==='function')toggleL(false);
+      if(window.luxAlert)luxAlert('ERROR','No se pudieron cargar los álbumes: '+(err.message||err));
+    }
+  };
+
+  /* Al guardar ocultar/mostrar, V73 actualiza el cache.
+     Reforzamos el render admin sin llamada adicional. */
+  var save73=window.saveAlbum64;
+  if(typeof save73==='function'){
+    window.saveAlbum64=async function(bridge,changes){
+      await save73.apply(this,arguments);
+      if(window.__albumAdminMode && typeof window.renderAlbumCards64==='function'){
+        window.renderAlbumCards64();
+      }
+    };
+  }
+
+  /* ------------------------------------------------------------
+     ADM:
+     el botón verde ya no abre el panel directamente: abre menú.
+     ------------------------------------------------------------ */
+  function menu(show){
+    var m=el('v74AdmMenu');if(!m)return;
+    m.style.display=show?'block':'none';
+  }
+
+  window.v74ToggleAdmMenu=function(e){
+    if(e){e.preventDefault();e.stopPropagation()}
+    var m=el('v74AdmMenu');if(!m)return;
+    menu(getComputedStyle(m).display==='none');
+  };
+
+  window.v74OpenPanel=async function(){
+    menu(false);
+    var adm=el('modalAdmin');if(adm)adm.style.display='flex';
+    if(typeof window.loadAdminOrders==='function')await window.loadAdminOrders();
+    setTimeout(highlightUnread74,40);
+  };
+
+  window.v74OpenAlbums=function(){
+    menu(false);
+    if(typeof window.enterAlbumAdminMode==='function')window.enterAlbumAdminMode();
+  };
+
+  window.v74Logout=function(){
+    menu(false);
+    try{
+      sessionStorage.removeItem('TOMAUNO_ADMIN_OK');
+      sessionStorage.removeItem('TOMAUNO_TICKET_OK');
+      sessionStorage.removeItem('TOMAUNO_ACTIVITY_MAP');
+      sessionStorage.removeItem('TOMAUNO_UNREAD_ROWS');
+    }catch(e){}
+    var adm=el('modalAdmin');if(adm)adm.style.display='none';
+    var dock=el('v73AdminDock');if(dock)dock.style.display='none';
+    var stack=el('v73NotifyStack');if(stack)stack.innerHTML='';
+    if(window.__albumAdminMode && typeof window.exitAlbumAdminMode==='function')window.exitAlbumAdminMode();
+    if(typeof miniToast==='function')miniToast('Sesión administrativa cerrada');
+  };
+
+  /* Convertir el pill ADM de V73 en menú */
+  function bindAdm74(){
+    var pill=document.querySelector('#v73AdminDock .adm-pill');
+    if(pill){
+      pill.onclick=window.v74ToggleAdmMenu;
+      pill.textContent='ADM ▾';
+      pill.title='Opciones de administración';
+    }
+    var bell=el('v73Bell');
+    if(bell){
+      bell.onclick=function(){window.v74OpenPanel()};
+      bell.title='Abrir novedades en Panel de Pedidos';
+    }
+  }
+
+  document.addEventListener('click',function(e){
+    var m=el('v74AdmMenu');
+    if(m && getComputedStyle(m).display!=='none' && !m.contains(e.target) && !(e.target.closest&&e.target.closest('#v73AdminDock .adm-pill'))){
+      menu(false);
+    }
+  });
+
+  /* ------------------------------------------------------------
+     NUEVOS:
+     no desaparecen al abrir el panel. Se marcan visualmente hasta
+     que el administrador pulse "Marcar vistos".
+     ------------------------------------------------------------ */
+  function unreadRows74(){
+    try{return JSON.parse(sessionStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]').map(Number)}
+    catch(e){return []}
+  }
+
+  function highlightUnread74(){
+    var rows=unreadRows74();
+    document.querySelectorAll('#adminOrders .order-row').forEach(function(row){
+      var cb=row.querySelector('.v64-order-check');
+      var r=Number(cb?cb.value:((row.querySelector('[data-delete-row]')||{}).dataset||{}).deleteRow||0);
+      row.classList.toggle('v74-unread',rows.indexOf(r)>=0);
+    });
+    var b=el('v74SeenBtn');
+    if(b)b.classList.toggle('has-unread',rows.length>0);
+  }
+  window.v74HighlightUnread=highlightUnread74;
+
+  window.v74MarkSeen=function(){
+    try{
+      sessionStorage.setItem('TOMAUNO_UNREAD_ROWS','[]');
+      var state=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
+      state.unread=0;
+      sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(state));
+    }catch(e){}
+    document.querySelectorAll('#adminOrders .v74-unread').forEach(function(r){r.classList.remove('v74-unread')});
+    var badge=el('v73BellBadge');if(badge){badge.textContent='0';badge.style.display='none'}
+    var stack=el('v73NotifyStack');if(stack)stack.innerHTML='';
+    var b=el('v74SeenBtn');if(b)b.classList.remove('has-unread');
+    if(typeof miniToast==='function')miniToast('Novedades marcadas como vistas');
+  };
+
+  function addSeenButton74(){
+    var bar=el('v72AdminBar');
+    if(!bar || el('v74SeenBtn'))return;
+    var b=document.createElement('button');
+    b.type='button';b.id='v74SeenBtn';b.className='v72-btn';
+    b.title='Quitar la marca NUEVO de los pedidos revisados';
+    b.innerHTML='✓ <span>Marcar vistos</span>';
+    b.onclick=window.v74MarkSeen;
+    var adm=bar.querySelector('.v72-adm');
+    bar.insertBefore(b,adm||null);
+  }
+
+  /* envolver loadAdminOrders una sola vez */
+  var oldLoad74=window.loadAdminOrders;
+  if(typeof oldLoad74==='function' && !oldLoad74.__v74){
+    var wrapped=async function(){
+      var r=await oldLoad74.apply(this,arguments);
+      setTimeout(function(){highlightUnread74();addSeenButton74()},20);
+      return r;
+    };
+    wrapped.__v74=true;
+    window.loadAdminOrders=wrapped;
+  }
+
+  /* ------------------------------------------------------------
+     PASSWORD MANAGER:
+     reforzar inputs técnicos para que Chrome no los trate como login.
+     ------------------------------------------------------------ */
+  function hardenPasswords74(){
+    ['inputPass','adminPinInput','v70KeyInput','v65InputField'].forEach(function(id){
+      var n=el(id);if(!n)return;
+      if(n.type==='password'){
+        n.autocomplete='new-password';
+        n.setAttribute('data-lpignore','true');
+        n.setAttribute('data-1p-ignore','true');
+        n.setAttribute('data-form-type','other');
+      }
+    });
+  }
+
+  /* F2 / Ticket Libre: NO toca ni recarga álbumes.
+     openFreeTicket ya es un modal flotante sobre la pantalla actual. */
+
+  window.addEventListener('load',function(){
+    bindAdm74();addSeenButton74();highlightUnread74();hardenPasswords74();
+  });
+  document.addEventListener('click',function(){
+    setTimeout(function(){bindAdm74();addSeenButton74();highlightUnread74();hardenPasswords74()},50);
+  });
+})();
+</script>
+<!-- /TOMAUNO V74 -->
 
 </body>
 </html>
