@@ -11583,5 +11583,441 @@ window.exitAlbumAdminMode=function(){
 </script>
 <!-- /TOMAUNO V88 -->
 
+
+
+<!-- TOMAUNO V89 - RENDER UNICO REAL + CLICK SELECTOR + BUSQUEDA JERARQUICA -->
+<style>
+#v88Version{display:none!important}
+#v89Version{
+  position:fixed;right:8px;bottom:5px;z-index:50;
+  color:#555;font-size:8px;font-weight:700;letter-spacing:.08em;
+  pointer-events:none;user-select:none
+}
+
+/* selector V89: encima de TODO, sin pointer-events heredados */
+.v89-check{
+  position:absolute!important;
+  left:12px!important;top:12px!important;
+  z-index:2147483640!important;
+  width:26px!important;height:26px!important;
+  border-radius:7px!important;
+  border:1px solid #8a8a8a!important;
+  background:#f2f2f2!important;
+  color:#111!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  cursor:pointer!important;pointer-events:auto!important;
+  user-select:none!important;
+  touch-action:manipulation!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.45)!important;
+}
+.v89-check.on{
+  background:#e0000b!important;
+  border-color:#ff3a43!important;
+  color:#fff!important;
+}
+.v89-check.on:after{content:"✓";font-size:16px;font-weight:1000}
+.event-card.v89-selected{
+  outline:1px solid #e0000b!important;
+  box-shadow:0 0 0 2px rgba(224,0,11,.08),0 0 16px rgba(224,0,11,.10)!important;
+}
+
+/* al iniciar, no mostrar ningún render viejo */
+body:not(.v89-public-ready):not(.v64-album-admin) #eventList{
+  opacity:0!important;
+}
+body.v89-public-ready #eventList{
+  opacity:1!important;
+  transition:opacity .12s ease;
+}
+
+/* resultados de búsqueda: indicador del padre */
+.v89-search-parent{
+  display:inline-flex;
+  margin-top:6px;
+  padding:4px 7px;
+  border-radius:999px;
+  background:#121214;
+  border:1px solid #303034;
+  color:#8d8d92;
+  font-size:8px;
+  font-weight:800;
+}
+</style>
+
+<div id="v89Version">TOMAUNO FOTOS · V89</div>
+
+<script>
+(function(){
+'use strict';
+
+function E(id){return document.getElementById(id)}
+function esc89(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function attr89(s){return esc89(s).replace(/`/g,'&#96;')}
+
+var selected89=new Set();
+window.__v89SelectedAlbums=selected89;
+
+/* =========================================================
+   1. RENDER PUBLICO UNICO
+   ========================================================= */
+function all89(){
+  var seen={},out=[];
+  [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+    (arr||[]).forEach(function(x){
+      var k=String(x.bridgeId||x.id||'');
+      if(k&&!seen[k]){seen[k]=1;out.push(x)}
+    });
+  });
+  return out;
+}
+
+function renderPublic89(){
+  if(window.__albumAdminMode)return;
+  var list=E('eventList');if(!list)return;
+
+  var all=all89().filter(function(x){return x.visible!==false});
+  var groups={},singles=[];
+  all.forEach(function(x){
+    var g=String(x.group||'').trim();
+    if(g)(groups[g]||(groups[g]=[])).push(x); else singles.push(x);
+  });
+
+  var parts=[];
+
+  Object.keys(groups).sort().forEach(function(g){
+    var items=groups[g];
+    var meta=(window.__v81GroupMeta||{})[g]||{};
+    var col=(typeof window.color84==='function')?window.color84(g):'#d71920';
+
+    parts.push(
+      '<div class="v80-group-card v84-parent-color" data-group="'+attr89(g)+'" style="--v84-group-color:'+col+'" onclick="v86OpenParent('+JSON.stringify(g).replace(/"/g,'&quot;')+')">'+
+        '<div class="v83-group-camera">📷</div>'+
+        '<div class="v83-group-badge">◆ EVENTO / COLECCIÓN</div>'+
+        '<h3>'+esc89(g)+'</h3>'+
+        ((meta.date||meta.description)?'<div class="v83-group-meta">'+esc89(meta.date||'')+(meta.date&&meta.description?' · ':'')+esc89(meta.description||'')+'</div>':'')+
+        '<p class="v83-group-count">'+items.length+' álbum'+(items.length===1?'':'es')+'</p>'+
+      '</div>'
+    );
+  });
+
+  singles.forEach(function(ev){
+    parts.push(
+      '<div class="event-card" data-album="'+attr89(ev.displayName||'')+'" onclick="askPass('+JSON.stringify(String(ev.id||'')).replace(/"/g,'&quot;')+')">'+
+        '<i class="fa fa-camera-retro"></i>'+
+        '<h3>'+esc89(ev.displayName||'')+'</h3>'+
+        (ev.description?'<div class="v64-album-desc">'+esc89(ev.description)+'</div>':'')+
+      '</div>'
+    );
+  });
+
+  list.innerHTML=parts.join('');
+  document.body.classList.add('v89-public-ready');
+}
+
+/* Forzar nuestro render DESPUES de cualquier render viejo */
+var evtObserver89=null;
+function watchPublic89(){
+  var list=E('eventList');if(!list)return;
+  if(evtObserver89)evtObserver89.disconnect();
+
+  evtObserver89=new MutationObserver(function(){
+    if(window.__albumAdminMode)return;
+    clearTimeout(window.__v89PublicTimer);
+    window.__v89PublicTimer=setTimeout(function(){
+      renderPublic89();
+    },20);
+  });
+  evtObserver89.observe(list,{childList:true,subtree:false});
+}
+
+/* =========================================================
+   2. SELECTORES ADMIN QUE REALMENTE RECIBEN CLICK
+   ========================================================= */
+function updateCount89(){
+  var c=E('v80GroupCount');
+  if(c)c.textContent=selected89.size+' seleccionado'+(selected89.size===1?'':'s');
+}
+
+function syncChecks89(){
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var id=String(card.dataset.bridge||'');
+    var b=card.querySelector('.v89-check');
+    var on=selected89.has(id);
+    if(b)b.classList.toggle('on',on);
+    card.classList.toggle('v89-selected',on);
+  });
+  updateCount89();
+}
+
+function addChecks89(){
+  if(!window.__albumAdminMode)return;
+  if(document.body.classList.contains('v80-inside-group'))return;
+
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var id=String(card.dataset.bridge||'');
+    if(!id)return;
+
+    if(card.querySelector('.v89-check'))return;
+
+    var b=document.createElement('button');
+    b.type='button';
+    b.className='v89-check';
+    b.title='Seleccionar para agrupar';
+    b.setAttribute('aria-label','Seleccionar para agrupar');
+    card.appendChild(b);
+  });
+
+  syncChecks89();
+}
+
+/* Captura global ANTES que cualquier listener viejo */
+document.addEventListener('pointerdown',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v89-check'):null;
+  if(!b)return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+},true);
+
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v89-check'):null;
+  if(!b)return;
+
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+
+  var card=b.closest('.event-card[data-bridge]');
+  var id=card?String(card.dataset.bridge||''):'';
+  if(!id)return;
+
+  if(selected89.has(id))selected89.delete(id);
+  else selected89.add(id);
+
+  syncChecks89();
+},true);
+
+/* Si otro render borra los checks, reponerlos */
+var adminObserver89=null;
+function watchAdmin89(){
+  var list=E('eventList');if(!list)return;
+  if(adminObserver89)adminObserver89.disconnect();
+
+  adminObserver89=new MutationObserver(function(){
+    if(!window.__albumAdminMode)return;
+    if(document.body.classList.contains('v80-inside-group'))return;
+    requestAnimationFrame(addChecks89);
+  });
+  adminObserver89.observe(list,{childList:true,subtree:true});
+}
+
+/* =========================================================
+   3. AGRUPAR
+   ========================================================= */
+window.v80AssignGroup=async function(){
+  var name=String((E('v80GroupName')||{}).value||'').trim();
+
+  if(!name){
+    if(window.luxAlert)luxAlert('NOMBRE DEL EVENTO','Escribí el nombre del evento / colección.');
+    return;
+  }
+
+  var ids=Array.from(selected89);
+
+  if(!ids.length){
+    if(window.luxAlert)luxAlert('SIN SELECCIÓN','Marcá uno o más álbumes con los cuadrados blancos.');
+    return;
+  }
+
+  var w=E('v80AlbumWork');
+  if(w){w.style.display='block';w.className='busy';w.textContent='AGRUPANDO…'}
+
+  try{
+    var r=await apiPost({
+      action:'setAlbumsGroup',
+      pin:'3233',
+      bridgeIds:ids,
+      group:name
+    });
+
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+
+    [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+      (arr||[]).forEach(function(x){
+        if(ids.indexOf(String(x.bridgeId||''))>=0)x.group=name;
+      });
+    });
+
+    selected89.clear();
+    var input=E('v80GroupName');if(input)input.value='';
+    updateCount89();
+
+    if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+    setTimeout(addChecks89,40);
+
+    if(w){
+      w.textContent='✓ AGRUPADO';
+      w.className='ok';
+      setTimeout(function(){w.style.display='none'},1300);
+    }
+  }catch(err){
+    if(w){w.textContent='ERROR';w.className='err'}
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }
+};
+
+window.v80ClearSelection=function(){
+  selected89.clear();
+  var i=E('v80GroupName');if(i)i.value='';
+  syncChecks89();
+};
+
+/* =========================================================
+   4. BUSQUEDA: ENCUENTRA PADRES Y TAMBIEN HIJOS
+   ========================================================= */
+function renderSearch89(q){
+  var list=E('eventList');if(!list)return;
+  q=String(q||'').trim().toLowerCase();
+
+  if(!q){
+    renderPublic89();
+    return;
+  }
+
+  var all=all89().filter(function(x){return x.visible!==false});
+  var groups={};
+  all.forEach(function(x){
+    var g=String(x.group||'').trim();
+    if(g)(groups[g]||(groups[g]=[])).push(x);
+  });
+
+  var parts=[];
+
+  /* Padres que coinciden */
+  Object.keys(groups).forEach(function(g){
+    if(g.toLowerCase().indexOf(q)>=0){
+      var col=(typeof window.color84==='function')?window.color84(g):'#d71920';
+      parts.push(
+        '<div class="v80-group-card v84-parent-color" data-group="'+attr89(g)+'" style="--v84-group-color:'+col+'" onclick="v86OpenParent('+JSON.stringify(g).replace(/"/g,'&quot;')+')">'+
+          '<div class="v83-group-camera">📷</div>'+
+          '<div class="v83-group-badge">◆ EVENTO / COLECCIÓN</div>'+
+          '<h3>'+esc89(g)+'</h3>'+
+          '<p class="v83-group-count">'+groups[g].length+' álbumes</p>'+
+        '</div>'
+      );
+    }
+  });
+
+  /* Hijos que coinciden, aunque estén dentro de padre */
+  all.forEach(function(ev){
+    var hay=(String(ev.displayName||'')+' '+String(ev.description||'')).toLowerCase();
+    if(hay.indexOf(q)<0)return;
+
+    var g=String(ev.group||'').trim();
+
+    parts.push(
+      '<div class="event-card" data-album="'+attr89(ev.displayName||'')+'" onclick="askPass('+JSON.stringify(String(ev.id||'')).replace(/"/g,'&quot;')+')">'+
+        '<i class="fa fa-camera-retro"></i>'+
+        '<h3>'+esc89(ev.displayName||'')+'</h3>'+
+        (ev.description?'<div class="v64-album-desc">'+esc89(ev.description)+'</div>':'')+
+        (g?'<div class="v89-search-parent">Dentro de: '+esc89(g)+'</div>':'')+
+      '</div>'
+    );
+  });
+
+  list.innerHTML=parts.join('')||'<p style="color:#777;text-align:center;grid-column:1/-1">No encontramos álbumes con ese nombre.</p>';
+}
+
+/* sustituir buscador original */
+function bindSearch89(){
+  var s=E('albumSearch');
+  if(!s)return;
+
+  s.oninput=function(){
+    if(window.__albumAdminMode)return;
+    renderSearch89(s.value);
+  };
+}
+
+/* =========================================================
+   5. ENTRADA/SALIDA DE ADM
+   ========================================================= */
+window.enterAlbumAdminMode=function(){
+  selected89.clear();
+  window.__albumAdminMode=true;
+  document.body.classList.add('v64-album-admin','v89-public-ready');
+  document.body.classList.remove('v80-inside-group');
+
+  var adm=E('modalAdmin');if(adm)adm.style.display='none';
+  var bar=E('v64AlbumAdminBar');if(bar)bar.style.display='flex';
+
+  function done(){
+    if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+    setTimeout(function(){addChecks89();watchAdmin89()},40);
+  }
+
+  if(window.__v73AdminAlbumsLoaded){
+    done();
+  }else{
+    apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()}).then(function(res){
+      var arr=Array.isArray(res)?res:(res.events||[]);
+      window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+      window.__v73AdminAlbumsLoaded=true;
+      window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+      done();
+    });
+  }
+};
+
+window.exitAlbumAdminMode=function(){
+  selected89.clear();
+  window.__albumAdminMode=false;
+  document.body.classList.remove('v64-album-admin','v80-inside-group');
+
+  var bar=E('v64AlbumAdminBar');if(bar)bar.style.display='none';
+
+  renderPublic89();
+  bindSearch89();
+};
+
+window.v86BackFromParent=function(){
+  document.body.classList.remove('v80-inside-group');
+
+  if(window.__albumAdminMode){
+    if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+    setTimeout(addChecks89,40);
+  }else{
+    renderPublic89();
+  }
+};
+window.v84CloseGroup=window.v86BackFromParent;
+window.v80CloseGroup=window.v86BackFromParent;
+
+/* primer arranque */
+window.addEventListener('DOMContentLoaded',function(){
+  watchPublic89();
+  bindSearch89();
+});
+
+window.addEventListener('load',function(){
+  /* esperar datos reales y recién entonces mostrar */
+  var tries=0;
+  var t=setInterval(function(){
+    tries++;
+    if(Array.isArray(window.eventsData) && window.eventsData.length){
+      clearInterval(t);
+      renderPublic89();
+      bindSearch89();
+    }else if(tries>30){
+      clearInterval(t);
+      renderPublic89();
+      bindSearch89();
+    }
+  },100);
+});
+})();
+</script>
+<!-- /TOMAUNO V89 -->
+
 </body>
 </html>
