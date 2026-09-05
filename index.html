@@ -9104,6 +9104,7 @@ var M={
   parent:'',
   selected:new Set()
 };
+window.__v91Model=M;
 var COLORS=['#4ed45a','#28d4e5','#efb91c','#aa69ff','#ff6c42','#e34c8c','#4e8cff','#18c5a2'];
 
 function E(id){return document.getElementById(id)}
@@ -9191,6 +9192,7 @@ function renderParent(g){
   if(M.admin&&E('v91EditParent'))E('v91EditParent').onclick=function(){editMeta(g)}
 }
 function render(){M.parent?renderParent(M.parent):renderRoot()}
+window.v91Render=render;
 function configureBar(){
   var bar=E('v91GroupBar'),front=E('v91FrontBtn'),input=E('v91GroupName'),cnt=E('v91Count');
   if(!bar)return;
@@ -9235,10 +9237,10 @@ function bind(){
     b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();if(window.editAlbumPass64)window.editAlbumPass64(b.dataset.v91key)}
   });
   document.querySelectorAll('[data-v91title]').forEach(function(h){
-    h.ondblclick=function(ev){ev.stopPropagation();if(window.editAlbumTitleInline64)window.editAlbumTitleInline64(h,h.dataset.v91title)}
+    h.ondblclick=function(ev){ev.stopPropagation();window.v92EditAlbumField(h.dataset.v91title,'title')}
   });
   document.querySelectorAll('[data-v91desc]').forEach(function(d){
-    d.ondblclick=function(ev){ev.stopPropagation();if(window.editAlbumDescription64)window.editAlbumDescription64(d.dataset.v91desc)}
+    d.ondblclick=function(ev){ev.stopPropagation();window.v92EditAlbumField(d.dataset.v91desc,'description')}
   })
 }
 async function setGroup(front){
@@ -9255,16 +9257,8 @@ async function setGroup(front){
     work(front?'ÁLBUMES ENVIADOS A PORTADA':'EVENTO ACTUALIZADO',true)
   }catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e))}
 }
-async function editMeta(g){
-  var old=M.meta[g]||{};
-  var desc=prompt('Descripción / Instagram / WhatsApp del evento:',old.description||'');if(desc===null)return;
-  var date=prompt('Fecha / referencia (opcional):',old.date||'');if(date===null)return;
-  work('GUARDANDO EVENTO…');
-  try{
-    var r=await apiPost({action:'saveAlbumGroupMeta',pin:'3233',group:g,description:desc,date:date});
-    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
-    M.meta[g]={name:g,description:r.description||desc,date:r.date||date};render();work('EVENTO ACTUALIZADO',true)
-  }catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e))}
+function editMeta(g){
+  window.v92OpenGroupMeta(g);
 }
 async function loadMeta(){
   try{
@@ -9319,6 +9313,247 @@ window.addEventListener('DOMContentLoaded',bindSearch)
 })();
 </script>
 <!-- /TOMAUNO V91 -->
+
+
+
+<!-- TOMAUNO V92 - MODALES TOMAUNO + RENDER ESTABLE TRAS EDICION -->
+<style>
+#v91Version{display:none!important}
+#v92Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
+}
+.v92-overlay{
+  display:none;position:fixed;inset:0;z-index:2147483600;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;padding:16px
+}
+.v92-overlay.open{display:flex}
+.v92-box{
+  width:min(520px,100%);box-sizing:border-box;
+  background:#0b0b0c;border:1px solid #62252a;border-radius:18px;
+  padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.65),0 0 26px rgba(225,0,11,.08)
+}
+.v92-box h3{margin:0 0 4px;color:#fff;font-size:17px}
+.v92-box .sub{color:#777;font-size:10px;margin-bottom:14px}
+.v92-box label{display:block;color:#999;font-size:9px;font-weight:850;margin:11px 0 5px}
+.v92-box input,.v92-box textarea{
+  width:100%;box-sizing:border-box;background:#050506;color:#fff;
+  border:1px solid #343438;border-radius:10px;padding:11px 12px;
+  font:inherit;outline:none
+}
+.v92-box textarea{min-height:88px;resize:vertical;line-height:1.45}
+.v92-box input:focus,.v92-box textarea:focus{
+  border-color:#d71920;box-shadow:0 0 0 3px rgba(215,25,32,.10)
+}
+.v92-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:15px}
+.v92-actions button{
+  height:36px;border:1px solid #353539;border-radius:9px;
+  background:#171719;color:#eee;padding:0 13px;font-size:9px;font-weight:900;cursor:pointer
+}
+.v92-actions .save{background:#d71920;border-color:#d71920;color:#fff}
+.v92-hint{
+  margin-top:8px;color:#666;font-size:9px;line-height:1.35
+}
+@media(max-width:700px){
+  .v92-box{padding:15px;border-radius:15px}
+  .v92-actions{display:grid;grid-template-columns:1fr 1fr}
+  .v92-actions button{width:100%}
+}
+</style>
+
+<div id="v92Version">TOMAUNO FOTOS · V92</div>
+
+<div id="v92MetaOverlay" class="v92-overlay">
+  <div class="v92-box">
+    <h3>EDITAR EVENTO / COLECCIÓN</h3>
+    <div class="sub" id="v92MetaTitle"></div>
+    <label>DESCRIPCIÓN</label>
+    <textarea id="v92MetaDesc" placeholder="Ej.: Fotografías oficiales · @tomaunoestudio · 3764354522"></textarea>
+    <label>FECHA / REFERENCIA</label>
+    <input id="v92MetaDate" type="text" autocomplete="off" placeholder="Ej.: 06/09/2026 · 08 a 22 hs">
+    <div class="v92-hint">@usuario se transforma en Instagram y un número de teléfono en acceso a WhatsApp.</div>
+    <div class="v92-actions">
+      <button type="button" onclick="v92CloseMeta()">CANCELAR</button>
+      <button type="button" class="save" onclick="v92SaveMeta()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<div id="v92AlbumOverlay" class="v92-overlay">
+  <div class="v92-box">
+    <h3 id="v92AlbumHeading">EDITAR ÁLBUM</h3>
+    <div class="sub" id="v92AlbumSubtitle"></div>
+    <label id="v92AlbumLabel">VALOR</label>
+    <textarea id="v92AlbumValue"></textarea>
+    <div class="v92-actions">
+      <button type="button" onclick="v92CloseAlbumEdit()">CANCELAR</button>
+      <button type="button" class="save" onclick="v92SaveAlbumEdit()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+var currentGroup92='';
+var currentAlbum92={id:'',field:''};
+
+function model92(){return window.__v91Model||null}
+function render92(){
+  if(typeof window.v91Render==='function')window.v91Render();
+}
+
+/* ---------- Meta padre: modal Tomauno, sin prompt del navegador ---------- */
+window.v92OpenGroupMeta=function(group){
+  var m=model92();if(!m)return;
+  currentGroup92=String(group||'');
+  var old=m.meta[currentGroup92]||{};
+  E('v92MetaTitle').textContent=currentGroup92;
+  E('v92MetaDesc').value=old.description||'';
+  E('v92MetaDate').value=old.date||'';
+  E('v92MetaOverlay').classList.add('open');
+  setTimeout(function(){E('v92MetaDesc').focus()},50);
+};
+window.v92CloseMeta=function(){
+  E('v92MetaOverlay').classList.remove('open');
+};
+window.v92SaveMeta=async function(){
+  var m=model92();if(!m||!currentGroup92)return;
+  var desc=String(E('v92MetaDesc').value||'').trim();
+  var date=String(E('v92MetaDate').value||'').trim();
+
+  if(typeof window.toggleL==='function')window.toggleL(true,'GUARDANDO EVENTO…');
+
+  try{
+    var r=await apiPost({
+      action:'saveAlbumGroupMeta',
+      pin:'3233',
+      group:currentGroup92,
+      description:desc,
+      date:date
+    });
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+
+    m.meta[currentGroup92]={
+      name:currentGroup92,
+      description:r.description||desc,
+      date:r.date||date
+    };
+
+    window.v92CloseMeta();
+    render92();
+
+    var n=E('v91Working');
+    if(n){
+      n.textContent='EVENTO ACTUALIZADO';
+      n.className='v91-working ok';
+      n.style.display='block';
+      setTimeout(function(){n.style.display='none'},1300);
+    }
+  }catch(err){
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }finally{
+    if(typeof window.toggleL==='function')window.toggleL(false);
+  }
+};
+
+/* ---------- Título/Descripción álbum sin activar renders heredados ---------- */
+window.v92EditAlbumField=function(bridge,field){
+  var m=model92();if(!m)return;
+  var a=(m.all||[]).find(function(x){return String(x.bridgeId||'')===String(bridge||'')});
+  if(!a)return;
+
+  currentAlbum92={id:String(bridge),field:field};
+  var title=field==='title'?'CAMBIAR TÍTULO':'EDITAR DESCRIPCIÓN';
+  var val=field==='title'?String(a.displayName||''):String(a.description||'');
+
+  E('v92AlbumHeading').textContent=title;
+  E('v92AlbumSubtitle').textContent=String(a.displayName||'');
+  E('v92AlbumLabel').textContent=field==='title'?'NUEVO TÍTULO':'DESCRIPCIÓN';
+  E('v92AlbumValue').value=val;
+  E('v92AlbumValue').style.minHeight=field==='title'?'54px':'88px';
+
+  E('v92AlbumOverlay').classList.add('open');
+  setTimeout(function(){E('v92AlbumValue').focus();E('v92AlbumValue').select()},50);
+};
+window.v92CloseAlbumEdit=function(){
+  E('v92AlbumOverlay').classList.remove('open');
+};
+window.v92SaveAlbumEdit=async function(){
+  var m=model92();if(!m||!currentAlbum92.id)return;
+  var val=String(E('v92AlbumValue').value||'').trim();
+  if(currentAlbum92.field==='title'&&!val){
+    if(window.luxAlert)luxAlert('TÍTULO','El título no puede quedar vacío.');
+    return;
+  }
+
+  var payload={
+    action:'updateAlbumConfig',
+    pin:'3233',
+    bridgeId:currentAlbum92.id
+  };
+  if(currentAlbum92.field==='title')payload.title=val;
+  else payload.description=val;
+
+  if(typeof window.toggleL==='function')window.toggleL(true,'GUARDANDO ÁLBUM…');
+
+  try{
+    var r=await apiPost(payload);
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+
+    (m.all||[]).forEach(function(a){
+      if(String(a.bridgeId||'')!==currentAlbum92.id)return;
+      if(currentAlbum92.field==='title')a.displayName=val;
+      else a.description=val;
+    });
+
+    if(typeof window.eventsData!=='undefined'){
+      (window.eventsData||[]).forEach(function(a){
+        if(String(a.bridgeId||'')!==currentAlbum92.id)return;
+        if(currentAlbum92.field==='title')a.displayName=val;
+        else a.description=val;
+      });
+    }
+    if(typeof window.__v73AdminAlbums!=='undefined'){
+      (window.__v73AdminAlbums||[]).forEach(function(a){
+        if(String(a.bridgeId||'')!==currentAlbum92.id)return;
+        if(currentAlbum92.field==='title')a.displayName=val;
+        else a.description=val;
+      });
+    }
+
+    window.v92CloseAlbumEdit();
+
+    /* Clave: renderizar SIEMPRE el árbol V91 actual.
+       No llamar a renderAlbumCards64 ni al flujo V78 antiguo. */
+    render92();
+
+    var n=E('v91Working');
+    if(n){
+      n.textContent='ÁLBUM ACTUALIZADO';
+      n.className='v91-working ok';
+      n.style.display='block';
+      setTimeout(function(){n.style.display='none'},1200);
+    }
+  }catch(err){
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }finally{
+    if(typeof window.toggleL==='function')window.toggleL(false);
+  }
+};
+
+/* Enter guarda en campos de una línea; Ctrl+Enter guarda textarea */
+E('v92MetaOverlay').addEventListener('click',function(e){if(e.target===this)window.v92CloseMeta()});
+E('v92AlbumOverlay').addEventListener('click',function(e){if(e.target===this)window.v92CloseAlbumEdit()});
+E('v92MetaDate').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();window.v92SaveMeta()}});
+E('v92AlbumValue').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&currentAlbum92.field==='title'){e.preventDefault();window.v92SaveAlbumEdit()}
+});
+})();
+</script>
+<!-- /TOMAUNO V92 -->
 
 </body>
 </html>
