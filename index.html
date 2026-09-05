@@ -9012,368 +9012,313 @@ document.addEventListener('click',function(){setTimeout(function(){cleanSlashN78
 
 
 
-<!-- TOMAUNO V79 - ADMIN LIMPIO + GALERIA MOBILE ESTABLE -->
+<!-- TOMAUNO V91 - PADRES LIMPIOS SOBRE BASE V78 -->
 <style>
-/* Quitar diagnóstico técnico V78 de las tarjetas */
-.v78-album-debug{display:none!important}
-
-/* Botón flotante para volver a álbumes durante galerías largas */
-#v79BackAlbums{
-  display:none;
-  position:fixed;
-  left:12px;
-  bottom:14px;
-  z-index:2147481000;
-  height:38px;
-  padding:0 13px;
-  border:1px solid rgba(255,255,255,.16);
-  border-radius:999px;
-  background:rgba(8,8,9,.92);
-  color:#eee;
-  font:800 10px/1 inherit;
-  box-shadow:0 8px 24px rgba(0,0,0,.48);
-  backdrop-filter:blur(8px);
-  cursor:pointer;
+#v64AlbumAdminBar{display:none!important}
+#v91Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
 }
-body.v79-gallery-open #v79BackAlbums{display:inline-flex;align-items:center;gap:7px}
+#v91GroupBar{
+  display:none;position:sticky;bottom:10px;z-index:120;
+  width:min(760px,calc(100vw - 18px));margin:16px auto 0;
+  box-sizing:border-box;gap:8px;align-items:center;padding:10px;
+  border:1px solid #35353a;border-radius:15px;background:#101012;
+  box-shadow:0 12px 34px rgba(0,0,0,.55)
+}
+body.v91-album-admin #v91GroupBar{display:flex}
+#v91GroupBar .count{min-width:95px;color:#aaa;font-size:10px}
+#v91GroupName{flex:1;min-width:150px;background:#050506;color:#fff;border:1px solid #444;border-radius:10px;padding:11px}
+#v91GroupBar button{height:38px;border:1px solid #444;border-radius:10px;background:#19191c;color:#fff;padding:0 12px;font-size:9px;font-weight:900;cursor:pointer}
+#v91GroupBar .primary{background:#e51b23;border-color:#e51b23}
+#v91GroupBar button:disabled{opacity:.35;cursor:not-allowed}
 
-/* Lightbox móvil: controles estables, sin depender de la proporción de la foto */
+.v91-parent{
+  position:relative;min-height:245px;border:1px solid var(--gc,#e51b23);
+  border-radius:22px;background:
+    radial-gradient(circle at 50% 18%,color-mix(in srgb,var(--gc,#e51b23) 15%,transparent),transparent 38%),
+    #09090a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  cursor:pointer;overflow:hidden;transition:.18s
+}
+.v91-parent:hover{transform:translateY(-2px);box-shadow:0 0 24px color-mix(in srgb,var(--gc,#e51b23) 20%,transparent)}
+.v91-parent:before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:4px;border-radius:0 4px 4px 0;background:var(--gc,#e51b23)}
+.v91-parent .cam{font-size:30px;padding:10px 13px;border:1px solid color-mix(in srgb,var(--gc,#e51b23) 50%,#222);border-radius:14px;background:#16090a;margin-bottom:10px}
+.v91-parent .tag,.v91-child-tag{border:1px solid var(--gc,#e51b23);color:var(--gc,#e51b23);background:color-mix(in srgb,var(--gc,#e51b23) 9%,#09090a);border-radius:999px;padding:4px 9px;font-size:8px;font-weight:900;letter-spacing:.07em}
+.v91-parent h3{margin:11px 18px 4px;font-size:20px}
+.v91-parent .meta,.v91-parent .count{color:#85858a;font-size:10px;margin-top:5px}
+.v91-parent .editmeta{margin-top:10px;border:1px solid #444;background:#171719;color:#fff;border-radius:9px;padding:7px 10px;font-size:9px;font-weight:850;cursor:pointer}
+
+.v91-admin-note{
+  grid-column:1/-1;border:1px solid #29292d;background:#101012;border-radius:12px;
+  padding:9px 12px;color:#96969b;font-size:10px;line-height:1.4
+}
+.v91-check{
+  position:absolute;left:12px;top:12px;z-index:90;width:26px;height:26px;
+  border:1px solid #777;border-radius:7px;background:#f4f4f4;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:manipulation
+}
+.v91-check.on{background:#e0000b;border-color:#ff3942;color:#fff}
+.v91-check.on:after{content:"✓";font-size:16px;font-weight:1000}
+.event-card.v91-selected{outline:1px solid #e0000b;box-shadow:0 0 0 2px rgba(224,0,11,.08),0 0 16px rgba(224,0,11,.1)}
+.v91-child-tag{position:absolute;left:46px;top:13px;z-index:35;font-size:7px}
+.v91-back{grid-column:1/-1;justify-self:start;border:1px solid #444;border-radius:999px;background:#151517;color:#fff;padding:8px 13px;font-size:9px;font-weight:900;cursor:pointer}
+.v91-parentbar{grid-column:1/-1;border:1px solid #303035;background:#101012;border-radius:12px;padding:9px 11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.v91-parentbar .title{color:#fff;font-size:11px;font-weight:900}
+.v91-parentbar .sub{color:#888;font-size:9px}
+.v91-parentbar button{margin-left:auto;border:1px solid #444;border-radius:9px;background:#18181a;color:#fff;padding:7px 10px;font-size:9px;font-weight:850;cursor:pointer}
+.v91-working{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483500;
+  display:none;padding:8px 13px;border-radius:999px;background:#09090a;border:1px solid #725b1e;
+  color:#f1cb56;font-size:9px;font-weight:900;box-shadow:0 10px 28px rgba(0,0,0,.55)
+}
+.v91-working.ok{border-color:#2c774a;color:#52db88}
+.v91-search-parent{display:inline-flex;margin-top:7px;padding:4px 7px;border:1px solid #333;border-radius:999px;color:#999;font-size:8px}
+.v91-rich a{color:#58b7ff;text-decoration:none;font-weight:850}
+.v91-rich a.wa{color:#54d77c}
 @media(max-width:700px){
-  #modalViewer .modal-box,
-  #viewerModal .modal-box,
-  .viewer-modal .modal-box{
-    width:100vw!important;
-    max-width:100vw!important;
-    height:100dvh!important;
-    max-height:100dvh!important;
-    margin:0!important;
-    border-radius:0!important;
-    box-sizing:border-box!important;
-    overflow:hidden!important;
-  }
-
-  #modalViewer img,
-  #viewerModal img,
-  .viewer-modal img{
-    max-width:100%!important;
-    max-height:calc(100dvh - 205px)!important;
-    object-fit:contain!important;
-    object-position:center center!important;
-  }
-
-  /* Carrito más compacto */
-  .floating-cart,
-  #floatingCart,
-  .cart-float{
-    max-width:145px!important;
-    min-width:0!important;
-    padding:8px 11px!important;
-    font-size:10px!important;
-    border-radius:999px!important;
-  }
-
-  /* La barra inferior no debe desbordar horizontalmente */
-  .gallery-bottom-bar,
-  .bottom-actions,
-  #galleryActions{
-    width:100%!important;
-    max-width:100vw!important;
-    box-sizing:border-box!important;
-    overflow:hidden!important;
-  }
-
-  /* Botones finales de galería: tipografía compacta */
-  .gallery-bottom-bar button,
-  .bottom-actions button,
-  #galleryActions button{
-    min-width:0!important;
-    white-space:normal!important;
-    line-height:1.15!important;
-    font-size:10px!important;
-  }
-
-  #v79BackAlbums{
-    left:8px;
-    bottom:9px;
-    height:35px;
-    padding:0 10px;
-    font-size:9px;
-  }
-}
-
-/* Si checkout está abierto, no mostrar carrito ni Volver a álbumes */
-body.v79-checkout-open #v79BackAlbums,
-body.v79-checkout-open .floating-cart,
-body.v79-checkout-open #floatingCart,
-body.v79-checkout-open .cart-float{
-  display:none!important;
+  #v91GroupBar{flex-wrap:wrap;bottom:8px}
+  #v91GroupName{flex-basis:100%}
+  .v91-parent{min-height:195px}
+  .v91-parent h3{font-size:17px}
 }
 </style>
 
-<button id="v79BackAlbums" type="button" title="Volver a la lista de álbumes">← ÁLBUMES</button>
+<div id="v91Version">TOMAUNO FOTOS · V91</div>
+<div id="v91Working" class="v91-working"></div>
+<div id="v91GroupBar">
+  <span class="count" id="v91Count">0 seleccionados</span>
+  <input id="v91GroupName" type="text" autocomplete="off" placeholder="Nombre del evento / grupo">
+  <button id="v91GroupBtn" type="button" class="primary">AGRUPAR</button>
+  <button id="v91FrontBtn" type="button" disabled>ENVIAR A PORTADA</button>
+  <button id="v91ClearBtn" type="button">LIMPIAR</button>
+</div>
 
 <script>
 (function(){
 'use strict';
-function el(id){return document.getElementById(id)}
-
-/* El diagnóstico V78 cumplió su función: mantener lógica, esconder texto técnico. */
-function cleanDebug79(){
-  document.querySelectorAll('.v78-album-debug').forEach(function(n){
-    n.style.display='none';
-  });
-}
-
-/* Detectar cuándo estamos dentro de una galería sin hacer nuevas consultas. */
-function galleryState79(){
-  var photoList=el('photoList');
-  var eventList=el('eventList');
-  var galleryVisible=!!(photoList && photoList.children.length &&
-    getComputedStyle(photoList).display!=='none' &&
-    (!eventList || getComputedStyle(eventList).display==='none' || document.body.classList.contains('photos-open')));
-  document.body.classList.toggle('v79-gallery-open',galleryVisible);
-}
-
-/* Reutilizar la navegación existente: no recarga si ya existe una función de retorno. */
-window.v79GoAlbums=function(){
-  var candidates=['backToEvents','goBackToEvents','showEvents','backToAlbums','goHome'];
-  for(var i=0;i<candidates.length;i++){
-    if(typeof window[candidates[i]]==='function'){
-      window[candidates[i]]();
-      document.body.classList.remove('v79-gallery-open');
-      window.scrollTo({top:0,behavior:'smooth'});
-      return;
-    }
-  }
-  /* fallback seguro: usar el botón VOLVER existente de la galería */
-  var b=Array.from(document.querySelectorAll('button')).find(function(x){
-    return /VOLVER.*(ALBUM|EVENT)|ALBUMES/i.test((x.textContent||'').trim()) &&
-           x.id!=='v79BackAlbums';
-  });
-  if(b){b.click();document.body.classList.remove('v79-gallery-open')}
+var M={
+  all:[],
+  meta:{},
+  admin:false,
+  parent:'',
+  selected:new Set()
 };
-el('v79BackAlbums').onclick=window.v79GoAlbums;
+var COLORS=['#4ed45a','#28d4e5','#efb91c','#aa69ff','#ff6c42','#e34c8c','#4e8cff','#18c5a2'];
 
-/* Checkout: ocultar elementos flotantes que pueden tapar datos/botones. */
-function checkoutState79(){
-  var m=el('modalCheckout');
-  var open=!!(m && getComputedStyle(m).display!=='none');
-  document.body.classList.toggle('v79-checkout-open',open);
-}
-
-/* Logout: asegurar salida visual completa sin recargar álbumes. */
-var logout79=window.v77Logout;
-if(typeof logout79==='function'){
-  window.v77Logout=function(){
-    logout79.apply(this,arguments);
-    document.body.classList.remove('v64-album-admin','v73-album-save');
-    cleanDebug79();
-  };
-  window.v71LogoutAdmin=window.v77Logout;
-  window.v74Logout=window.v77Logout;
-}
-
-/* No mostramos fila técnica aunque V78 la regenere. */
-var observer79=new MutationObserver(function(){
-  cleanDebug79();
-  galleryState79();
-  checkoutState79();
-});
-observer79.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
-
-window.addEventListener('load',function(){
-  cleanDebug79();galleryState79();checkoutState79();
-});
-})();
-</script>
-<!-- /TOMAUNO V79 -->
-
-
-<!-- TOMAUNO V90 - CAPA SANEADA DE ALBUMES: UN SOLO RENDER -->
-<style>
-#v79Version,#v80Version,#v81Version,#v82Version,#v83Version,#v84Version,#v85Version,#v86Version{display:none!important}
-#v90Version{position:fixed;right:8px;bottom:5px;z-index:40;color:#555;font:700 8px Arial;letter-spacing:.08em;pointer-events:none}
-.v90-parent{position:relative;min-height:250px;border:1px solid var(--gc,#e31b23);border-radius:22px;background:radial-gradient(circle at 50% 10%,color-mix(in srgb,var(--gc,#e31b23) 14%,transparent),transparent 45%),#09090a;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;overflow:hidden;transition:.18s}
-.v90-parent:hover{transform:translateY(-2px);box-shadow:0 0 24px color-mix(in srgb,var(--gc,#e31b23) 22%,transparent)}
-.v90-parent:before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:4px;background:var(--gc,#e31b23);border-radius:0 4px 4px 0}
-.v90-parent .cam{font-size:31px;padding:10px 13px;border:1px solid color-mix(in srgb,var(--gc,#e31b23) 55%,#222);border-radius:14px;background:#16090a;margin-bottom:12px}
-.v90-parent .tag,.v90-child-tag{border:1px solid var(--gc,#e31b23);color:var(--gc,#e31b23);background:color-mix(in srgb,var(--gc,#e31b23) 10%,#09090a);border-radius:999px;padding:4px 9px;font-size:9px;font-weight:900;letter-spacing:.06em}
-.v90-parent h3{margin:11px 20px 5px;font-size:21px}
-.v90-parent .meta,.v90-parent .count{color:#777;font-size:11px;margin-top:5px}
-.v90-admin-note{grid-column:1/-1;border:1px solid #29292d;background:#101012;border-radius:12px;padding:9px 12px;color:#999;font-size:11px}
-.v90-check{position:absolute;left:12px;top:12px;z-index:20;width:26px;height:26px;border-radius:7px;border:1px solid #777;background:#f5f5f5;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.v90-check.on{background:#e0000b;border-color:#ff3942;color:white}
-.v90-check.on:after{content:"✓";font-weight:1000;font-size:16px}
-.v90-admin-card{position:relative}
-.v90-child-tag{position:absolute;left:48px;top:13px;z-index:5;font-size:8px}
-.v90-groupbar{position:sticky;bottom:10px;z-index:80;margin:18px auto 4px;max-width:760px;padding:10px;background:#101012;border:1px solid #343438;border-radius:15px;display:flex;gap:8px;align-items:center;box-shadow:0 10px 35px #000}
-.v90-groupbar input{flex:1;min-width:160px;background:#050506;color:white;border:1px solid #444;border-radius:10px;padding:12px}
-.v90-groupbar button{border:1px solid #444;background:#1a1a1d;color:white;border-radius:10px;padding:11px 14px;font-weight:900;cursor:pointer}
-.v90-groupbar .primary{background:#e51b23;border-color:#e51b23}
-.v90-back{grid-column:1/-1;justify-self:start;border:1px solid #444;background:#151517;color:white;border-radius:999px;padding:8px 16px;font-weight:900;cursor:pointer}
-.v90-parent-admin{outline:1px dashed #6b2225}
-.v90-parent-admin .editmeta{margin-top:12px;border:1px solid #444;background:#161618;color:white;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:10px;font-weight:800}
-.v90-search-parent{display:inline-flex;margin-top:8px;border:1px solid #333;border-radius:999px;padding:4px 8px;color:#999;font-size:9px}
-@media(max-width:700px){
- .v90-parent{min-height:190px}
- .v90-parent h3{font-size:17px}
- .v90-groupbar{left:8px;right:8px;bottom:8px;flex-wrap:wrap}
- .v90-groupbar input{flex-basis:100%}
-}
-</style>
-<div id="v90Version">TOMAUNO FOTOS · V90</div>
-<script>
-(function(){
-'use strict';
-var S={all:[],admin:false,parent:'',selected:new Set(),meta:{}};
-var palette=['#52d65a','#27d8e8','#f0bd18','#b56cff','#ff6f3d','#e83f86'];
 function E(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function attr(s){return esc(s)}
-function color(g){var n=0;for(var i=0;i<g.length;i++)n=(n*31+g.charCodeAt(i))>>>0;return palette[n%palette.length]}
-function visible(a){return a.visible!==false}
-function grouped(){
- var m={};S.all.forEach(function(a){var g=String(a.group||'').trim();if(g)(m[g]||(m[g]=[])).push(a)});return m
+function color(g){var h=0;g=String(g||'');for(var i=0;i<g.length;i++)h=((h*31)+g.charCodeAt(i))>>>0;return COLORS[h%COLORS.length]}
+function isVisible(a){return a.visible!==false}
+function groupMap(){var x={};M.all.forEach(function(a){var g=String(a.group||'').trim();if(g)(x[g]||(x[g]=[])).push(a)});return x}
+function work(t,ok){
+  var n=E('v91Working');if(!n)return;
+  n.textContent=t;n.className='v91-working'+(ok?' ok':'');n.style.display='block';
+  clearTimeout(window.__v91WorkTimer);
+  if(ok)window.__v91WorkTimer=setTimeout(function(){n.style.display='none'},1400)
 }
-function albumCard(a,admin){
- var hidden=!visible(a), id=String(a.bridgeId||''), g=String(a.group||'').trim();
- var safeId=String(a.id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
- var click=admin?'':' onclick="askPass(\''+safeId+'\')"';
- return '<div class="event-card v90-admin-card '+(hidden?'v64-hidden':'')+'" data-v90id="'+attr(id)+'"'+click+'>'+
-   (admin?'<button type="button" class="v90-check'+(S.selected.has(id)?' on':'')+'" data-v90check="'+attr(id)+'" aria-label="Seleccionar"></button>':'')+
-   (admin&&g?'<span class="v90-child-tag" style="--gc:'+color(g)+'">↳ '+esc(g)+'</span>':'')+
-   (hidden?'<span class="v64-hidden-label">OCULTO</span>':'')+
-   '<i class="fa fa-camera-retro"></i><h3>'+esc(a.displayName||'')+'</h3>'+
-   (a.description?'<div class="v64-album-desc">'+esc(a.description)+'</div>':'')+
- '</div>'
+function richText(t){
+  var s=esc(t||'');
+  s=s.replace(/(^|[\s(])@([A-Za-z0-9._]{2,30})\b/g,function(_,p,u){
+    return p+'<a href="https://www.instagram.com/'+u+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">@'+u+'</a>'
+  });
+  s=s.replace(/(^|[\s(])(\+?\d[\d\s-]{8,16}\d)\b/g,function(_,p,r){
+    var d=r.replace(/\D/g,'');if(d.length<10||d.length>13)return _;
+    var w=d.length===10?'54'+d:d;
+    return p+'<a class="wa" href="https://wa.me/'+w+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+r+'</a>'
+  });
+  return s
+}
+function syncGlobal(){
+  window.eventsData=M.all.map(function(x){return Object.assign({},x)});
+  window.__v73AdminAlbums=M.all.map(function(x){return Object.assign({},x)});
+  window.__v73AdminAlbumsLoaded=true;
 }
 function parentCard(g,items,admin){
- var m=S.meta[g]||{}, c=color(g);
- return '<div class="v90-parent '+(admin?'v90-parent-admin':'')+'" data-v90parent="'+attr(g)+'" style="--gc:'+c+'">'+
-   '<div class="cam">📷</div><div class="tag">◆ EVENTO / COLECCIÓN</div><h3>'+esc(g)+'</h3>'+
-   ((m.date||m.description)?'<div class="meta">'+esc((m.date?m.date+(m.description?' · ':''):'')+(m.description||''))+'</div>':'')+
-   '<div class="count">'+items.length+' álbum'+(items.length===1?'':'es')+'</div>'+
-   (admin?'<button type="button" class="editmeta" data-v90meta="'+attr(g)+'">✎ DESCRIPCIÓN / FECHA</button>':'')+
- '</div>'
+  var m=M.meta[g]||{},c=color(g);
+  return '<div class="v91-parent" data-v91parent="'+esc(g)+'" style="--gc:'+c+'">'+
+    '<div class="cam">📷</div><div class="tag">◆ EVENTO / COLECCIÓN</div>'+
+    '<h3>'+esc(g)+'</h3>'+
+    ((m.date||m.description)?'<div class="meta v91-rich">'+richText((m.date?m.date+(m.description?' · ':''):'')+(m.description||''))+'</div>':'')+
+    '<div class="count">'+items.length+' álbum'+(items.length===1?'':'es')+'</div>'+
+    (admin?'<button type="button" class="editmeta" data-v91meta="'+esc(g)+'">✎ DESCRIPCIÓN / FECHA</button>':'')+
+  '</div>'
 }
-function groupbar(){
- return '<div class="v90-groupbar"><span id="v90Count">'+S.selected.size+' seleccionados</span>'+
- '<input id="v90GroupName" placeholder="Nombre del evento / grupo">'+
- '<button class="primary" type="button" id="v90GroupBtn">AGRUPAR</button>'+
- '<button type="button" id="v90FrontBtn">ENVIAR A PORTADA</button>'+
- '<button type="button" id="v90ClearBtn">LIMPIAR</button></div>'
+function albumCard(a,admin){
+  var id=String(a.bridgeId||''),hidden=!isVisible(a),g=String(a.group||'').trim();
+  var safeId=String(a.id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  var open=admin?'':' onclick="askPass(\''+safeId+'\')"';
+  return '<div class="event-card '+(hidden?'v64-hidden ':'')+(M.selected.has(id)?'v91-selected ':'')+'" data-v91album="'+esc(id)+'"'+open+'>'+
+    (admin?'<button type="button" class="v91-check'+(M.selected.has(id)?' on':'')+'" data-v91check="'+esc(id)+'" aria-label="Seleccionar"></button>':'')+
+    (admin&&g?'<span class="v91-child-tag" style="--gc:'+color(g)+'">↳ '+esc(g)+'</span>':'')+
+    (hidden?'<span class="v64-hidden-badge" style="left:47px">OCULTO</span>':'')+
+    (admin?'<div class="v64-album-tools" onclick="event.stopPropagation()">'+
+      '<button type="button" data-v91eye="'+esc(id)+'" title="'+(hidden?'Mostrar álbum':'Ocultar álbum')+'">'+(hidden?'◉':'◌')+'</button>'+
+      '<button type="button" data-v91key="'+esc(id)+'" title="Cambiar clave">⌁</button>'+
+    '</div>':'')+
+    '<i class="fa fa-camera-retro"></i>'+
+    '<h3 '+(admin?'class="v64-editable-title" data-v91title="'+esc(id)+'"':'')+'>'+esc(a.displayName||'')+'</h3>'+
+    ((a.description||admin)?'<div class="v64-album-desc v91-rich" '+(admin?'data-v91desc="'+esc(id)+'"':'')+'>'+richText(a.description||(admin?'Doble clic para agregar descripción':''))+'</div>':'')+
+  '</div>'
 }
 function renderRoot(){
- var list=E('eventList');if(!list)return;
- var gs=grouped(), out=[];
- if(S.admin)out.push('<div class="v90-admin-note"><b>Administración de álbumes</b><br>Marcá álbumes sueltos para agrupar. Para administrar los que ya pertenecen a un evento, entrá en el padre.</div>');
- Object.keys(gs).sort().forEach(function(g){out.push(parentCard(g,gs[g],S.admin))});
- S.all.filter(function(a){return !String(a.group||'').trim() && (S.admin||visible(a))}).forEach(function(a){out.push(albumCard(a,S.admin))});
- list.innerHTML=out.join('');
- if(S.admin){list.insertAdjacentHTML('afterend',groupbar());bindAdmin()}
+  var list=E('eventList');if(!list)return;
+  M.parent='';
+  var groups=groupMap(),out=[];
+  if(M.admin)out.push('<div class="v91-admin-note"><b>Administración de álbumes</b><br>Los álbumes que ya están agrupados se administran entrando en su padre. Acá se muestran los padres y los álbumes sueltos.</div>');
+  Object.keys(groups).sort().forEach(function(g){out.push(parentCard(g,groups[g],M.admin))});
+  M.all.filter(function(a){return !String(a.group||'').trim() && (M.admin||isVisible(a))}).forEach(function(a){out.push(albumCard(a,M.admin))});
+  list.innerHTML=out.join('')||'<p>Sin álbumes disponibles.</p>';
+  configureBar();
+  bind()
 }
 function renderParent(g){
- var list=E('eventList');if(!list)return;S.parent=g;
- var items=S.all.filter(function(a){return String(a.group||'').trim()===g && (S.admin||visible(a))});
- var out=['<button type="button" class="v90-back" id="v90Back">← TODOS LOS ÁLBUMES</button>'];
- if(S.admin){
-   var m=S.meta[g]||{};
-   out.push('<div class="v90-admin-note"><b>Administrando:</b> '+esc(g)+' &nbsp; <button type="button" id="v90MetaInside">✎ DESCRIPCIÓN / FECHA</button>'+
-   ((m.date||m.description)?'<br>'+esc((m.date?m.date+' · ':'')+(m.description||'')):'')+'</div>');
- }
- items.forEach(function(a){out.push(albumCard(a,S.admin))});
- list.innerHTML=out.join('');
- E('v90Back').onclick=function(){S.parent='';S.selected.clear();renderRoot()};
- if(S.admin){list.insertAdjacentHTML('afterend',groupbar());bindAdmin();var mi=E('v90MetaInside');if(mi)mi.onclick=function(){editMeta(g)}}
+  var list=E('eventList');if(!list)return;
+  M.parent=g;M.selected.clear();
+  var items=M.all.filter(function(a){return String(a.group||'').trim()===g && (M.admin||isVisible(a))});
+  var meta=M.meta[g]||{},out=[];
+  out.push('<button type="button" class="v91-back" id="v91Back">← TODOS LOS ÁLBUMES</button>');
+  if(M.admin){
+    out.push('<div class="v91-parentbar"><div><div class="title">'+esc(g)+'</div><div class="sub">'+items.length+' álbum'+(items.length===1?'':'es')+
+      ((meta.date||meta.description)?' · <span class="v91-rich">'+richText((meta.date?meta.date+' · ':'')+(meta.description||''))+'</span>':'')+
+      '</div></div><button type="button" id="v91EditParent">✎ DESCRIPCIÓN / FECHA</button></div>')
+  }
+  items.forEach(function(a){out.push(albumCard(a,M.admin))});
+  list.innerHTML=out.join('');
+  configureBar();
+  bind();
+  E('v91Back').onclick=function(){M.selected.clear();renderRoot()};
+  if(M.admin&&E('v91EditParent'))E('v91EditParent').onclick=function(){editMeta(g)}
 }
-function removeBar(){var b=document.querySelector('.v90-groupbar');if(b)b.remove()}
-function render(){removeBar();S.parent?renderParent(S.parent):renderRoot()}
-function bindAdmin(){
- document.querySelectorAll('[data-v90check]').forEach(function(b){
-  b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();var id=b.dataset.v90check;S.selected.has(id)?S.selected.delete(id):S.selected.add(id);render()}
- });
- document.querySelectorAll('[data-v90parent]').forEach(function(p){
-  p.onclick=function(ev){if(ev.target.closest('[data-v90meta]'))return;S.selected.clear();removeBar();renderParent(p.dataset.v90parent)}
- });
- document.querySelectorAll('[data-v90meta]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();editMeta(b.dataset.v90meta)}});
- var gb=E('v90GroupBtn'),fb=E('v90FrontBtn'),cb=E('v90ClearBtn');
- if(gb)gb.onclick=assignGroup;if(fb)fb.onclick=function(){assignGroup(true)};if(cb)cb.onclick=function(){S.selected.clear();render()}
+function render(){M.parent?renderParent(M.parent):renderRoot()}
+function configureBar(){
+  var bar=E('v91GroupBar'),front=E('v91FrontBtn'),input=E('v91GroupName'),cnt=E('v91Count');
+  if(!bar)return;
+  bar.style.display=M.admin?'flex':'none';
+  if(front)front.disabled=!M.parent;
+  if(input)input.placeholder=M.parent?'Mover seleccionados a otro evento / grupo':'Nombre del evento / grupo';
+  if(cnt)cnt.textContent=M.selected.size+' seleccionado'+(M.selected.size===1?'':'s');
 }
-async function assignGroup(front){
- if(!S.selected.size){if(window.luxAlert)luxAlert('SIN SELECCIÓN','Marcá uno o más álbumes.');return}
- var name=front?'':String((E('v90GroupName')||{}).value||'').trim();
- if(!front&&!name){if(window.luxAlert)luxAlert('NOMBRE DEL EVENTO','Escribí el nombre del evento / colección.');return}
- var ids=Array.from(S.selected), btn=front?E('v90FrontBtn'):E('v90GroupBtn');
- if(btn){btn.disabled=true;btn.textContent=front?'MOVIENDO…':'AGRUPANDO…'}
- try{
-  var r=await apiPost({action:'setAlbumsGroup',pin:'3233',bridgeIds:ids,group:name});
-  if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
-  S.all.forEach(function(a){if(ids.indexOf(String(a.bridgeId||''))>=0)a.group=name});
-  S.selected.clear();
-  render(); /* conserva el padre actual: si se envía a portada, desaparece de aquí */
- }catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e));else alert(e.message||e)}
+function bind(){
+  document.querySelectorAll('[data-v91parent]').forEach(function(p){
+    p.onclick=function(ev){
+      if(ev.target.closest('[data-v91meta]'))return;
+      renderParent(p.dataset.v91parent)
+    }
+  });
+  document.querySelectorAll('[data-v91meta]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();editMeta(b.dataset.v91meta)}});
+  document.querySelectorAll('[data-v91check]').forEach(function(b){
+    b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();var id=b.dataset.v91check;M.selected.has(id)?M.selected.delete(id):M.selected.add(id);render()}
+  });
+  document.querySelectorAll('[data-v91eye]').forEach(function(b){
+    b.onclick=async function(ev){
+      ev.preventDefault();ev.stopPropagation();
+      var id=b.dataset.v91eye,a=M.all.find(function(x){return String(x.bridgeId||'')===id});if(!a)return;
+      var target=a.visible===false;
+      work(target?'MOSTRANDO ÁLBUM…':'OCULTANDO ÁLBUM…');
+      a.visible=target;render();
+      try{
+        var r=await apiPost({action:'setAlbumVisibility',pin:'3233',bridgeId:id,state:target?'VISIBLE':'OCULTO'});
+        if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+        work(target?'ÁLBUM VISIBLE':'ÁLBUM OCULTO',true)
+      }catch(e){
+        a.visible=!target;render();
+        if(window.luxAlert)luxAlert('ERROR',e.message||String(e))
+      }
+    }
+  });
+  document.querySelectorAll('[data-v91key]').forEach(function(b){
+    b.onmouseenter=function(){
+      var a=M.all.find(function(x){return String(x.bridgeId||'')===String(b.dataset.v91key)});
+      b.title=a&&a.pass?'Clave actual: '+a.pass:'Sin clave configurada'
+    };
+    b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();if(window.editAlbumPass64)window.editAlbumPass64(b.dataset.v91key)}
+  });
+  document.querySelectorAll('[data-v91title]').forEach(function(h){
+    h.ondblclick=function(ev){ev.stopPropagation();if(window.editAlbumTitleInline64)window.editAlbumTitleInline64(h,h.dataset.v91title)}
+  });
+  document.querySelectorAll('[data-v91desc]').forEach(function(d){
+    d.ondblclick=function(ev){ev.stopPropagation();if(window.editAlbumDescription64)window.editAlbumDescription64(d.dataset.v91desc)}
+  })
+}
+async function setGroup(front){
+  if(!M.selected.size){if(window.luxAlert)luxAlert('SIN SELECCIÓN','Marcá uno o más álbumes.');return}
+  var g=front?'':String((E('v91GroupName')||{}).value||'').trim();
+  if(!front&&!g){if(window.luxAlert)luxAlert('NOMBRE DEL EVENTO','Escribí el nombre del evento o colección.');return}
+  var ids=Array.from(M.selected);
+  work(front?'ENVIANDO A PORTADA…':'AGRUPANDO ÁLBUMES…');
+  try{
+    var r=await apiPost({action:'setAlbumsGroup',pin:'3233',bridgeIds:ids,group:g});
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+    M.all.forEach(function(a){if(ids.indexOf(String(a.bridgeId||''))>=0)a.group=g});
+    M.selected.clear();if(E('v91GroupName'))E('v91GroupName').value='';syncGlobal();render();
+    work(front?'ÁLBUMES ENVIADOS A PORTADA':'EVENTO ACTUALIZADO',true)
+  }catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e))}
 }
 async function editMeta(g){
- var old=S.meta[g]||{};
- var desc=prompt('Descripción / Instagram / WhatsApp del evento:',old.description||'');
- if(desc===null)return;
- var date=prompt('Fecha (opcional):',old.date||'');
- if(date===null)return;
- try{
-  var r=await apiPost({action:'saveAlbumGroupMeta',pin:'3233',group:g,description:desc,date:date});
-  if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
-  S.meta[g]={description:r.description||desc,date:r.date||date};render()
- }catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e))}
+  var old=M.meta[g]||{};
+  var desc=prompt('Descripción / Instagram / WhatsApp del evento:',old.description||'');if(desc===null)return;
+  var date=prompt('Fecha / referencia (opcional):',old.date||'');if(date===null)return;
+  work('GUARDANDO EVENTO…');
+  try{
+    var r=await apiPost({action:'saveAlbumGroupMeta',pin:'3233',group:g,description:desc,date:date});
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+    M.meta[g]={name:g,description:r.description||desc,date:r.date||date};render();work('EVENTO ACTUALIZADO',true)
+  }catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e))}
 }
 async function loadMeta(){
- try{var r=await apiGet({action:'albumGroups',t:Date.now()});var arr=Array.isArray(r)?r:(r.groups||[]);
-  S.meta={};arr.forEach(function(x){var n=String(x.name||x.group||'').trim();if(n)S.meta[n]=x})
- }catch(e){}
+  try{
+    var r=await apiGet({action:'albumGroups',t:Date.now()});
+    M.meta={};(r.groups||[]).forEach(function(x){M.meta[x.name]=x})
+  }catch(e){M.meta={}}
 }
-async function loadClean(){
- var list=E('eventList');if(list)list.innerHTML='<p style="grid-column:1/-1;text-align:center;color:#777">Cargando álbumes…</p>';
- try{
-  var events=await apiGet({action:'events',t:Date.now()});
-  S.all=(Array.isArray(events)?events:(events.events||[])).map(function(x){return Object.assign({},x)});
-  window.eventsData=S.all.filter(visible).map(function(x){return Object.assign({},x)});
-  await loadMeta();render()
- }catch(e){if(list)list.innerHTML='<p style="grid-column:1/-1;text-align:center;color:#f55">No se pudieron cargar los álbumes.</p>'}
+async function loadV91(admin){
+  if(window.toggleL)toggleL(true,admin?'CARGANDO ADMINISTRACIÓN…':'CARGANDO ÁLBUMES…');
+  try{
+    var r=await apiGet(admin?{action:'eventsAdmin',pin:'3233',t:Date.now()}:{action:'events',t:Date.now()});
+    M.all=(Array.isArray(r)?r:(r.events||[])).map(function(x){return Object.assign({},x)});
+    await loadMeta();syncGlobal();if(window.toggleL)toggleL(false);render()
+  }catch(e){
+    if(window.toggleL)toggleL(false);
+    if(window.luxAlert)luxAlert('ERROR','No se pudieron cargar los álbumes: '+(e.message||e))
+  }
 }
 function search(q){
- q=String(q||'').trim().toLowerCase();if(!q){render();return}
- removeBar();var list=E('eventList'),gs=grouped(),out=[];
- Object.keys(gs).forEach(function(g){if(g.toLowerCase().indexOf(q)>=0)out.push(parentCard(g,gs[g].filter(visible),false))});
- S.all.filter(visible).forEach(function(a){
-  var text=(String(a.displayName||'')+' '+String(a.description||'')).toLowerCase();
-  if(text.indexOf(q)>=0){var g=String(a.group||'').trim();var c=albumCard(a,false);if(g)c=c.replace('</div>','<span class="v90-search-parent">Dentro de: '+esc(g)+'</span></div>');out.push(c)}
- });
- list.innerHTML=out.join('')||'<p style="grid-column:1/-1;text-align:center;color:#777">No encontramos álbumes.</p>';
- document.querySelectorAll('[data-v90parent]').forEach(function(p){p.onclick=function(){renderParent(p.dataset.v90parent)}})
+  if(M.admin)return;
+  q=String(q||'').trim().toLowerCase();if(!q){renderRoot();return}
+  var list=E('eventList'),groups=groupMap(),out=[];
+  Object.keys(groups).forEach(function(g){if(g.toLowerCase().indexOf(q)>=0)out.push(parentCard(g,groups[g].filter(isVisible),false))});
+  M.all.filter(isVisible).forEach(function(a){
+    var tx=(String(a.displayName||'')+' '+String(a.description||'')).toLowerCase();
+    if(tx.indexOf(q)<0)return;
+    var card=albumCard(a,false),g=String(a.group||'').trim();
+    if(g)card=card.replace('</div>','<span class="v91-search-parent">Dentro de: '+esc(g)+'</span></div>');
+    out.push(card)
+  });
+  list.innerHTML=out.join('')||'<p style="grid-column:1/-1;text-align:center;color:#777">No encontramos álbumes.</p>';
+  bind()
 }
 function bindSearch(){
- var s=E('albumSearch');if(s)s.oninput=function(){if(!S.admin)search(s.value)}
+  var s=E('albumSearch');if(s)s.oninput=function(){search(s.value)}
 }
-/* Entradas públicas */
-document.addEventListener('click',function(e){
- var p=e.target.closest&&e.target.closest('[data-v90parent]');
- if(p&&!S.admin){e.preventDefault();renderParent(p.dataset.v90parent)}
-});
-/* Reemplazamos las entradas de administración: no recargan datos ya cargados. */
+/* Entradas */
+window.loadEvents=function(){M.admin=false;M.parent='';M.selected.clear();document.body.classList.remove('v91-album-admin');loadV91(false)};
 window.enterAlbumAdminMode=function(){
- S.admin=true;S.parent='';S.selected.clear();document.body.classList.add('v64-album-admin');
- var m=E('modalAdmin');if(m)m.style.display='none';var b=E('v64AlbumAdminBar');if(b)b.style.display='flex';render()
+  M.admin=true;M.parent='';M.selected.clear();document.body.classList.add('v91-album-admin');
+  var adm=E('modalAdmin');if(adm)adm.style.display='none';
+  loadV91(true)
 };
 window.exitAlbumAdminMode=function(){
- S.admin=false;S.parent='';S.selected.clear();document.body.classList.remove('v64-album-admin');
- var b=E('v64AlbumAdminBar');if(b)b.style.display='none';render()
+  M.admin=false;M.parent='';M.selected.clear();document.body.classList.remove('v91-album-admin');
+  M.all=M.all.filter(isVisible);syncGlobal();render()
 };
-/* Un solo arranque. Anula la cadena de loadEvents heredada para álbumes. */
-window.loadEvents=loadClean;
-window.addEventListener('DOMContentLoaded',bindSearch);
-window.onload=function(){bindSearch();loadClean()};
+E('v91GroupBtn').onclick=function(){setGroup(false)};
+E('v91FrontBtn').onclick=function(){setGroup(true)};
+E('v91ClearBtn').onclick=function(){M.selected.clear();if(E('v91GroupName'))E('v91GroupName').value='';render()};
+window.addEventListener('DOMContentLoaded',bindSearch)
 })();
 </script>
-<!-- /TOMAUNO V90 -->
+<!-- /TOMAUNO V91 -->
 
 </body>
 </html>
