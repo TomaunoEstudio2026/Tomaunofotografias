@@ -11167,5 +11167,262 @@ document.addEventListener('click',function(){
 </script>
 <!-- /TOMAUNO V86 -->
 
+
+
+<!-- TOMAUNO V87 - RENDER UNICO + SELECTORES ADMIN ROOT -->
+<style>
+#v86Version{display:none!important}
+#v87Version{
+  position:fixed;right:8px;bottom:5px;z-index:50;
+  color:#555;font-size:8px;font-weight:700;letter-spacing:.08em;
+  pointer-events:none;user-select:none
+}
+
+/* Evita el "flash" del diseño viejo al iniciar */
+body:not(.v87-ready) #eventList{
+  visibility:hidden!important;
+}
+body:not(.v87-ready) #view-events{
+  min-height:360px;
+}
+
+/* selector propio visible en admin root */
+.v87-select-album{
+  position:absolute!important;
+  left:10px!important;top:10px!important;z-index:99999!important;
+  width:24px!important;height:24px!important;
+  border-radius:7px!important;border:1px solid #555!important;
+  background:#101012!important;color:transparent!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  cursor:pointer!important;pointer-events:auto!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.35)!important;
+}
+.v87-select-album.selected{
+  background:#e0000b!important;border-color:#e0000b!important;color:#fff!important;
+}
+.v87-select-album.selected:before{
+  content:"✓";font-size:14px;font-weight:950;
+}
+.event-card.v87-selected{
+  outline:1px solid #e0000b!important;
+  box-shadow:0 0 0 2px rgba(224,0,11,.08),0 0 16px rgba(224,0,11,.10)!important;
+}
+
+/* En root ADM, mantener claro qué se puede arrastrar */
+body.v64-album-admin .event-card[data-bridge]{
+  position:relative!important;
+}
+</style>
+
+<div id="v87Version">TOMAUNO FOTOS · V87</div>
+
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+
+window.__v87SelectedAlbums=window.__v87SelectedAlbums||new Set();
+
+function count87(){
+  var n=window.__v87SelectedAlbums.size;
+  var c=el('v80GroupCount');
+  if(c)c.textContent=n+' seleccionado'+(n===1?'':'s');
+}
+
+/* Agrega selector a cada álbum suelto del root ADM */
+function bindRootSelectors87(){
+  if(!window.__albumAdminMode)return;
+  if(document.body.classList.contains('v80-inside-group'))return;
+
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var id=String(card.getAttribute('data-bridge')||'');
+    if(!id)return;
+
+    var b=card.querySelector('.v87-select-album');
+    if(!b){
+      b=document.createElement('button');
+      b.type='button';
+      b.className='v87-select-album';
+      b.title='Seleccionar álbum';
+      b.setAttribute('aria-label','Seleccionar álbum');
+      b.onclick=function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        if(window.__v87SelectedAlbums.has(id))window.__v87SelectedAlbums.delete(id);
+        else window.__v87SelectedAlbums.add(id);
+
+        syncSelectors87();
+      };
+      card.appendChild(b);
+    }
+  });
+
+  syncSelectors87();
+}
+
+function syncSelectors87(){
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var id=String(card.getAttribute('data-bridge')||'');
+    var b=card.querySelector('.v87-select-album');
+    var on=window.__v87SelectedAlbums.has(id);
+    if(b)b.classList.toggle('selected',on);
+    card.classList.toggle('v87-selected',on);
+  });
+  count87();
+}
+
+/* LIMPIAR = desmarcar + vaciar texto */
+window.v80ClearSelection=function(){
+  window.__v87SelectedAlbums.clear();
+  var i=el('v80GroupName');if(i)i.value='';
+  syncSelectors87();
+};
+
+/* AGRUPAR desde root ADM usando los selectores V87 */
+async function assign87(group){
+  var ids=Array.from(window.__v87SelectedAlbums);
+  if(!ids.length){
+    if(window.luxAlert)luxAlert('SIN SELECCIÓN','Marcá uno o más álbumes con el cuadradito de la esquina.');
+    return;
+  }
+
+  var work=el('v80AlbumWork');
+  if(work){
+    work.textContent=group?'AGRUPANDO ÁLBUMES…':'ENVIANDO A PORTADA…';
+    work.className='busy';
+    work.style.display='block';
+  }
+
+  try{
+    var r=await apiPost({
+      action:'setAlbumsGroup',
+      pin:'3233',
+      bridgeIds:ids,
+      group:group||''
+    });
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar.');
+
+    [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+      (arr||[]).forEach(function(x){
+        if(ids.indexOf(String(x.bridgeId||''))>=0)x.group=group||'';
+      });
+    });
+
+    window.__v87SelectedAlbums.clear();
+    var input=el('v80GroupName');if(input)input.value='';
+    count87();
+
+    /* reflejar inmediatamente el nuevo árbol admin */
+    if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+    setTimeout(bindRootSelectors87,40);
+
+    if(work){
+      work.textContent=group?'✓ EVENTO CREADO / ACTUALIZADO':'✓ ÁLBUMES ENVIADOS A PORTADA';
+      work.className='ok';
+      work.style.display='block';
+      setTimeout(function(){work.style.display='none'},1600);
+    }
+  }catch(err){
+    if(work){
+      work.textContent='ERROR AL GUARDAR';
+      work.className='err';
+      work.style.display='block';
+    }
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }
+}
+
+window.v80AssignGroup=function(){
+  var g=String((el('v80GroupName')||{}).value||'').trim();
+  if(!g){
+    if(window.luxAlert)luxAlert('NOMBRE DEL EVENTO','Escribí el nombre del evento o colección.');
+    return;
+  }
+  assign87(g);
+};
+
+window.v80ClearGroup=function(){
+  assign87('');
+};
+
+/* Render público único desde el primer momento */
+function finalPublic87(){
+  if(window.__albumAdminMode)return;
+  if(typeof window.v84RenderPublic==='function'){
+    window.v84RenderPublic();
+  }
+  document.body.classList.add('v87-ready');
+}
+
+/* Root admin único */
+function finalAdmin87(){
+  if(!window.__albumAdminMode)return;
+  document.body.classList.add('v87-ready');
+  if(typeof window.v85AdminRoot==='function'){
+    window.v85AdminRoot();
+    setTimeout(bindRootSelectors87,40);
+  }
+}
+
+/* Sobrescribir entrada a ADM para asegurar selectores */
+var enter87=window.enterAlbumAdminMode;
+window.enterAlbumAdminMode=function(){
+  window.__albumAdminMode=true;
+  document.body.classList.add('v64-album-admin','v87-ready');
+
+  var adm=el('modalAdmin');if(adm)adm.style.display='none';
+  var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='flex';
+
+  if(window.__v73AdminAlbumsLoaded){
+    finalAdmin87();
+  }else{
+    apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()}).then(function(res){
+      var arr=Array.isArray(res)?res:(res.events||[]);
+      window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+      window.__v73AdminAlbumsLoaded=true;
+      window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+      finalAdmin87();
+    });
+  }
+};
+
+/* Salida de ADM: render moderno inmediatamente */
+window.exitAlbumAdminMode=function(){
+  window.__albumAdminMode=false;
+  document.body.classList.remove('v64-album-admin','v80-inside-group');
+  var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='none';
+  window.__v87SelectedAlbums.clear();
+  finalPublic87();
+};
+
+/* Al volver desde padre, mantener el mismo render */
+var back87=window.v86BackFromParent;
+window.v86BackFromParent=function(){
+  document.body.classList.remove('v80-inside-group');
+  if(window.__albumAdminMode){
+    finalAdmin87();
+  }else{
+    finalPublic87();
+  }
+};
+window.v84CloseGroup=window.v86BackFromParent;
+window.v80CloseGroup=window.v86BackFromParent;
+
+/* Primer inicio: ocultar viejo y mostrar solamente moderno */
+window.addEventListener('load',function(){
+  setTimeout(finalPublic87,250);
+  setTimeout(finalPublic87,700);
+});
+
+/* Si la lista se vuelve a renderizar en admin, recuperar selectores */
+document.addEventListener('click',function(){
+  setTimeout(bindRootSelectors87,50);
+});
+})();
+</script>
+<!-- /TOMAUNO V87 -->
+
 </body>
 </html>
