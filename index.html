@@ -10157,5 +10157,326 @@ window.addEventListener('load',function(){setTimeout(function(){rename83();if(wi
 </script>
 <!-- /TOMAUNO V83 -->
 
+
+
+<!-- TOMAUNO V84 - PADRES ADMIN + COLORES DE GRUPO + FEEDBACK OPTIMISTA -->
+<style>
+#v83Version{display:none!important}
+#v84Version{
+  position:fixed;right:8px;bottom:5px;z-index:50;
+  color:#555;font-size:8px;font-weight:700;letter-spacing:.08em;
+  pointer-events:none;user-select:none
+}
+
+/* Padres con el mismo peso/tamaño visual que los álbumes comunes */
+.v80-group-card{
+  min-height:250px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  padding:22px 18px!important;
+}
+.v83-group-camera{
+  display:flex!important;
+  width:58px!important;height:58px!important;
+  margin:0 auto 12px!important;
+  align-items:center!important;justify-content:center!important;
+  border-radius:16px!important;
+  background:rgba(224,0,11,.12)!important;
+  border:1px solid rgba(255,30,40,.32)!important;
+  box-shadow:0 0 20px rgba(224,0,11,.12)!important;
+  font-size:30px!important;
+}
+
+/* Etiquetas por grupo con color estable */
+.v83-member-tag{
+  color:#fff!important;
+  border-color:var(--v84-group-color,#c43)!important;
+  background:color-mix(in srgb,var(--v84-group-color,#c43) 22%,#09090a 78%)!important;
+  box-shadow:0 0 12px color-mix(in srgb,var(--v84-group-color,#c43) 18%,transparent)!important;
+}
+.v84-parent-color{
+  border-color:var(--v84-group-color,#d71920)!important;
+}
+.v84-parent-color:before{
+  background:var(--v84-group-color,#d71920)!important;
+}
+.v84-parent-color .v83-group-badge{
+  color:var(--v84-group-color,#d71920)!important;
+  border-color:color-mix(in srgb,var(--v84-group-color,#d71920) 45%,transparent)!important;
+  background:color-mix(in srgb,var(--v84-group-color,#d71920) 10%,transparent)!important;
+}
+
+/* Barra de administración de padres visible en modo edición */
+#v84ParentAdminBar{
+  display:none;
+  margin:0 0 14px;
+  padding:10px;
+  border:1px solid #2d2d31;
+  border-radius:14px;
+  background:#0a0a0b;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+body.v64-album-admin #v84ParentAdminBar{display:flex}
+#v84ParentAdminBar .label{color:#888;font-size:9px;font-weight:850;letter-spacing:.08em}
+#v84ParentAdminBar select,
+#v84ParentAdminBar button{
+  height:34px;border:1px solid #343438;border-radius:9px;
+  background:#141416;color:#eee;padding:0 10px;font-size:9px;font-weight:850
+}
+#v84ParentAdminBar button{cursor:pointer}
+#v84ParentAdminBar button:hover{border-color:#d71920}
+
+/* Feedback optimista al ocultar/mostrar */
+.event-card.v84-pending{
+  opacity:.55!important;
+  filter:saturate(.55)!important;
+}
+.event-card.v84-pending:after{
+  content:attr(data-v84-status);
+  position:absolute;
+  left:50%;bottom:10px;transform:translateX(-50%);
+  padding:5px 8px;border-radius:999px;
+  background:rgba(7,7,8,.90);border:1px solid #5e4d1e;
+  color:#efca57;font-size:8px;font-weight:900;letter-spacing:.06em;
+  pointer-events:none;z-index:30
+}
+
+/* Botón volver de padres */
+#v84GroupBack{
+  display:inline-flex;align-items:center;gap:6px;
+  margin:0 0 14px;padding:8px 12px;
+  border:1px solid #333;border-radius:999px;
+  background:#111;color:#eee;font-size:9px;font-weight:850;cursor:pointer
+}
+
+@media(max-width:700px){
+  .v80-group-card{min-height:210px!important;padding:18px 14px!important}
+  .v83-group-camera{width:52px!important;height:52px!important;font-size:26px!important}
+  #v84ParentAdminBar{padding:8px}
+  #v84ParentAdminBar select{flex:1;min-width:150px}
+}
+</style>
+
+<div id="v84Version">TOMAUNO FOTOS · V84</div>
+
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+function esc84(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+/* ---------- color determinístico por nombre de grupo ---------- */
+var palette84=['#25a7ff','#a96cff','#ff6b9d','#19c99a','#f0b93b','#ff7b45','#6bcf63','#35c8d9','#d95cff'];
+function color84(name){
+  name=String(name||'');
+  var h=0;
+  for(var i=0;i<name.length;i++)h=((h<<5)-h)+name.charCodeAt(i),h|=0;
+  return palette84[Math.abs(h)%palette84.length];
+}
+function applyGroupColors84(){
+  document.querySelectorAll('.v83-member-tag').forEach(function(tag){
+    var g=(tag.textContent||'').replace(/^↳\s*/,'').trim();
+    tag.style.setProperty('--v84-group-color',color84(g));
+  });
+  document.querySelectorAll('.v80-group-card[data-group]').forEach(function(card){
+    var g=card.getAttribute('data-group')||'';
+    card.classList.add('v84-parent-color');
+    card.style.setProperty('--v84-group-color',color84(g));
+  });
+}
+
+/* ---------- render público / padres ---------- */
+function all84(){
+  var seen={},out=[];
+  [window.eventsData,window.__v73AdminAlbums].forEach(function(arr){
+    (arr||[]).forEach(function(x){
+      var k=String(x.bridgeId||x.id||'');
+      if(k&&!seen[k]){seen[k]=1;out.push(x)}
+    });
+  });
+  return out;
+}
+function public84(){
+  if(window.__albumAdminMode)return;
+  var list=el('eventList'); if(!list)return;
+
+  var all=all84().filter(function(x){return x.visible!==false});
+  var groups={},singles=[];
+  all.forEach(function(x){
+    var g=String(x.group||'').trim();
+    if(g)(groups[g]||(groups[g]=[])).push(x); else singles.push(x);
+  });
+
+  var out=[];
+  Object.keys(groups).sort().forEach(function(g){
+    var items=groups[g],m=(window.__v81GroupMeta||{})[g]||{};
+    out.push(
+      '<div class="v80-group-card" data-group="'+esc84(g)+'" onclick="v84OpenGroup('+JSON.stringify(g).replace(/"/g,'&quot;')+')">'+
+        '<div class="v83-group-camera">📷</div>'+
+        '<div class="v83-group-badge">◆ EVENTO / COLECCIÓN</div>'+
+        '<h3>'+esc84(g)+'</h3>'+
+        ((m.date||m.description)?'<div class="v83-group-meta">'+esc84(m.date||'')+(m.date&&m.description?' · ':'')+esc84(m.description||'')+'</div>':'')+
+        '<p class="v83-group-count">'+items.length+' álbum'+(items.length===1?'':'es')+'</p>'+
+        ((sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'&&typeof window.v81EditMeta==='function')?
+          '<button class="v83-group-admin" onclick="event.stopPropagation();v81EditMeta('+JSON.stringify(g).replace(/"/g,'&quot;')+')">✎ DESCRIPCIÓN / FECHA</button>':'')+
+      '</div>'
+    );
+  });
+  singles.forEach(function(ev){
+    out.push(
+      '<div class="event-card" data-album="'+esc84(ev.displayName||'')+'" onclick="askPass('+JSON.stringify(String(ev.id||'')).replace(/"/g,'&quot;')+')">'+
+        '<i class="fa fa-camera-retro"></i><h3>'+esc84(ev.displayName||'')+'</h3>'+
+        (ev.description?'<div class="v64-album-desc">'+esc84(ev.description)+'</div>':'')+
+      '</div>'
+    );
+  });
+
+  list.innerHTML=out.join('');
+  applyGroupColors84();
+}
+window.v84RenderPublic=public84;
+window.renderPublic80=public84;
+window.v81RenderPublic=public84;
+window.v83RenderPublic=public84;
+
+/* ---------- entrar a un padre, incluso estando ADM ---------- */
+window.v84OpenGroup=function(group){
+  var list=el('eventList'); if(!list)return;
+  var items=all84().filter(function(x){return x.visible!==false&&String(x.group||'')===String(group)});
+  var admin=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1';
+
+  var adminbar=admin?
+    '<div id="v84ParentAdminBar">'+
+      '<span class="label">ADMINISTRANDO:</span>'+
+      '<strong style="color:#fff;font-size:11px">'+esc84(group)+'</strong>'+
+      '<button type="button" onclick="event.stopPropagation();v81EditMeta('+JSON.stringify(group).replace(/"/g,'&quot;')+')">✎ DESCRIPCIÓN / FECHA</button>'+
+    '</div>':'';
+
+  list.innerHTML=
+    '<button id="v84GroupBack" type="button" onclick="v84CloseGroup()">← TODOS LOS ÁLBUMES</button>'+
+    adminbar+
+    items.map(function(ev){
+      return '<div class="event-card" data-album="'+esc84(ev.displayName||'')+'" onclick="askPass('+JSON.stringify(String(ev.id||'')).replace(/"/g,'&quot;')+')">'+
+        '<i class="fa fa-camera-retro"></i><h3>'+esc84(ev.displayName||'')+'</h3>'+
+        (ev.description?'<div class="v64-album-desc">'+esc84(ev.description)+'</div>':'')+
+      '</div>';
+    }).join('');
+  document.body.classList.add('v80-inside-group');
+};
+window.v84CloseGroup=function(){
+  document.body.classList.remove('v80-inside-group');
+  public84();
+};
+window.v80OpenGroup=window.v84OpenGroup;
+window.v80CloseGroup=window.v84CloseGroup;
+
+/* ---------- modo ADM: padre arriba + miembros identificados ---------- */
+function adminOverview84(){
+  if(!window.__albumAdminMode)return;
+  var list=el('eventList');if(!list)return;
+
+  /* Mantener las tarjetas editables ya generadas y agregar una franja de padres arriba */
+  var groups={};
+  all84().forEach(function(x){
+    var g=String(x.group||'').trim();
+    if(g)(groups[g]||(groups[g]=[])).push(x);
+  });
+
+  var old=el('v84ParentsStrip');
+  if(old)old.remove();
+
+  if(Object.keys(groups).length){
+    var strip=document.createElement('div');
+    strip.id='v84ParentsStrip';
+    strip.style.cssText='grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin:0 0 10px';
+    Object.keys(groups).sort().forEach(function(g){
+      var c=document.createElement('div');
+      c.className='v80-group-card';
+      c.setAttribute('data-group',g);
+      c.style.minHeight='145px';
+      c.innerHTML=
+        '<div class="v83-group-camera" style="width:42px!important;height:42px!important;font-size:20px!important">📷</div>'+
+        '<div class="v83-group-badge">◆ PADRE</div>'+
+        '<h3 style="font-size:14px">'+esc84(g)+'</h3>'+
+        '<p class="v83-group-count">'+groups[g].length+' álbumes</p>';
+      c.onclick=function(e){e.stopPropagation();window.v84OpenGroup(g)};
+      strip.appendChild(c);
+    });
+    list.insertBefore(strip,list.firstChild);
+  }
+
+  applyGroupColors84();
+}
+
+/* ---------- feedback optimista ocultar/mostrar ---------- */
+document.addEventListener('click',function(e){
+  if(!window.__albumAdminMode)return;
+  var btn=e.target&&e.target.closest?e.target.closest('#eventList .v64-album-tools button'):null;
+  if(!btn)return;
+  var title=(btn.getAttribute('title')||'').toLowerCase();
+  if(title.indexOf('ocultar')<0 && title.indexOf('mostrar')<0)return;
+
+  var card=btn.closest('.event-card');
+  if(!card)return;
+  var willShow=title.indexOf('mostrar')>=0;
+  card.classList.add('v84-pending');
+  card.dataset.v84Status=willShow?'MOSTRANDO…':'OCULTANDO…';
+
+  /* efecto visual inmediato */
+  if(!willShow)card.style.opacity='.38';
+  setTimeout(function(){
+    card.classList.remove('v84-pending');
+    card.style.opacity='';
+    delete card.dataset.v84Status;
+  },4000);
+},true);
+
+/* ---------- salir de ADM: refrescar UI pública sin F5 ---------- */
+var oldExit84=window.exitAlbumAdminMode;
+if(typeof oldExit84==='function'){
+  window.exitAlbumAdminMode=function(){
+    var r=oldExit84.apply(this,arguments);
+    setTimeout(public84,80);
+    return r;
+  };
+}
+
+/* logout real: también reconstruye portada pública */
+var oldLogout84=window.v77Logout;
+if(typeof oldLogout84==='function'){
+  window.v77Logout=function(){
+    var r=oldLogout84.apply(this,arguments);
+    setTimeout(public84,80);
+    return r;
+  };
+  window.v71LogoutAdmin=window.v77Logout;
+  window.v74Logout=window.v77Logout;
+}
+
+/* al renderizar admin, agregar padres y colores */
+var oldRender84=window.renderAlbumCards64;
+if(typeof oldRender84==='function'){
+  window.renderAlbumCards64=function(){
+    var r=oldRender84.apply(this,arguments);
+    setTimeout(function(){adminOverview84();applyGroupColors84()},50);
+    return r;
+  };
+}
+
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    if(window.__albumAdminMode)adminOverview84();
+    else public84();
+  },700);
+});
+})();
+</script>
+<!-- /TOMAUNO V84 -->
+
 </body>
 </html>
