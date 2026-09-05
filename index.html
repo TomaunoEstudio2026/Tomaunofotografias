@@ -11424,5 +11424,164 @@ document.addEventListener('click',function(){
 </script>
 <!-- /TOMAUNO V87 -->
 
+
+
+<!-- TOMAUNO V88 - FIX DEFINITIVO RENDER INICIAL + SELECCION ADMIN -->
+<style>
+#v87Version{display:none!important}
+#v88Version{
+ position:fixed;right:8px;bottom:5px;z-index:50;color:#555;font-size:8px;
+ font-weight:700;letter-spacing:.08em;pointer-events:none
+}
+.v88-check{
+ position:absolute!important;left:12px!important;top:12px!important;z-index:2147483000!important;
+ width:25px!important;height:25px!important;display:flex!important;align-items:center!important;
+ justify-content:center!important;border:1px solid #777!important;border-radius:6px!important;
+ background:#f7f7f7!important;color:#111!important;cursor:pointer!important;
+ box-shadow:0 3px 10px rgba(0,0,0,.45)!important;pointer-events:auto!important;
+}
+.v88-check.on{background:#e0000b!important;border-color:#ff313b!important;color:#fff!important}
+.v88-check.on:after{content:"✓";font-size:16px;font-weight:1000}
+body.v64-album-admin #eventList .event-card{position:relative!important}
+</style>
+<div id="v88Version">TOMAUNO FOTOS · V88</div>
+<script>
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+var SEL=new Set();
+window.__v88Selected=SEL;
+
+function albums(){
+ var a=window.__v73AdminAlbums||window.eventsData||[];
+ return Array.isArray(a)?a:[];
+}
+function sync(){
+ document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+   var id=String(card.dataset.bridge||'');
+   var b=card.querySelector('.v88-check');
+   if(b)b.classList.toggle('on',SEL.has(id));
+ });
+ var c=E('v80GroupCount'); if(c)c.textContent=SEL.size+' seleccionado'+(SEL.size===1?'':'s');
+}
+function addChecks(){
+ if(!window.__albumAdminMode || document.body.classList.contains('v80-inside-group'))return;
+ document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+   if(card.querySelector('.v88-check'))return;
+   var id=String(card.dataset.bridge||''); if(!id)return;
+   var b=document.createElement('button');
+   b.type='button'; b.className='v88-check'; b.title='Seleccionar para agrupar';
+   b.onclick=function(ev){
+     ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();
+     SEL.has(id)?SEL.delete(id):SEL.add(id); sync();
+   };
+   card.appendChild(b);
+ });
+ sync();
+}
+
+/* Observa específicamente el render del admin y vuelve a colocar selectores si otro render los reemplaza. */
+var mo=new MutationObserver(function(){
+ if(window.__albumAdminMode && !document.body.classList.contains('v80-inside-group')){
+   requestAnimationFrame(addChecks);
+ }
+});
+window.addEventListener('DOMContentLoaded',function(){
+ var l=E('eventList'); if(l)mo.observe(l,{childList:true,subtree:true});
+});
+
+/* Un único render público moderno, llamado después de terminar la carga real de eventos. */
+function modern(){
+ if(window.__albumAdminMode)return;
+ if(typeof window.v84RenderPublic==='function')window.v84RenderPublic();
+ document.body.classList.add('v87-ready');
+}
+
+/* Interceptamos renderEvents: dejamos que cargue datos y luego sustituimos SIEMPRE por el moderno. */
+var oldRender=window.renderEvents;
+if(typeof oldRender==='function'){
+ window.renderEvents=function(){
+   var r=oldRender.apply(this,arguments);
+   if(!window.__albumAdminMode)requestAnimationFrame(modern);
+   return r;
+ };
+}
+
+/* También cubre cargas asincrónicas tardías de eventsData. */
+var pubTimer=setInterval(function(){
+ if(!window.__albumAdminMode && Array.isArray(window.eventsData) && window.eventsData.length){
+   modern(); clearInterval(pubTimer);
+ }
+},120);
+setTimeout(function(){clearInterval(pubTimer);modern()},4000);
+
+/* Admin root: siempre reconstruir y luego agregar nuestros checks. */
+function adminRoot(){
+ document.body.classList.remove('v80-inside-group');
+ if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+ requestAnimationFrame(function(){requestAnimationFrame(addChecks)});
+}
+var oldEnter=window.enterAlbumAdminMode;
+window.enterAlbumAdminMode=function(){
+ SEL.clear();
+ window.__albumAdminMode=true;
+ document.body.classList.add('v64-album-admin','v87-ready');
+ var m=E('modalAdmin');if(m)m.style.display='none';
+ var b=E('v64AlbumAdminBar');if(b)b.style.display='flex';
+ if(window.__v73AdminAlbumsLoaded){adminRoot();return}
+ apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()}).then(function(res){
+   var arr=Array.isArray(res)?res:(res.events||[]);
+   window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+   window.__v73AdminAlbumsLoaded=true;
+   window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+   adminRoot();
+ });
+};
+
+/* AGRUPAR usa exclusivamente los checks visibles V88. */
+window.v80AssignGroup=async function(){
+ var name=String((E('v80GroupName')||{}).value||'').trim();
+ if(!name){if(window.luxAlert)luxAlert('NOMBRE DEL EVENTO','Escribí el nombre del evento / colección.');return}
+ var ids=Array.from(SEL);
+ if(!ids.length){if(window.luxAlert)luxAlert('SIN SELECCIÓN','Primero marcá uno o más álbumes con los cuadrados blancos.');return}
+ var w=E('v80AlbumWork');
+ if(w){w.style.display='block';w.className='busy';w.textContent='AGRUPANDO…'}
+ try{
+   var r=await apiPost({action:'setAlbumsGroup',pin:'3233',bridgeIds:ids,group:name});
+   if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+   [window.__v73AdminAlbums,window.eventsData].forEach(function(a){
+     (a||[]).forEach(function(x){if(ids.indexOf(String(x.bridgeId||''))>=0)x.group=name})
+   });
+   SEL.clear(); var i=E('v80GroupName');if(i)i.value='';
+   adminRoot();
+   if(w){w.textContent='✓ AGRUPADO';w.className='ok';setTimeout(function(){w.style.display='none'},1300)}
+ }catch(err){
+   if(w){w.textContent='ERROR';w.className='err'}
+   if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+ }
+};
+window.v80ClearSelection=function(){
+ SEL.clear();var i=E('v80GroupName');if(i)i.value='';sync();
+};
+
+/* Volver desde padre: mismo render, nunca modelo viejo. */
+window.v86BackFromParent=function(){
+ document.body.classList.remove('v80-inside-group');
+ if(window.__albumAdminMode)adminRoot(); else modern();
+};
+window.v84CloseGroup=window.v86BackFromParent;
+window.v80CloseGroup=window.v86BackFromParent;
+
+/* Salir admin: mismo render moderno. */
+window.exitAlbumAdminMode=function(){
+ SEL.clear();window.__albumAdminMode=false;
+ document.body.classList.remove('v64-album-admin','v80-inside-group');
+ var b=E('v64AlbumAdminBar');if(b)b.style.display='none';
+ modern();
+};
+})();
+</script>
+<!-- /TOMAUNO V88 -->
+
 </body>
 </html>
