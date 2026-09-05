@@ -10827,5 +10827,345 @@ window.addEventListener('load',function(){
 </script>
 <!-- /TOMAUNO V85 -->
 
+
+
+<!-- TOMAUNO V86 - FLUJO PADRES CONSISTENTE + LINKS EN DESCRIPCIONES -->
+<style>
+#v85Version{display:none!important}
+#v86Version{
+  position:fixed;right:8px;bottom:5px;z-index:50;
+  color:#555;font-size:8px;font-weight:700;letter-spacing:.08em;
+  pointer-events:none;user-select:none
+}
+
+/* Una sola barra superior dentro del padre */
+#v86ParentTopbar{
+  grid-column:1/-1!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  min-height:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+  flex-wrap:wrap!important;
+  margin:0 0 12px!important;
+  padding:8px 10px!important;
+  border:1px solid #2f2f33!important;
+  border-radius:12px!important;
+  background:#0a0a0b!important;
+}
+#v86ParentTopbar .back{
+  height:32px!important;
+  min-width:0!important;
+  width:auto!important;
+  padding:0 11px!important;
+  margin:0!important;
+  border:1px solid #3a3a3e!important;
+  border-radius:999px!important;
+  background:#151517!important;
+  color:#eee!important;
+  font-size:9px!important;
+  font-weight:850!important;
+  cursor:pointer!important;
+}
+#v86ParentTopbar .info{
+  min-width:160px;flex:1;
+}
+#v86ParentTopbar .title{color:#fff;font-size:11px;font-weight:900}
+#v86ParentTopbar .sub{color:#777;font-size:9px;margin-top:2px}
+#v86ParentTopbar .edit{
+  height:32px;border:1px solid #493136;border-radius:9px;background:#181113;
+  color:#eee;padding:0 10px;font-size:9px;font-weight:850;cursor:pointer
+}
+
+/* No dejar botones volver heredados ocupando huecos */
+#eventList > #v84GroupBack,
+#eventList > #v80GroupBack,
+#eventList > #v85InsideParentBar{display:none!important}
+
+/* Links en descripciones */
+.v86-rich-desc a{
+  color:#58b7ff!important;
+  text-decoration:none!important;
+  font-weight:850!important;
+  border-bottom:1px dotted rgba(88,183,255,.45)
+}
+.v86-rich-desc a.v86-wa{
+  color:#53d879!important;
+  border-bottom-color:rgba(83,216,121,.45)
+}
+.v86-rich-desc a:hover{filter:brightness(1.15)}
+
+@media(max-width:700px){
+  #v86ParentTopbar{align-items:flex-start}
+  #v86ParentTopbar .info{flex-basis:calc(100% - 90px)}
+  #v86ParentTopbar .edit{width:100%}
+}
+</style>
+
+<div id="v86Version">TOMAUNO FOTOS · V86</div>
+
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+function esc86(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+var parent86='';
+
+/* Instagram @usuario + teléfono argentino clickeable */
+function rich86(text){
+  var s=esc86(text||'');
+
+  /* Instagram */
+  s=s.replace(/(^|[\s(])@([A-Za-z0-9._]{2,30})\b/g,function(_,pre,user){
+    return pre+'<a href="https://www.instagram.com/'+user+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">@'+user+'</a>';
+  });
+
+  /* teléfonos de 10 a 13 dígitos, permitiendo espacios/guiones */
+  s=s.replace(/(^|[\s(])(\+?\d[\d\s-]{8,16}\d)\b/g,function(_,pre,raw){
+    var digits=raw.replace(/\D/g,'');
+    if(digits.length<10 || digits.length>13)return _;
+    var wa=digits;
+    if(digits.length===10)wa='54'+digits;
+    return pre+'<a class="v86-wa" href="https://wa.me/'+wa+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+raw+'</a>';
+  });
+
+  return s;
+}
+window.v86RichText=rich86;
+
+function all86(){
+  var seen={},out=[];
+  [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+    (arr||[]).forEach(function(x){
+      var k=String(x.bridgeId||x.id||'');
+      if(k&&!seen[k]){seen[k]=1;out.push(x)}
+    });
+  });
+  return out;
+}
+
+function albumCard86(ev,admin){
+  if(admin && typeof window.albumCardAdmin85==='function')return window.albumCardAdmin85(ev);
+
+  return '<div class="event-card" data-album="'+esc86(ev.displayName||'')+'" onclick="askPass('+JSON.stringify(String(ev.id||'')).replace(/"/g,'&quot;')+')">'+
+    '<i class="fa fa-camera-retro"></i>'+
+    '<h3>'+esc86(ev.displayName||'')+'</h3>'+
+    (ev.description?'<div class="v64-album-desc v86-rich-desc">'+rich86(ev.description)+'</div>':'')+
+  '</div>';
+}
+
+/* Entrar al padre: siempre el mismo flujo */
+window.v86OpenParent=function(name){
+  parent86=name;
+  var list=el('eventList');if(!list)return;
+  var admin=!!window.__albumAdminMode;
+  var items=all86().filter(function(x){return String(x.group||'')===String(name)});
+  var meta=(window.__v81GroupMeta||{})[name]||{};
+
+  var top=
+    '<div id="v86ParentTopbar">'+
+      '<button class="back" type="button" onclick="v86BackFromParent()">← VOLVER</button>'+
+      '<div class="info">'+
+        '<div class="title">'+esc86(name)+'</div>'+
+        '<div class="sub">'+items.length+' álbum'+(items.length===1?'':'es')+
+          ((meta.date||meta.description)?' · <span class="v86-rich-desc">'+rich86((meta.date?meta.date+' · ':'')+(meta.description||''))+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      (admin?'<button class="edit" type="button" onclick="event.stopPropagation();v81EditMeta('+JSON.stringify(name).replace(/"/g,'&quot;')+')">✎ DESCRIPCIÓN / FECHA</button>':'')+
+    '</div>';
+
+  list.innerHTML=top+items.map(function(ev){return albumCard86(ev,admin)}).join('');
+  document.body.classList.add('v80-inside-group');
+
+  if(admin){
+    bindAdminInside86(name);
+  }
+};
+
+window.v85OpenParent=window.v86OpenParent;
+window.v84OpenGroup=window.v86OpenParent;
+window.v80OpenGroup=window.v86OpenParent;
+
+/* Volver: si ADM -> raíz ADM; si público -> portada pública */
+window.v86BackFromParent=function(){
+  document.body.classList.remove('v80-inside-group');
+  var old=parent86; parent86='';
+  if(window.__albumAdminMode){
+    if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+  }else{
+    if(typeof window.v84RenderPublic==='function')window.v84RenderPublic();
+  }
+};
+window.v84CloseGroup=window.v86BackFromParent;
+window.v80CloseGroup=window.v86BackFromParent;
+
+/* Dentro de padre, seleccionar y enviar a portada sin abandonar el padre */
+function bindAdminInside86(group){
+  var selected=new Set();
+
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var id=String(card.getAttribute('data-bridge')||'');
+
+    /* selector */
+    var b=document.createElement('button');
+    b.type='button';b.className='v82-select-album';b.title='Seleccionar álbum';
+    b.onclick=function(e){
+      e.preventDefault();e.stopPropagation();
+      if(selected.has(id))selected.delete(id);else selected.add(id);
+      b.classList.toggle('selected',selected.has(id));
+    };
+    card.appendChild(b);
+
+    /* ojo / clave */
+    var tools=card.querySelectorAll('.v64-album-tools button');
+    if(tools[0]){
+      tools[0].onclick=function(e){
+        e.preventDefault();e.stopPropagation();
+        if(typeof window.optimisticVisibility85==='function')window.optimisticVisibility85(card,id);
+        else if(typeof window.toggleAlbumVisibility64==='function')window.toggleAlbumVisibility64(id);
+      };
+    }
+    if(tools[1]){
+      tools[1].onclick=function(e){
+        e.preventDefault();e.stopPropagation();
+        if(typeof window.editAlbumPass64==='function')window.editAlbumPass64(id);
+      };
+    }
+  });
+
+  var top=el('v86ParentTopbar');
+  if(top){
+    var send=document.createElement('button');
+    send.className='edit';
+    send.type='button';
+    send.textContent='ENVIAR SELECCIONADOS A PORTADA';
+    send.onclick=async function(){
+      var ids=Array.from(selected);
+      if(!ids.length){
+        if(window.luxAlert)luxAlert('SIN SELECCIÓN','Marcá uno o más álbumes.');
+        return;
+      }
+
+      send.disabled=true;
+      send.textContent='ENVIANDO…';
+
+      try{
+        var r=await apiPost({action:'setAlbumsGroup',pin:'3233',bridgeIds:ids,group:''});
+        if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+
+        [window.__v73AdminAlbums,window.eventsData].forEach(function(arr){
+          (arr||[]).forEach(function(x){
+            if(ids.indexOf(String(x.bridgeId||''))>=0)x.group='';
+          });
+        });
+
+        /* Permanecer dentro del padre: los enviados simplemente desaparecen */
+        window.v86OpenParent(group);
+
+        if(typeof showToast==='function')showToast(ids.length+' álbum'+(ids.length===1?' enviado':'es enviados')+' a portada');
+      }catch(err){
+        send.disabled=false;send.textContent='ENVIAR SELECCIONADOS A PORTADA';
+        if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+      }
+    };
+    top.appendChild(send);
+  }
+}
+
+/* Guardar metadata sin sacarnos del padre */
+var saveMeta86=window.v81SaveMeta;
+window.v81SaveMeta=async function(){
+  var name=(el('v81MetaName')||{}).value||'';
+  var desc=(el('v81MetaDesc')||{}).value||'';
+  var date=(el('v81MetaDate')||{}).value||'';
+
+  try{
+    var r=await apiPost({
+      action:'saveAlbumGroupMeta',pin:'3233',
+      group:name,description:desc,date:date
+    });
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+
+    window.__v81GroupMeta=window.__v81GroupMeta||{};
+    window.__v81GroupMeta[name]={
+      name:name,description:r.description||desc,date:r.date||date
+    };
+
+    if(typeof window.v81CloseMeta==='function')window.v81CloseMeta();
+
+    /* Si estábamos dentro del padre, seguimos ahí. */
+    if(parent86===name){
+      window.v86OpenParent(name);
+    }else if(window.__albumAdminMode){
+      if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+    }else if(typeof window.v84RenderPublic==='function'){
+      window.v84RenderPublic();
+    }
+  }catch(err){
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }
+};
+
+/* Portada pública consistente: limpiar cualquier botón volver heredado */
+function cleanRoot86(){
+  if(document.body.classList.contains('v80-inside-group'))return;
+  ['v84GroupBack','v80GroupBack','v86ParentTopbar'].forEach(function(id){
+    var n=el(id);if(n)n.remove();
+  });
+}
+
+/* Linkificar descripciones ya renderizadas */
+function linkifyRendered86(){
+  document.querySelectorAll('.v64-album-desc:not([data-v86-rich])').forEach(function(n){
+    n.setAttribute('data-v86-rich','1');
+    n.classList.add('v86-rich-desc');
+    n.innerHTML=rich86(n.textContent||'');
+  });
+}
+
+/* Cuando se entra a ADM, mantener raíz jerárquica; no mezclar hijos */
+var enter86=window.enterAlbumAdminMode;
+window.enterAlbumAdminMode=function(){
+  parent86='';
+  window.__albumAdminMode=true;
+  document.body.classList.add('v64-album-admin');
+  var adm=el('modalAdmin');if(adm)adm.style.display='none';
+  var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='flex';
+
+  if(window.__v73AdminAlbumsLoaded){
+    if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+  }else{
+    apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()}).then(function(res){
+      var arr=Array.isArray(res)?res:(res.events||[]);
+      window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+      window.__v73AdminAlbumsLoaded=true;
+      window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+      if(typeof window.v85AdminRoot==='function')window.v85AdminRoot();
+    });
+  }
+};
+
+/* Salir ADM: portada pública y sin controles residuales */
+window.exitAlbumAdminMode=function(){
+  parent86='';
+  window.__albumAdminMode=false;
+  document.body.classList.remove('v64-album-admin','v80-inside-group');
+  var bar=el('v64AlbumAdminBar');if(bar)bar.style.display='none';
+  if(typeof window.v84RenderPublic==='function')window.v84RenderPublic();
+  setTimeout(function(){cleanRoot86();linkifyRendered86()},40);
+};
+
+window.addEventListener('load',function(){
+  setTimeout(function(){cleanRoot86();linkifyRendered86()},900);
+});
+document.addEventListener('click',function(){
+  setTimeout(linkifyRendered86,80);
+});
+})();
+</script>
+<!-- /TOMAUNO V86 -->
+
 </body>
 </html>
