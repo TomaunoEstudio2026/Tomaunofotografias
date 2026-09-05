@@ -3526,12 +3526,11 @@ function attr(s) {
     <h3>❓ Ayuda</h3>
     <p><b>¿Cómo utilizar la plataforma?</b></p>
     <ol>
-      <li>Elegí tu álbum.</li>
-      <li>Seleccioná tus fotografías favoritas.</li>
-      <li>Completá los datos del pedido.</li>
-      <li>Confirmá la solicitud.</li>
-      <li>Serás dirigido a WhatsApp.</li>
-      <li>Cuando el pago sea confirmado recibirás tu clave de descarga.</li>
+      <li>Elegí tu álbum y seleccioná tus fotografías favoritas.</li>
+      <li>Completá los datos y confirmá el pedido.</li>
+      <li>Si pagás con <b>Mercado Pago</b>, al aprobarse el pago las fotografías quedan habilitadas automáticamente para descargar.</li>
+      <li>También podés continuar por WhatsApp cuando necesites atención personal.</li>
+      <li>Ante cualquier inconveniente, escribinos al <a href="https://wa.me/5493764354522?text=Hola%20Tomauno%2C%20necesito%20ayuda%20con%20mi%20pedido%20de%20fotograf%C3%ADas." target="_blank" rel="noopener" style="color:#4bd783;font-weight:900">WhatsApp 3764 354522</a>.</li>
     </ol>
     <div style="text-align:center;margin-top:18px"><button class="btn-order" style="background:#222" onclick="document.getElementById('modalHelpTomauno').style.display='none'">Cerrar</button></div>
   </div>
@@ -4940,16 +4939,16 @@ function attr(s) {
     }
   }
   document.addEventListener('DOMContentLoaded', function(){
-    setTimeout(function(){markHomeState();adminButtonsInline();ensureFullPanel();},500);
+    setTimeout(function(){markHomeState();ensureFullPanel();},500);
   });
   document.addEventListener('click', function(e){
-    setTimeout(function(){markHomeState();adminButtonsInline();ensureFullPanel();},120);
+    setTimeout(function(){markHomeState();ensureFullPanel();},120);
   }, true);
   var oldLoad=window.loadPhotos;
   if(typeof oldLoad==='function') window.loadPhotos=function(){var r=oldLoad.apply(this, arguments); setTimeout(function(){document.body.classList.remove('tomauno-home'); ensureFullPanel();},350); return r;};
   var oldBack=window.tomaunoBackToAlbums;
   if(typeof oldBack==='function') window.tomaunoBackToAlbums=function(){var r=oldBack.apply(this, arguments); setTimeout(markHomeState,80); return r;};
-  setInterval(function(){markHomeState(); ensureFullPanel(); adminButtonsInline();},1200);
+  /* V76: rutina heredada adminButtonsInline eliminada para no reordenar el Panel Admin */
 })();
 </script>
 <!-- /TOMAUNO V12 -->
@@ -8026,7 +8025,7 @@ if(adm){
 
     var stack=el('v73NotifyStack');if(!stack)return;
     var existing=stack.querySelectorAll('.v73-note:not(.summary)');
-    if(existing.length>=3){
+    if(existing.length>=6){
       var sum=stack.querySelector('.v73-note.summary');
       if(!sum){
         sum=document.createElement('div');
@@ -8034,7 +8033,7 @@ if(adm){
         sum.onclick=function(){window.v73OpenAdmin()};
         stack.appendChild(sum);
       }
-      sum.textContent='+'+(activity73.unread-3)+' novedades más · clic para abrir';
+      sum.textContent='+'+(activity73.unread-6)+' novedades más · clic para abrir';
       saveActivity73();
       return;
     }
@@ -8417,6 +8416,226 @@ if(adm){
 })();
 </script>
 <!-- /TOMAUNO V74 -->
+
+\n<!-- TOMAUNO V75 -->
+<style>
+@media(max-width:700px){
+ #modalCheckout .t54-mp-pay,#modalCheckout .t54-manual{font-size:12px!important;font-weight:950!important;letter-spacing:0!important}
+ #v75CopyBack{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important;width:100%!important;grid-column:1/-1!important}
+ #v75CopyBack button{width:100%!important;margin:0!important;min-width:0!important;font-size:10px!important}
+}
+.v75-key-tip{position:fixed;z-index:2147483600;display:none;background:#080809;color:#fff;border:1px solid #444;border-radius:8px;padding:6px 9px;font-size:10px;font-weight:850;box-shadow:0 8px 24px rgba(0,0,0,.55);pointer-events:none}
+</style>
+<div id="v75KeyTip" class="v75-key-tip"></div>
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+function album75(bridge){
+ var pools=[window.__v73AdminAlbums,window.eventsData];
+ for(var i=0;i<pools.length;i++){var a=(pools[i]||[]).find(function(x){return String(x.bridgeId||'')===String(bridge||'')});if(a)return a}
+ return null;
+}
+/* visibility: use the exact boolean expected by backend, then update local admin cache */
+window.toggleAlbumVisibility64=async function(bridge){
+ var ev=album75(bridge);if(!ev)return;
+ var next=ev.visible===false;
+ await window.saveAlbum64(bridge,{visible:next});
+ var a=album75(bridge);if(a)a.visible=next;
+ if(window.__albumAdminMode&&typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+};
+function bindAlbumTools75(){
+ if(!window.__albumAdminMode)return;
+ document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+  var bridge=card.getAttribute('data-bridge'),btns=card.querySelectorAll('.v64-album-tools button');
+  if(btns[0])btns[0].onclick=function(e){e.preventDefault();e.stopPropagation();window.toggleAlbumVisibility64(bridge)};
+  btns.forEach(function(btn){
+   if((btn.title||'').toLowerCase().indexOf('clave')<0||btn.dataset.v75tip)return;btn.dataset.v75tip='1';
+   btn.addEventListener('mouseenter',function(){
+    var tip=el('v75KeyTip'),ev=album75(bridge);if(!tip)return;var pass=ev?String(ev.pass||'').trim():'';
+    tip.textContent=pass?'Clave actual: '+pass:'Sin clave configurada';tip.style.display='block';
+    var r=btn.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(innerWidth-tip.offsetWidth-8,r.left))+'px';tip.style.top=Math.max(8,r.top-tip.offsetHeight-7)+'px';
+   });
+   btn.addEventListener('mouseleave',function(){var t=el('v75KeyTip');if(t)t.style.display='none'});
+  });
+ });
+}
+var rr=window.renderAlbumCards64;if(typeof rr==='function'){window.renderAlbumCards64=function(){var x=rr.apply(this,arguments);setTimeout(bindAlbumTools75,0);return x}}
+/* password-manager hints: browsers ultimately decide whether to show their own UI */
+function harden75(){['adminPinInput','inputPass','v70KeyInput'].forEach(function(id){var n=el(id);if(!n)return;n.autocomplete='new-password';n.setAttribute('data-lpignore','true');n.setAttribute('data-1p-ignore','true');n.setAttribute('data-form-type','other');n.name='tomauno_code_'+id})}
+/* Copy + Back together below WhatsApp */
+function arrange75(){
+ var m=el('modalCheckout');if(!m)return;var bs=[].slice.call(m.querySelectorAll('button'));
+ var copy=bs.find(function(b){return /COPIAR PEDIDO/i.test(b.textContent||'')}),back=bs.find(function(b){return /^\\s*VOLVER\\s*$/i.test(b.textContent||'')}),wa=m.querySelector('.t54-manual');
+ if(!copy||!back||!wa)return;var row=el('v75CopyBack');if(!row){row=document.createElement('div');row.id='v75CopyBack';row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;grid-column:1/-1';wa.insertAdjacentElement('afterend',row)}row.appendChild(copy);row.appendChild(back);
+}
+window.addEventListener('load',function(){harden75();arrange75();bindAlbumTools75()});
+document.addEventListener('click',function(){setTimeout(function(){harden75();arrange75();bindAlbumTools75()},50)});
+})();
+</script>
+<!-- /TOMAUNO V75 -->
+
+
+<!-- TOMAUNO V76 - VISIBILIDAD ROBUSTA + ADMIN ESTABLE -->
+<style>
+  /* La barra estable del Admin no debe cambiar de layout tras ACTUALIZAR */
+  #v72AdminBar{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    width:100%!important;
+    box-sizing:border-box!important;
+    align-items:center!important;
+    flex-wrap:wrap!important;
+    gap:7px!important;
+  }
+
+  /* En edición de álbumes quitamos el botón redundante de descripción.
+     La descripción se edita con doble clic, igual que el título. */
+  body.v64-album-admin .v76-desc-hidden{display:none!important}
+
+  /* Feedback pequeño mientras cambia Visible/Oculto */
+  .v76-eye-busy{
+    opacity:.48!important;
+    pointer-events:none!important;
+  }
+</style>
+
+<script>
+(function(){
+  'use strict';
+
+  function el(id){ return document.getElementById(id); }
+
+  function albumByBridge76(bridge){
+    var pools=[window.__v73AdminAlbums, window.eventsData];
+    for(var i=0;i<pools.length;i++){
+      var a=(pools[i]||[]).find(function(x){
+        return String(x.bridgeId||'')===String(bridge||'');
+      });
+      if(a) return a;
+    }
+    return null;
+  }
+
+  async function refreshAdminAlbums76(){
+    var res=await apiGet({action:'eventsAdmin',pin:'3233',t:Date.now()});
+    var arr=Array.isArray(res)?res:(res.events||[]);
+    window.__v73AdminAlbums=arr.map(function(x){return Object.assign({},x)});
+    window.__v73AdminAlbumsLoaded=true;
+    window.eventsData=window.__v73AdminAlbums.map(function(x){return Object.assign({},x)});
+    if(typeof window.renderAlbumCards64==='function') window.renderAlbumCards64();
+  }
+
+  /*
+   * Visibilidad deliberadamente independiente de saveAlbum64().
+   * Había varias capas históricas sobrescribiendo esa función.
+   * Acá enviamos el booleano directamente al backend y luego
+   * volvemos a leer la lista de álbumes para verificar el estado real.
+   */
+  window.toggleAlbumVisibility64=async function(bridge){
+    var ev=albumByBridge76(bridge);
+    if(!ev) return;
+
+    var nextVisible = (ev.visible===false); // oculto -> mostrar / visible -> ocultar
+    var card=document.querySelector('#eventList .event-card[data-bridge="'+CSS.escape(String(bridge))+'"]');
+    var eye=card ? card.querySelector('.v64-album-tools button') : null;
+    if(eye) eye.classList.add('v76-eye-busy');
+
+    try{
+      var res=await apiPost({
+        action:'updateAlbumConfig',
+        pin:'3233',
+        bridgeId:String(bridge),
+        visible:nextVisible
+      });
+      if(!res || res.success===false){
+        throw new Error((res&&res.msg)||'No se pudo cambiar la visibilidad.');
+      }
+
+      // Confirmar contra backend, no contra un cache viejo.
+      await refreshAdminAlbums76();
+
+      if(typeof showToast==='function'){
+        showToast(nextVisible ? 'Álbum visible' : 'Álbum oculto');
+      }
+    }catch(err){
+      if(window.luxAlert) luxAlert('ERROR',err.message||String(err));
+      else alert(err.message||err);
+    }finally{
+      if(eye) eye.classList.remove('v76-eye-busy');
+    }
+  };
+
+  /*
+   * Reasignar controles tras cada render:
+   * 1er botón = ojo
+   * 2do/3ro: quitamos visualmente el botón redundante de descripción
+   * cuando su title lo identifica. Doble clic sigue funcionando.
+   */
+  function bindAlbumControls76(){
+    if(!window.__albumAdminMode) return;
+
+    document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+      var bridge=card.getAttribute('data-bridge');
+      var buttons=Array.from(card.querySelectorAll('.v64-album-tools button'));
+
+      buttons.forEach(function(btn,index){
+        var title=(btn.getAttribute('title')||'').toLowerCase();
+
+        if(index===0){
+          btn.onclick=function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            window.toggleAlbumVisibility64(bridge);
+          };
+        }
+
+        if(title.indexOf('descrip')>=0){
+          btn.classList.add('v76-desc-hidden');
+        }
+      });
+    });
+  }
+
+  var renderBefore76=window.renderAlbumCards64;
+  if(typeof renderBefore76==='function'){
+    window.renderAlbumCards64=function(){
+      var r=renderBefore76.apply(this,arguments);
+      setTimeout(bindAlbumControls76,0);
+      return r;
+    };
+  }
+
+  /*
+   * ACTUALIZAR pedidos: restaurar barra estable después del fetch.
+   * No recreamos ni movemos botones.
+   */
+  var loadBefore76=window.loadAdminOrders;
+  if(typeof loadBefore76==='function' && !loadBefore76.__v76){
+    var wrapped=async function(){
+      var r=await loadBefore76.apply(this,arguments);
+      var bar=el('v72AdminBar');
+      if(bar){
+        bar.style.display='flex';
+        bar.style.visibility='visible';
+        bar.style.opacity='1';
+      }
+      return r;
+    };
+    wrapped.__v76=true;
+    window.loadAdminOrders=wrapped;
+  }
+
+  window.addEventListener('load',function(){
+    setTimeout(bindAlbumControls76,250);
+  });
+  document.addEventListener('click',function(){
+    setTimeout(bindAlbumControls76,40);
+  });
+})();
+</script>
+<!-- /TOMAUNO V76 -->
 
 </body>
 </html>
