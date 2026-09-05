@@ -9716,5 +9716,224 @@ window.addEventListener('load',async function(){
 </script>
 <!-- /TOMAUNO V81 -->
 
+
+
+<!-- TOMAUNO V82 - GRUPOS LIMPIOS + SELECTOR DE ALBUMES ROBUSTO -->
+<style>
+#v80Version,#v81Version{display:none!important}
+#v82Version{
+  position:fixed;right:8px;bottom:5px;z-index:50;
+  color:#555;font-size:8px;font-weight:700;letter-spacing:.08em;
+  pointer-events:none;user-select:none
+}
+.v80-album-check{display:none!important}
+.v82-select-album{
+  position:absolute!important;left:10px!important;top:10px!important;z-index:99999!important;
+  width:24px!important;height:24px!important;border-radius:7px!important;border:1px solid #555!important;
+  background:#101012!important;color:transparent!important;display:flex!important;align-items:center!important;
+  justify-content:center!important;cursor:pointer!important;pointer-events:auto!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.35)!important;
+}
+.v82-select-album.selected{background:#e0000b!important;border-color:#e0000b!important;color:#fff!important}
+.v82-select-album.selected:before{content:"✓";font-size:14px;font-weight:950}
+.event-card.v82-selected{
+  outline:1px solid #e0000b!important;
+  box-shadow:0 0 0 2px rgba(224,0,11,.08),0 0 16px rgba(224,0,11,.10)!important;
+}
+#v80GroupBar{z-index:2147483000!important}
+</style>
+
+<div id="v82Version">TOMAUNO FOTOS · V82</div>
+
+<script>
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+function esc82(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function attr82(s){return esc82(s).replace(/`/g,'&#96;')}
+
+window.__v82SelectedAlbums=window.__v82SelectedAlbums||new Set();
+
+function badGroup82(g){
+  g=String(g||'').trim();
+  return (
+    /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[A-Z][a-z]{2}\s+\d{2}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+GMT/i.test(g) ||
+    /^\d{1,2}\/\d{1,2}\/\d{4}(?:\s+\d{1,2}:\d{2})?$/.test(g)
+  );
+}
+
+function sanitize82(){
+  [window.eventsData,window.__v73AdminAlbums].forEach(function(arr){
+    (arr||[]).forEach(function(x){if(badGroup82(x.group))x.group=''});
+  });
+}
+
+function updateCount82(){
+  var n=window.__v82SelectedAlbums.size;
+  var c=el('v80GroupCount');
+  if(c)c.textContent=n+' seleccionado'+(n===1?'':'s');
+}
+
+function bindSelectors82(){
+  if(!window.__albumAdminMode)return;
+  sanitize82();
+  document.querySelectorAll('#eventList .event-card[data-bridge]').forEach(function(card){
+    var id=String(card.getAttribute('data-bridge')||'');
+    if(!id)return;
+    var b=card.querySelector('.v82-select-album');
+    if(!b){
+      b=document.createElement('button');
+      b.type='button';b.className='v82-select-album';b.title='Seleccionar álbum';
+      b.setAttribute('aria-label','Seleccionar álbum');
+      card.appendChild(b);
+    }
+    var selected=window.__v82SelectedAlbums.has(id);
+    b.classList.toggle('selected',selected);
+    card.classList.toggle('v82-selected',selected);
+  });
+}
+
+document.addEventListener('pointerdown',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v82-select-album'):null;
+  if(!b)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+},true);
+
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v82-select-album'):null;
+  if(!b)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+
+  var card=b.closest('.event-card[data-bridge]');
+  var id=card?String(card.getAttribute('data-bridge')||''):'';
+  if(!id)return;
+
+  if(window.__v82SelectedAlbums.has(id))window.__v82SelectedAlbums.delete(id);
+  else window.__v82SelectedAlbums.add(id);
+
+  bindSelectors82();
+  updateCount82();
+},true);
+
+window.v80ClearSelection=function(){
+  window.__v82SelectedAlbums.clear();
+  updateCount82();
+  bindSelectors82();
+};
+
+async function assign82(group){
+  var ids=Array.from(window.__v82SelectedAlbums);
+  if(!ids.length){
+    if(window.luxAlert)luxAlert('SIN SELECCIÓN','Tocá el cuadrito de uno o más álbumes.');
+    return;
+  }
+  var work=el('v80AlbumWork');
+  if(work){work.textContent=group?'AGRUPANDO ÁLBUMES…':'QUITANDO DEL GRUPO…';work.className='busy';work.style.display='block'}
+
+  try{
+    var r=await apiPost({action:'setAlbumsGroup',pin:'3233',bridgeIds:ids,group:group||''});
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo agrupar.');
+    [window.eventsData,window.__v73AdminAlbums].forEach(function(arr){
+      (arr||[]).forEach(function(x){
+        if(ids.indexOf(String(x.bridgeId||''))>=0)x.group=group||'';
+      });
+    });
+    window.__v82SelectedAlbums.clear();
+    updateCount82();
+    if(typeof window.renderAlbumCards64==='function')window.renderAlbumCards64();
+    setTimeout(bindSelectors82,0);
+    if(work){
+      work.textContent=group?'ÁLBUMES AGRUPADOS':'ÁLBUMES SIN GRUPO';
+      work.className='ok';work.style.display='block';
+      setTimeout(function(){work.style.display='none'},1400);
+    }
+  }catch(err){
+    if(work){work.textContent='ERROR AL AGRUPAR';work.className='err';work.style.display='block'}
+    if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+  }
+}
+
+window.v80AssignGroup=function(){
+  var g=String((el('v80GroupName')||{}).value||'').trim();
+  if(!g){
+    if(window.luxAlert)luxAlert('NOMBRE DEL EVENTO','Escribí el nombre del evento o colección.');
+    return;
+  }
+  assign82(g);
+};
+window.v80ClearGroup=function(){assign82('')};
+
+function renderPublic82(){
+  if(window.__albumAdminMode)return;
+  sanitize82();
+  var list=el('eventList');if(!list)return;
+  var all=(window.eventsData||[]).filter(function(x){return x.visible!==false});
+  var groups={},singles=[];
+
+  all.forEach(function(ev){
+    var g=String(ev.group||'').trim();
+    if(g&&!badGroup82(g)){(groups[g]||(groups[g]=[])).push(ev)}
+    else singles.push(ev);
+  });
+
+  var out=[];
+  Object.keys(groups).sort().forEach(function(g){
+    var items=groups[g],m=(window.__v81GroupMeta||{})[g]||{};
+    out.push(
+      '<div class="v80-group-card" onclick="v80OpenGroup('+JSON.stringify(g).replace(/"/g,'&quot;')+')">'+
+      '<span class="v81-folder">▣</span><div class="eyebrow">EVENTO / COLECCIÓN</div>'+
+      '<h3>'+esc82(g)+'</h3>'+
+      ((m.date||m.description)?'<div class="v81-meta">'+esc82(m.date||'')+(m.date&&m.description?' · ':'')+esc82(m.description||'')+'</div>':'')+
+      '<p>'+items.length+' álbum'+(items.length===1?'':'es')+'</p>'+
+      ((sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1' && typeof window.v81EditMeta==='function')?
+        '<button class="v81-edit" onclick="event.stopPropagation();v81EditMeta('+JSON.stringify(g).replace(/"/g,'&quot;')+')">✎ EDITAR DATOS</button>':'')+
+      '</div>'
+    );
+  });
+
+  singles.forEach(function(ev){
+    out.push(
+      '<div class="event-card" data-album="'+attr82(ev.displayName||'')+'" onclick="askPass('+JSON.stringify(String(ev.id||'')).replace(/"/g,'&quot;')+')">'+
+      '<i class="fa fa-camera-retro"></i><h3>'+esc82(ev.displayName||'')+'</h3>'+
+      (ev.description?'<div class="v64-album-desc">'+esc82(ev.description)+'</div>':'')+
+      '</div>'
+    );
+  });
+
+  list.innerHTML=out.join('');
+}
+
+window.renderPublic80=renderPublic82;
+window.v81RenderPublic=renderPublic82;
+
+var renderBefore82=window.renderAlbumCards64;
+if(typeof renderBefore82==='function'){
+  window.renderAlbumCards64=function(){
+    var r=renderBefore82.apply(this,arguments);
+    setTimeout(function(){sanitize82();bindSelectors82()},0);
+    return r;
+  };
+}
+
+var exitBefore82=window.exitAlbumAdminMode;
+if(typeof exitBefore82==='function'){
+  window.exitAlbumAdminMode=function(){
+    var r=exitBefore82.apply(this,arguments);
+    setTimeout(renderPublic82,30);
+    return r;
+  };
+}
+
+window.addEventListener('load',function(){
+  sanitize82();
+  setTimeout(function(){
+    if(window.__albumAdminMode)bindSelectors82();
+    else renderPublic82();
+  },500);
+});
+})();
+</script>
+<!-- /TOMAUNO V82 -->
+
 </body>
 </html>
