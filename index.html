@@ -5614,17 +5614,34 @@ function attr(s) {
     var ov=$('mpDeliveryOverlay'); if(!ov) return;
     var files=Array.isArray(res.files)?res.files:[];
     var total=Number(res.total||0);
-    ov.innerHTML='<div class="mp54-card">'
-      +'<div class="mp54-head"><h2>✅ ¡PAGO APROBADO!</h2>'
-      +'<div class="mp54-sub">Pedido <b>#'+esc(res.row)+'</b> · '+files.length+' fotografía(s) · <b>$'+total.toLocaleString('es-AR')+'</b><br>Tu compra ya está habilitada. Podés descargar cada archivo ahora.</div></div>'
-      +'<div class="mp54-files">'+files.map(function(f){
+    var serviceOnly=!files.length;
+    var detail=[
+      '<div class="t105-receipt">',
+      '<div class="t105-ok">✓ PAGO VERIFICADO POR MERCADO PAGO</div>',
+      '<div class="t105-grid">',
+      '<div><small>PEDIDO</small><b>#'+esc(res.row)+'</b></div>',
+      '<div><small>TOTAL</small><b>$'+total.toLocaleString('es-AR')+'</b></div>',
+      (res.eventName?'<div><small>EVENTO</small><b>'+esc(res.eventName)+'</b></div>':''),
+      (res.orderType?'<div><small>COMPRA</small><b>'+esc(res.orderType)+'</b></div>':''),
+      (res.customer?'<div><small>CLIENTE</small><b>'+esc(res.customer)+'</b></div>':''),
+      '<div><small>ID DE PAGO</small><b>'+esc(paymentId)+'</b></div>',
+      (res.paymentMethod?'<div><small>MEDIO</small><b>'+esc(res.paymentMethod)+'</b></div>':''),
+      '</div><div class="t105-keep">Conservá este comprobante. El personal de Tomauno puede verificar el pedido directamente en el sistema.</div></div>'
+    ].join('');
+    window.__t105Receipt={row:res.row,total:total,eventName:res.eventName||'',orderType:res.orderType||'',customer:res.customer||'',paymentId:paymentId,paymentMethod:res.paymentMethod||''};
+    ov.innerHTML='<div class="mp54-card t105-card">'
+      +'<div class="mp54-head"><h2>✅ ¡PAGO CONFIRMADO!</h2>'
+      +'<div class="mp54-sub">'+(serviceOnly?'Tu compra quedó registrada y pagada. Presentá este comprobante al personal de Tomauno.':'Tu compra quedó registrada y pagada. Tus fotografías ya están habilitadas para descargar.')+'</div></div>'
+      +detail
+      +(files.length?'<div class="mp54-files">'+files.map(function(f){
         return '<div class="mp54-file"><div class="mp54-name">'+esc(f.name||'Fotografía')+'</div>'
           +'<a class="mp54-btn primary" href="'+esc(f.downloadUrl)+'" target="_blank" rel="noopener">⬇ DESCARGAR</a>'
           +'<a class="mp54-btn" href="'+esc(f.viewUrl)+'" target="_blank" rel="noopener">👁 VER</a></div>';
-      }).join('')+'</div>'
-      +'<div class="mp54-foot"><a class="mp54-btn" href="'+whatsappFallback(res.row,total,paymentId,'Pago aprobado, pero necesito asistencia con la descarga')+'" target="_blank">💬 NECESITO AYUDA</a><button class="mp54-btn" id="mp54Close">VOLVER AL SITIO</button></div>'
+      }).join('')+'</div>':'')
+      +'<div class="mp54-foot"><button class="mp54-btn primary" id="t105ReceiptDownload">⬇ GUARDAR COMPROBANTE</button><a class="mp54-btn" href="'+whatsappFallback(res.row,total,paymentId,'Pago aprobado - envío mi comprobante')+'" target="_blank">💬 WHATSAPP</a><button class="mp54-btn" id="mp54Close">VOLVER AL SITIO</button></div>'
       +'</div>';
     ov.style.display='flex';
+    var d=$('t105ReceiptDownload'); if(d) d.onclick=function(){ if(window.t105DownloadReceipt) window.t105DownloadReceipt(window.__t105Receipt); };
     var c=$('mp54Close'); if(c) c.onclick=function(){ ov.style.display='none'; history.replaceState({},document.title,location.pathname+location.hash); };
   }
 
@@ -10327,12 +10344,12 @@ function enhanceMpRows95(){
   rows.forEach(function(row,i){
     var o=filtered[i];if(!o||!isMP95(o)||row.querySelector('.v95-mp-line'))return;
     var meta=row.querySelector('.order-meta');if(!meta)return;
-    var bits=['Mercado Pago'];
+    var bits=[(String(o.pago||'').toUpperCase()==='PAGADO' && String(o.mpStatus||'').toLowerCase()==='approved')?'✓ MP VERIFICADO':'Mercado Pago'];
     if(o.mpStatus)bits.push(String(o.mpStatus).toUpperCase());
     if(o.mpMetodo)bits.push(o.mpMetodo);
     if(o.mpMonto)bits.push('$'+Number(o.mpMonto||0).toLocaleString('es-AR'));
     if(o.mpPaymentId)bits.push('Pago '+o.mpPaymentId);
-    var d=document.createElement('div');d.className='v95-mp-line';d.textContent='💳 '+bits.join(' · ');
+    var d=document.createElement('div');d.className='v95-mp-line';d.textContent=((String(o.pago||'').toUpperCase()==='PAGADO' && String(o.mpStatus||'').toLowerCase()==='approved')?'✅ ':'💳 ')+bits.join(' · ');
     meta.appendChild(d);
   });
 }
@@ -10710,7 +10727,7 @@ function enhanceMpRows97(){
     if(!isMp || row.querySelector('.v95-mp-line'))return;
 
     var meta=row.querySelector('.order-meta');if(!meta)return;
-    var bits=['Mercado Pago'];
+    var bits=[(String(o.pago||'').toUpperCase()==='PAGADO' && String(o.mpStatus||'').toLowerCase()==='approved')?'✓ MP VERIFICADO':'Mercado Pago'];
     if(o.mpStatus)bits.push(String(o.mpStatus).toUpperCase());
     if(o.mpMetodo)bits.push(String(o.mpMetodo));
     if(o.mpMonto)bits.push('$'+Number(o.mpMonto||0).toLocaleString('es-AR'));
@@ -10718,7 +10735,7 @@ function enhanceMpRows97(){
 
     var d=document.createElement('div');
     d.className='v95-mp-line';
-    d.textContent='💳 '+bits.join(' · ');
+    d.textContent=((String(o.pago||'').toUpperCase()==='PAGADO' && String(o.mpStatus||'').toLowerCase()==='approved')?'✅ ':'💳 ')+bits.join(' · ');
     meta.appendChild(d);
   });
 }
@@ -11179,5 +11196,950 @@ window.addEventListener('load',function(){setTimeout(renderRecent,300)});
 </script>
 <!-- /TOMAUNO V100 -->
 
+
+<!-- TOMAUNO V101 - BELLYNEA OPERATIVO / CAMBIOS CONDICIONALES -->
+<style>
+#v100Version{display:none!important}
+#v101Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
+}
+
+/* Entrada condicional: solo existe cuando el álbum tiene productos adicionales. */
+#modalMode .v101-services-card{
+  border-color:#4d4218!important;
+  background:linear-gradient(145deg,#171307,#050505)!important;
+}
+#modalMode .v101-services-card:hover{
+  border-color:var(--oro)!important;
+  box-shadow:0 0 22px rgba(212,175,55,.12)!important;
+}
+#modalMode .v101-services-card .ico{color:var(--oro)!important}
+
+/* Referencia de coreografía: solo se muestra en álbumes con Coreografía configurada. */
+#v101CoreoBtn{
+  display:none;
+  background:#2a2010!important;
+  border:1px solid #8c7420!important;
+  color:#ffe58a!important;
+  white-space:normal!important;
+  line-height:1.05!important;
+}
+#v101CoreoBtn.active{
+  background:#d4af37!important;
+  border-color:#d4af37!important;
+  color:#000!important;
+  box-shadow:0 0 18px rgba(212,175,55,.28)!important;
+}
+.t50-badge.v101-coreo-badge{
+  color:#ffe58a!important;
+  border-color:#745f16!important;
+  background:rgba(212,175,55,.09)!important;
+}
+
+/* Checkout: permitir textos completos, sin romper Mercado Pago / WhatsApp. */
+#modalCheckout .t50-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:stretch!important;
+  justify-content:center!important;
+  gap:8px!important;
+}
+#modalCheckout .t50-actions .btn-order,
+#modalCheckout .t54-mp-pay,
+#modalCheckout .t54-manual,
+#modalCheckout .v101-mp-services{
+  flex:1 1 175px!important;
+  width:auto!important;
+  max-width:none!important;
+  min-width:145px!important;
+  min-height:48px!important;
+  height:auto!important;
+  padding:9px 12px!important;
+  white-space:normal!important;
+  line-height:1.15!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-size:10px!important;
+  font-weight:900!important;
+}
+#modalCheckout .v101-mp-services{
+  background:#009ee3!important;
+  color:#fff!important;
+}
+#modalCheckout .v101-service-note{
+  flex:1 0 100%;
+  color:#777;
+  font-size:9px;
+  text-align:center;
+  padding:0 5px 2px;
+}
+
+/* Si V75 agrupó COPIAR + VOLVER, ese bloque también debe convivir sin aplastar textos. */
+#modalCheckout #v75CopyBack{
+  flex:1 1 300px!important;
+  min-width:260px!important;
+  align-self:stretch!important;
+}
+#modalCheckout #v75CopyBack .btn-order{
+  width:100%!important;
+  min-width:0!important;
+}
+
+@media(max-width:760px){
+  #modalCheckout .t50-actions{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:6px!important;
+  }
+  #modalCheckout .t50-actions .btn-order{
+    width:100%!important;
+    min-width:0!important;
+    min-height:42px!important;
+    font-size:10px!important;
+  }
+  #modalCheckout .t54-mp-pay,
+  #modalCheckout .t54-manual,
+  #modalCheckout .v101-mp-services,
+  #modalCheckout .v101-service-note,
+  #modalCheckout #v75CopyBack{
+    grid-column:1/-1!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  #v101CoreoBtn{font-size:9px!important;padding:10px 8px!important}
+}
+</style>
+
+<div id="v101Version">TOMAUNO FOTOS · V101</div>
+
+<script>
+(function(){
+'use strict';
+if(window.__TOMAUNO_V101__) return;
+window.__TOMAUNO_V101__=true;
+
+function E(id){return document.getElementById(id)}
+function norm(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function selectedNow(){
+  try{return (window.selectedPhotos||selectedPhotos||[])}catch(e){return []}
+}
+function allNow(){
+  try{return (window.allPhotos||allPhotos||[])}catch(e){return []}
+}
+function photoId(p){return String((p&&(p.id||p.fileId||p.photoId))||'')}
+function photoName(p){return String((p&&(p.name||p.fileName||p.id))||'')}
+function metaFor101(id){
+  id=String(id||'');
+  window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};
+  if(!window.__tomaunoPhotoMeta[id]) window.__tomaunoPhotoMeta[id]={cover:false,priority:false,comment:''};
+  return window.__tomaunoPhotoMeta[id];
+}
+function findPhoto101(id){
+  id=String(id||'');
+  return allNow().find(function(p){return photoId(p)===id}) ||
+         selectedNow().find(function(p){return photoId(p)===id}) || null;
+}
+function currentPhoto101(){
+  var idx=0;
+  try{idx=Number(typeof currentZoomIdx!=='undefined'?currentZoomIdx:0)}catch(e){}
+  return allNow()[idx]||null;
+}
+function ensureSelected101(p){
+  if(!p)return;
+  var id=photoId(p);
+  if(selectedNow().some(function(x){return photoId(x)===id}))return;
+  try{
+    if(typeof window.togglePhoto==='function') window.togglePhoto(id);
+    else if(typeof togglePhoto==='function') togglePhoto(id);
+  }catch(e){
+    try{selectedPhotos.push(p)}catch(_){}
+  }
+}
+function extraProducts101(){
+  try{return (typeof window.getExtraProducts==='function'?window.getExtraProducts():getExtraProducts())||[]}
+  catch(e){return []}
+}
+function hasExtras101(){return extraProducts101().length>0}
+function hasCoreo101(){
+  return extraProducts101().some(function(p){return /coreografia/i.test(norm(p&&p.label))});
+}
+function coreoRefs101(){
+  var refs=[];
+  var seen={};
+  allNow().concat(selectedNow()).forEach(function(p){
+    var id=photoId(p); if(!id||seen[id])return;
+    seen[id]=1;
+    var m=metaFor101(id);
+    if(m.coreoRef) refs.push({id:id,name:photoName(p)||id});
+  });
+  return refs;
+}
+function coreoRefsText101(){
+  var r=coreoRefs101();
+  return r.length ? r.map(function(x,i){return 'Coreografía '+(i+1)+': '+x.name}).join(' | ') : '';
+}
+
+/* 1) Los productos BellyNEA que pueden repetirse pasan a cantidad.
+      No altera álbumes que no tengan estos nombres configurados. */
+var oldGetExtras101=window.getExtraProducts;
+if(typeof oldGetExtras101==='function' && !oldGetExtras101.__v101){
+  var wrapExtras=function(){
+    var arr=oldGetExtras101.apply(this,arguments)||[];
+    arr.forEach(function(p){
+      var n=norm(p&&p.label);
+      if(
+        n.indexOf('coreografia completa digital')>-1 ||
+        n.indexOf('sesion de fotos en estudio')>-1 ||
+        /^pack\s*[12]\b/.test(n)
+      ){
+        p.extraMode='cant';
+        p.quantityExtra=true;
+      }
+    });
+    return arr;
+  };
+  wrapExtras.__v101=true;
+  window.getExtraProducts=wrapExtras;
+}
+
+/* 2) Quitar el segundo aviso de SELECCIONAR FOTOGRAFÍAS sin reescribir su flujo. */
+var oldChoose101=window.chooseOrderMode;
+if(typeof oldChoose101==='function' && !oldChoose101.__v101){
+  var chooseWrap=async function(idx){
+    var products=[];
+    try{
+      products=(typeof getProductsForEvent==='function'?getProductsForEvent():[])
+        .filter(function(p){return p&&!p.quantityExtra&&!p.extraProduct});
+    }catch(e){}
+    var p=products[Number(idx)]||null;
+    var isSel=!!(p&&(p.selectionOnly||/seleccion|edicion|fotolibro/i.test(norm(p.label))));
+    if(!isSel) return oldChoose101.apply(this,arguments);
+
+    var oldLux=window.luxConfirmAsync;
+    var oldConfirm=window.confirm;
+    window.luxConfirmAsync=async function(){return true};
+    window.confirm=function(){return true};
+    try{return await oldChoose101.apply(this,arguments)}
+    finally{
+      if(oldLux) window.luxConfirmAsync=oldLux; else try{delete window.luxConfirmAsync}catch(e){}
+      window.confirm=oldConfirm;
+    }
+  };
+  chooseWrap.__v101=true;
+  window.chooseOrderMode=chooseWrap;
+}
+
+/* 3) Entrada SERVICIOS / PACKS solo si el álbum tiene extras. */
+var oldMode101=window.openModeModal;
+if(typeof oldMode101==='function' && !oldMode101.__v101){
+  var modeWrap=function(){
+    var r=oldMode101.apply(this,arguments);
+    setTimeout(function(){
+      var box=E('modeOptions');
+      if(!box || !hasExtras101() || box.querySelector('.v101-services-card'))return;
+      var card=document.createElement('div');
+      card.className='mode-card v101-services-card';
+      card.innerHTML='<span class="ico">✨</span><b>SERVICIOS / PACKS</b><span>Sesiones, coreografías y packs</span>';
+      card.onclick=window.openServices101;
+      box.appendChild(card);
+    },0);
+    return r;
+  };
+  modeWrap.__v101=true;
+  window.openModeModal=modeWrap;
+}
+
+window.openServices101=function(){
+  try{selectedPhotos=[];window.selectedPhotos=selectedPhotos}catch(e){window.selectedPhotos=[]}
+  try{extraQuantities={};window.extraQuantities=extraQuantities}catch(e){window.extraQuantities={}}
+  window.__tomaunoPhotoMeta={};
+  try{isFullAlbumMode=false}catch(e){}
+  selectedMainProduct={
+    label:'Servicios / Packs',
+    price:0,
+    perPhoto:false,
+    includesDigital:false,
+    selectionOnly:false,
+    isFullAlbum:false,
+    v101ServicesOnly:true
+  };
+  window.selectedMainProduct=selectedMainProduct;
+  var mm=E('modalMode');if(mm)mm.style.display='none';
+  if(typeof window.openCheckout==='function') window.openCheckout();
+  else if(typeof openCheckout==='function') openCheckout();
+  setTimeout(installServicesPayment101,70);
+};
+
+function installServicesPayment101(){
+  var modal=E('modalCheckout');
+  if(!modal || getComputedStyle(modal).display==='none')return;
+  var p=null;
+  try{p=(typeof getSelectedProduct==='function'?getSelectedProduct():selectedMainProduct)}catch(e){}
+  if(!p || !p.v101ServicesOnly)return;
+
+  var actions=modal.querySelector('.t50-actions');
+  var submit=E('btnSubmit');
+  if(!actions||!submit)return;
+
+  submit.textContent='💬 CONTINUAR POR WHATSAPP';
+  submit.classList.add('t54-manual');
+
+  if(!actions.querySelector('.v101-mp-services')){
+    var mp=document.createElement('button');
+    mp.type='button';
+    mp.className='btn-order v101-mp-services';
+    mp.textContent='💳 PAGAR CON MERCADO PAGO';
+    mp.onclick=payServices101;
+    actions.insertBefore(mp,submit);
+  }
+  if(!actions.querySelector('.v101-service-note')){
+    var note=document.createElement('div');
+    note.className='v101-service-note';
+    note.textContent='Elegí uno o más servicios. No necesitás seleccionar una foto para contratar una sesión.';
+    actions.appendChild(note);
+  }
+}
+
+async function payServices101(){
+  var name=((E('userName')||{}).value||'').trim();
+  var phone=((E('userPhone')||{}).value||'').trim();
+  var notes=((E('userNotes')||{}).value||'').trim();
+  if(!name||!phone){
+    if(window.luxAlert)return luxAlert('FALTAN DATOS','Escribe tu nombre y WhatsApp.');
+    return alert('Escribe tu nombre y WhatsApp.');
+  }
+  var extras='';
+  try{extras=String(getExtrasText(' | ')||'').trim()}catch(e){}
+  var total=0;
+  try{total=Number(getOrderTotal(getSelectedProduct())||0)}catch(e){}
+  if(!extras || !(total>0)){
+    if(window.luxAlert)return luxAlert('ELEGÍ UN SERVICIO','Seleccioná al menos un servicio o pack antes de pagar.');
+    return alert('Seleccioná al menos un servicio o pack.');
+  }
+
+  var parts=[];
+  if(notes)parts.push(notes);
+  parts.push('Extras: '+extras);
+  var refs=coreoRefsText101(); if(refs)parts.push('Referencias de coreografía: '+refs);
+
+  var btn=document.querySelector('.v101-mp-services');
+  if(btn){btn.disabled=true;btn.textContent='CREANDO PAGO...'}
+  try{
+    var order=await apiPost({
+      action:'submitOrder',
+      name:name,
+      phone:phone,
+      notes:parts.join('\n\n'),
+      orderType:'Servicios / Packs + Extras',
+      eventName:(window.activeEvent&&activeEvent.displayName)?activeEvent.displayName:'',
+      photos:[],
+      photoNames:[],
+      total:total,
+      paymentChannel:'MERCADOPAGO'
+    });
+    if(!order||!order.success||!order.row)throw new Error((order&&order.msg)||'No se pudo registrar el pedido.');
+    var pref=await apiPost({action:'createMpPreference',row:order.row});
+    if(!pref||!pref.success||!pref.initPoint)throw new Error((pref&&pref.msg)||'No se pudo iniciar Mercado Pago.');
+    try{
+      sessionStorage.setItem('TOMAUNO_LAST_MP_PREF',JSON.stringify({
+        initPoint:pref.initPoint,row:order.row,createdAt:Date.now()
+      }));
+    }catch(e){}
+    location.href=pref.initPoint;
+  }catch(err){
+    if(btn){btn.disabled=false;btn.textContent='💳 PAGAR CON MERCADO PAGO'}
+    var msg=String(err&&err.message?err.message:err);
+    if(window.luxAlert)luxAlert('NO SE PUDO INICIAR EL PAGO',msg+'\n\nPodés continuar por WhatsApp.');
+    else alert(msg);
+  }
+}
+
+/* 4) Referencia "MI COREO" reutilizando la foto y su miniatura existente.
+      Se pueden marcar varias referencias. */
+function ensureCoreoButton101(){
+  var lb=E('lightbox'); if(!lb)return;
+  var btn=E('v101CoreoBtn');
+  if(!btn){
+    btn=document.createElement('button');
+    btn.id='v101CoreoBtn';
+    btn.type='button';
+    btn.className='btn-order';
+    btn.onclick=function(e){
+      e.preventDefault();e.stopPropagation();
+      var p=currentPhoto101();if(!p)return;
+      var m=metaFor101(photoId(p));
+      m.coreoRef=!m.coreoRef;
+      if(m.coreoRef)ensureSelected101(p);
+      refreshCoreo101();
+      try{if(typeof window.renderOrderSummary==='function')window.renderOrderSummary()}catch(err){}
+      if(window.miniToast)miniToast(m.coreoRef?'Foto marcada como referencia de coreografía.':'Referencia de coreografía quitada.');
+    };
+    var confirm=E('zoomConfirmBtn');
+    if(confirm && confirm.parentNode)confirm.parentNode.insertBefore(btn,confirm);
+    else lb.appendChild(btn);
+  }
+  btn.style.display=hasCoreo101()?'inline-flex':'none';
+}
+function refreshCoreo101(){
+  ensureCoreoButton101();
+  var btn=E('v101CoreoBtn'); if(!btn || btn.style.display==='none')return;
+  var p=currentPhoto101(),active=false;
+  if(p)active=!!metaFor101(photoId(p)).coreoRef;
+  btn.classList.toggle('active',active);
+  btn.textContent=active?'✓ ESTA ES MI COREO':'💃 ESTA ES MI COREO';
+}
+
+['openZoom','nextPhoto','prevPhoto'].forEach(function(name){
+  var old=window[name];
+  if(typeof old!=='function'||old.__v101)return;
+  var w=function(){
+    var r=old.apply(this,arguments);
+    setTimeout(refreshCoreo101,20);
+    setTimeout(refreshCoreo101,120);
+    return r;
+  };
+  w.__v101=true;window[name]=w;
+});
+
+/* Mostrar la referencia dentro del resumen del pedido usando la misma miniatura existente. */
+var oldSummary101=window.renderOrderSummary;
+if(typeof oldSummary101==='function'&&!oldSummary101.__v101){
+  var sumWrap=function(){
+    var r=oldSummary101.apply(this,arguments);
+    setTimeout(function(){
+      document.querySelectorAll('#orderSummary .t50-photo-row[data-photo-id]').forEach(function(row){
+        var id=row.getAttribute('data-photo-id');
+        var badges=row.querySelector('.t50-badges');
+        if(!badges)return;
+        var old=badges.querySelector('.v101-coreo-badge');
+        var active=!!metaFor101(id).coreoRef;
+        if(active && !old){
+          var s=document.createElement('span');
+          s.className='t50-badge v101-coreo-badge';
+          s.textContent='💃 Mi coreo';
+          badges.appendChild(s);
+        }else if(!active && old)old.remove();
+      });
+    },0);
+    return r;
+  };
+  sumWrap.__v101=true;window.renderOrderSummary=sumWrap;
+}
+
+/* Guardar referencias también en Sheets/ADM, tanto WhatsApp como Mercado Pago.
+   Para MP además conservamos el detalle de los extras, que el payload viejo omitía. */
+var oldApi101=window.apiPost;
+if(typeof oldApi101==='function'&&!oldApi101.__v101){
+  var apiWrap=async function(data){
+    if(data && data.action==='submitOrder'){
+      var extras='';
+      try{extras=String(getExtrasText(' | ')||'').trim()}catch(e){}
+      var refs=coreoRefsText101();
+      var notes=String(data.notes||'').trim();
+      var add=[];
+      if(extras && notes.indexOf('Extras:')<0)add.push('Extras: '+extras);
+      if(refs && notes.indexOf('Referencias de coreografía:')<0)add.push('Referencias de coreografía: '+refs);
+      if(add.length)data.notes=(notes?notes+'\n\n':'')+add.join('\n\n');
+      if(extras && String(data.orderType||'').indexOf('+ Extras')<0)data.orderType=String(data.orderType||'Pedido')+' + Extras';
+    }
+    return oldApi101.apply(this,arguments);
+  };
+  apiWrap.__v101=true;window.apiPost=apiWrap;
+}
+
+/* 5) PIN ADM: después de cerrar "PIN incorrecto", cursor listo para reintentar. */
+var oldPin101=window.checkAdminPin;
+if(typeof oldPin101==='function'&&!oldPin101.__v101){
+  var pinWrap=function(){
+    var inp=E('adminPinInput');
+    var typed=String(inp?inp.value:'');
+    var isWrong=(typed!=='3233' && typed!=='1234');
+    if(isWrong){
+      window.__v101RefocusAdminPin=true;
+      if(inp)inp.value='';
+    }
+    return oldPin101.apply(this,arguments);
+  };
+  pinWrap.__v101=true;window.checkAdminPin=pinWrap;
+}
+var alertBtn=E('alertBtn');
+if(alertBtn && !alertBtn.dataset.v101focus){
+  alertBtn.dataset.v101focus='1';
+  alertBtn.addEventListener('click',function(){
+    if(!window.__v101RefocusAdminPin)return;
+    window.__v101RefocusAdminPin=false;
+    setTimeout(function(){
+      var modal=E('modalAdminPin'),inp=E('adminPinInput');
+      if(modal && getComputedStyle(modal).display!=='none' && inp){
+        inp.value='';inp.focus();
+      }
+    },40);
+  });
+}
+
+/* Reaplicar solo en aperturas reales; sin MutationObserver ni intervalos. */
+document.addEventListener('click',function(){
+  setTimeout(function(){
+    ensureCoreoButton101();
+    installServicesPayment101();
+  },35);
+});
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    ensureCoreoButton101();
+    refreshCoreo101();
+  },350);
+});
+})();
+</script>
+<!-- /TOMAUNO V101 -->
+
+<!-- TOMAUNO V103 - MI COREO + OPERATIVO DE TANDAS -->
+<style>
+#v103Version{
+  position:fixed;right:10px;bottom:8px;z-index:9997;
+  font:700 9px/1.2 Montserrat,Arial,sans-serif;letter-spacing:.7px;
+  color:#666;pointer-events:none
+}
+#v101Version{display:none!important}
+
+.v103-coreo-chip{
+  position:absolute;left:8px;bottom:8px;z-index:35;
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 9px;border-radius:999px;
+  background:rgba(0,0,0,.86);border:1px solid #ff3131;
+  color:#fff;font:800 9px/1 Montserrat,Arial,sans-serif;
+  letter-spacing:.4px;box-shadow:0 3px 12px rgba(0,0,0,.45);
+  pointer-events:none
+}
+.v103-coreo-chip b{color:#ff3b3b}
+#v103CoreoCount{
+  display:none;margin:8px auto 0;width:max-content;max-width:92%;
+  padding:7px 11px;border-radius:999px;border:1px solid #382020;
+  background:#130909;color:#ddd;font:700 10px/1.2 Montserrat,Arial,sans-serif;
+  letter-spacing:.3px
+}
+#v103CoreoCount.on{display:block}
+#v103CoreoCount strong{color:#ff3b3b}
+
+.v103-batchbar{
+  display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;
+  width:100%;margin:10px 0 14px;padding:10px;
+  border:1px solid #242424;border-radius:14px;background:#090909
+}
+.v103-batchbar .v103-title{
+  width:100%;text-align:center;color:#888;font:800 9px/1.2 Montserrat,Arial,sans-serif;
+  letter-spacing:1.2px;text-transform:uppercase;margin-bottom:2px
+}
+.v103-batchbar button{
+  min-height:38px;padding:9px 13px;border-radius:10px;border:1px solid #333;
+  background:#151515;color:#fff;font:800 10px/1 Montserrat,Arial,sans-serif;
+  cursor:pointer
+}
+.v103-batchbar button.v103-publish{border-color:#166c38;color:#65e59a}
+.v103-batchbar button.v103-hide{border-color:#7c2020;color:#ff7777}
+.v103-batchbar button:disabled{opacity:.35;cursor:not-allowed}
+.v103-batch-state{
+  width:100%;text-align:center;color:#777;font:600 9px/1.3 Montserrat,Arial,sans-serif
+}
+@media(max-width:600px){
+  .v103-batchbar button{flex:1 1 145px}
+  .v103-coreo-chip{padding:5px 7px;font-size:8px}
+}
+</style>
+
+<div id="v103Version">TOMAUNO FOTOS · V103</div>
+
+<script>
+(function(){
+'use strict';
+if(window.__TOMAUNO_V103__)return;
+window.__TOMAUNO_V103__=true;
+
+function E(id){return document.getElementById(id)}
+function photoId103(p){return String((p&&(p.id||p.fileId||p.photoId))||'')}
+function meta103(id){
+  try{
+    if(typeof window.meta==='function')return window.meta(id)||{};
+    if(typeof meta==='function')return meta(id)||{};
+  }catch(e){}
+  window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};
+  return window.__tomaunoPhotoMeta[id]||(window.__tomaunoPhotoMeta[id]={});
+}
+function refs103(){
+  try{
+    if(typeof window.coreoRefs101==='function')return window.coreoRefs101()||[];
+  }catch(e){}
+  var arr=[];
+  try{
+    var all=(typeof allPhotos!=='undefined'&&Array.isArray(allPhotos))?allPhotos:[];
+    all.forEach(function(p){
+      var id=photoId103(p);
+      if(id&&meta103(id).coreoRef)arr.push({id:id,name:p.name||id});
+    });
+  }catch(e){}
+  return arr;
+}
+
+/* MI COREO: además del botón del visor, dejar una marca visible en la miniatura.
+   No cambia selección, precios ni checkout. */
+function decorateCoreos103(){
+  var refs=refs103(), map={};
+  refs.forEach(function(r){map[String(r.id)]=true});
+
+  document.querySelectorAll('.photo-box').forEach(function(box){
+    var id='';
+    var candidates=[
+      box.getAttribute('data-photo-id'),
+      box.dataset&&box.dataset.photoId,
+      box.querySelector('[data-photo-id]')&&box.querySelector('[data-photo-id]').getAttribute('data-photo-id'),
+      box.querySelector('img')&&box.querySelector('img').getAttribute('data-id')
+    ];
+    for(var i=0;i<candidates.length;i++)if(candidates[i]){id=String(candidates[i]);break}
+
+    if(!id){
+      var img=box.querySelector('img');
+      var src=img?String(img.src||''):'';
+      var m=src.match(/\/d\/([A-Za-z0-9_-]+)/)||src.match(/[?&]id=([A-Za-z0-9_-]+)/);
+      if(m)id=m[1];
+    }
+
+    var chip=box.querySelector('.v103-coreo-chip');
+    if(id&&map[id]){
+      if(!chip){
+        chip=document.createElement('span');
+        chip.className='v103-coreo-chip';
+        chip.innerHTML='💃 <b>MI COREO</b>';
+        box.appendChild(chip);
+      }
+    }else if(chip)chip.remove();
+  });
+
+  var count=E('v103CoreoCount');
+  if(!count){
+    var lb=E('lightbox');
+    var anchor=E('v101CoreoBtn');
+    if(lb&&anchor&&anchor.parentNode){
+      count=document.createElement('div');
+      count.id='v103CoreoCount';
+      anchor.parentNode.insertBefore(count,anchor.nextSibling);
+    }
+  }
+  if(count){
+    count.classList.toggle('on',refs.length>0);
+    count.innerHTML=refs.length
+      ? '<strong>'+refs.length+'</strong> referencia'+(refs.length===1?'':'s')+' de coreografía marcada'+(refs.length===1?'':'s')
+      : '';
+  }
+}
+
+/* TANDAS:
+   Dentro de un padre en ADM ya existen los checks y el ojo individual.
+   V103 agrega únicamente acciones masivas para publicar/ocultar los álbumes seleccionados,
+   reutilizando setAlbumVisibility existente. */
+function selectedAlbumIds103(){
+  var ids=[];
+  document.querySelectorAll('[data-v91album].v91-selected').forEach(function(card){
+    var id=String(card.getAttribute('data-v91album')||'').trim();
+    if(id)ids.push(id);
+  });
+  return ids;
+}
+function installBatchBar103(){
+  var list=E('eventList');
+  if(!list)return;
+  var back=E('v91Back');
+  var existing=E('v103BatchBar');
+
+  /* Solo dentro de un padre y solo si estamos en administración. */
+  var admin=!!(window.__v91State&&window.__v91State.admin);
+  if(!admin){
+    /* Compatibilidad con el módulo V91, que guarda el estado en un closure:
+       la presencia de checks administrativos dentro de un padre es una señal segura. */
+    admin=!!(back&&list.querySelector('[data-v91check]'));
+  }
+  if(!back||!admin){
+    if(existing)existing.remove();
+    return;
+  }
+
+  if(!existing){
+    var bar=document.createElement('div');
+    bar.id='v103BatchBar';
+    bar.className='v103-batchbar';
+    bar.innerHTML=
+      '<div class="v103-title">PUBLICACIÓN DE TANDAS</div>'+
+      '<button type="button" class="v103-publish" id="v103Publish">👁 PUBLICAR SELECCIONADOS</button>'+
+      '<button type="button" class="v103-hide" id="v103Hide">⊘ OCULTAR SELECCIONADOS</button>'+
+      '<div class="v103-batch-state" id="v103BatchState">Seleccioná uno o más álbumes de esta tanda.</div>';
+    back.insertAdjacentElement('afterend',bar);
+    E('v103Publish').onclick=function(){setSelectedVisibility103(true)};
+    E('v103Hide').onclick=function(){setSelectedVisibility103(false)};
+    existing=bar;
+  }
+  updateBatchBar103();
+}
+function updateBatchBar103(){
+  var ids=selectedAlbumIds103(), state=E('v103BatchState');
+  var pub=E('v103Publish'),hide=E('v103Hide');
+  if(pub)pub.disabled=!ids.length;
+  if(hide)hide.disabled=!ids.length;
+  if(state)state.textContent=ids.length
+    ? ids.length+' álbum'+(ids.length===1?'':'es')+' seleccionado'+(ids.length===1?'':'s')+'.'
+    : 'Seleccioná uno o más álbumes de esta tanda.';
+}
+async function setSelectedVisibility103(visible){
+  var ids=selectedAlbumIds103();
+  if(!ids.length)return;
+  var pub=E('v103Publish'),hide=E('v103Hide'),state=E('v103BatchState');
+  if(pub)pub.disabled=true;if(hide)hide.disabled=true;
+  if(state)state.textContent=(visible?'PUBLICANDO ':'OCULTANDO ')+ids.length+' álbum'+(ids.length===1?'':'es')+'…';
+
+  var ok=0,failed=[];
+  for(var i=0;i<ids.length;i++){
+    try{
+      var r=await window.apiPost({
+        action:'setAlbumVisibility',pin:'3233',bridgeId:ids[i],
+        state:visible?'VISIBLE':'OCULTO'
+      });
+      if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+      ok++;
+    }catch(e){failed.push(ids[i])}
+  }
+
+  /* Actualizar el estado que usa V91 antes de redibujar. */
+  try{
+    if(Array.isArray(window.eventsData)){
+      window.eventsData.forEach(function(a){
+        if(ids.indexOf(String(a.bridgeId||''))>-1)a.visible=visible;
+      });
+    }
+    if(Array.isArray(window.__v73AdminAlbums)){
+      window.__v73AdminAlbums.forEach(function(a){
+        if(ids.indexOf(String(a.bridgeId||''))>-1)a.visible=visible;
+      });
+    }
+  }catch(e){}
+
+  /* El render V91 conserva el flujo existente y vuelve a leer sus tarjetas. */
+  if(typeof window.v91Render==='function')window.v91Render();
+
+  setTimeout(function(){
+    installBatchBar103();
+    var s=E('v103BatchState');
+    if(s)s.textContent=failed.length
+      ? 'Se actualizaron '+ok+'. Hubo '+failed.length+' error'+(failed.length===1?'':'es')+'.'
+      : (visible?'Tanda publicada correctamente.':'Tanda ocultada correctamente.');
+    if(window.miniToast&&!failed.length)window.miniToast(visible?'Álbumes publicados.':'Álbumes ocultados.');
+  },50);
+}
+
+/* No observamos el DOM continuamente. Reaplicamos solo después de acciones reales. */
+document.addEventListener('click',function(e){
+  setTimeout(function(){
+    decorateCoreos103();
+    installBatchBar103();
+    updateBatchBar103();
+  },80);
+},true);
+
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    decorateCoreos103();
+    installBatchBar103();
+  },500);
+});
+
+/* El botón V101 cambia coreoRef: refrescar inmediatamente después. */
+var cb=E('v101CoreoBtn');
+if(cb&&!cb.dataset.v103){
+  cb.dataset.v103='1';
+  cb.addEventListener('click',function(){setTimeout(decorateCoreos103,30)});
+}
+})();
+</script>
+<!-- /TOMAUNO V103 -->
+
+
+<!-- TOMAUNO V105 - BARRA ADMIN COMPACTA / FIX TANDAS -->
+<style>
+#v103Version{display:none!important}
+#v104Version{
+  position:fixed;right:10px;bottom:8px;z-index:9997;
+  font:700 9px/1.2 Montserrat,Arial,sans-serif;letter-spacing:.7px;
+  color:#666;pointer-events:none
+}
+/* Retiramos el panel grande V103: las acciones viven en la barra existente. */
+#v103BatchBar{display:none!important}
+#v104BatchActions{
+  display:flex;align-items:center;gap:6px;flex:0 0 auto
+}
+#v104BatchActions button{
+  width:38px;height:38px;min-width:38px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:10px;border:1px solid #333;background:#121212;color:#ddd;
+  font:800 15px/1 Arial,sans-serif;cursor:pointer
+}
+#v104BatchActions button[data-kind="show"]{border-color:#174f31;color:#56d88b}
+#v104BatchActions button[data-kind="hide"]{border-color:#612020;color:#ff6969}
+#v104BatchActions button:disabled{opacity:.28;cursor:not-allowed}
+#v91GroupName[list="v104Groups"]{min-width:220px}
+@media(max-width:700px){
+  #v104BatchActions{width:auto}
+  #v104BatchActions button{width:42px;height:42px;min-width:42px}
+}
+</style>
+<div id="v104Version">TOMAUNO FOTOS · V105</div>
+<datalist id="v104Groups"></datalist>
+
+<script>
+(function(){
+'use strict';
+if(window.__TOMAUNO_V105__)return;
+window.__TOMAUNO_V105__=true;
+
+function E104(id){return document.getElementById(id)}
+function model104(){
+  try{
+    if(typeof window.v93Model==='function')return window.v93Model();
+  }catch(e){}
+  return null;
+}
+function selected104(){
+  var m=model104();
+  if(m&&m.selected&&typeof m.selected.forEach==='function'){
+    var a=[];m.selected.forEach(function(id){a.push(String(id))});return a;
+  }
+  var a=[];
+  document.querySelectorAll('#eventList [data-v91album].v91-selected').forEach(function(c){
+    var id=String(c.getAttribute('data-v91album')||'');if(id)a.push(id);
+  });
+  return a;
+}
+function fillGroups104(){
+  var dl=E104('v104Groups');if(!dl)return;
+  var names=[];
+  var m=model104();
+  if(m&&m.meta)names=Object.keys(m.meta);
+  if(!names.length){
+    document.querySelectorAll('[data-v91parent]').forEach(function(x){
+      var n=String(x.getAttribute('data-v91parent')||'').trim();
+      if(n&&names.indexOf(n)<0)names.push(n);
+    });
+  }
+  dl.innerHTML=names.sort().map(function(n){
+    return '<option value="'+String(n).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></option>'
+  }).join('');
+}
+function install104(){
+  var bar=E104('v91GroupBar');
+  if(!bar)return;
+  var input=E104('v91GroupName');
+  if(input){
+    input.setAttribute('list','v104Groups');
+    input.title='Escribí o elegí el evento de destino. AGRUPAR mueve allí los álbumes seleccionados.';
+  }
+  fillGroups104();
+
+  var box=E104('v104BatchActions');
+  if(!box){
+    box=document.createElement('div');
+    box.id='v104BatchActions';
+    box.innerHTML=
+      '<button type="button" id="v104Show" data-kind="show" title="Publicar álbumes seleccionados" aria-label="Publicar seleccionados">👁</button>'+
+      '<button type="button" id="v104Hide" data-kind="hide" title="Ocultar álbumes seleccionados" aria-label="Ocultar seleccionados">⊘</button>';
+    var front=E104('v91FrontBtn');
+    if(front&&front.parentNode===bar)bar.insertBefore(box,front);
+    else bar.appendChild(box);
+    E104('v104Show').onclick=function(){visibility104(true)};
+    E104('v104Hide').onclick=function(){visibility104(false)};
+  }
+  sync104();
+}
+function sync104(){
+  var n=selected104().length;
+  var s=E104('v104Show'),h=E104('v104Hide');
+  if(s)s.disabled=!n;
+  if(h)h.disabled=!n;
+}
+async function visibility104(visible){
+  var ids=selected104();if(!ids.length)return;
+  var s=E104('v104Show'),h=E104('v104Hide');
+  if(s)s.disabled=true;if(h)h.disabled=true;
+  var failed=0;
+  for(var i=0;i<ids.length;i++){
+    try{
+      var r=await window.apiPost({
+        action:'setAlbumVisibility',pin:'3233',bridgeId:ids[i],
+        state:visible?'VISIBLE':'OCULTO'
+      });
+      if(!r||r.success===false)throw new Error((r&&r.msg)||'Error');
+      var m=model104();
+      if(m&&Array.isArray(m.all)){
+        var a=m.all.find(function(x){return String(x.bridgeId||'')===ids[i]});
+        if(a)a.visible=visible;
+      }
+    }catch(e){failed++}
+  }
+  var m=model104();
+  if(m&&m.selected&&m.selected.clear)m.selected.clear();
+  if(typeof window.v91Render==='function')window.v91Render();
+  setTimeout(function(){
+    install104();
+    if(window.miniToast)window.miniToast(
+      failed ? 'Se actualizaron con '+failed+' error(es).' :
+      (visible?'Álbumes publicados.':'Álbumes ocultados.')
+    );
+  },30);
+}
+
+/* V93 consume el click de los checks con stopImmediatePropagation.
+   Por eso V103 no podía enterarse y sus botones quedaban deshabilitados.
+   En V105 nos enganchamos al render real: cada selección redibuja y luego sincronizamos. */
+var originalRender104=window.v91Render;
+if(typeof originalRender104==='function'&&!originalRender104.__v104){
+  var wrapped=function(){
+    var r=originalRender104.apply(this,arguments);
+    setTimeout(install104,0);
+    return r;
+  };
+  wrapped.__v104=true;
+  window.v91Render=wrapped;
+}
+setTimeout(install104,100);
+window.addEventListener('load',function(){setTimeout(install104,350)});
+})();
+</script>
+<!-- /TOMAUNO V105 -->
+
+
+<!-- TOMAUNO V105 - COMPROBANTE MP -->
+<style>
+.t105-card{max-width:760px!important}.t105-receipt{margin:16px 0;padding:16px;border:1px solid rgba(212,175,55,.55);border-radius:16px;background:linear-gradient(145deg,#151515,#080808);text-align:left}.t105-ok{font-size:12px;font-weight:800;letter-spacing:.8px;color:#7dff9b;margin-bottom:12px;text-align:center}.t105-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.t105-grid>div{background:#050505;border:1px solid #252525;border-radius:10px;padding:10px}.t105-grid small{display:block;color:#888;font-size:9px;letter-spacing:1px;margin-bottom:4px}.t105-grid b{font-size:12px;overflow-wrap:anywhere}.t105-keep{margin-top:12px;color:#aaa;font-size:10px;line-height:1.45;text-align:center}.v95-mp-line{border-radius:8px}.v95-mp-line:has(*){}@media(max-width:560px){.t105-grid{grid-template-columns:1fr}.mp54-foot{gap:8px}.mp54-foot .mp54-btn{width:100%;justify-content:center}}
+</style>
+<script>
+(function(){
+ window.t105DownloadReceipt=function(r){
+  if(!r)return;
+  var c=document.createElement('canvas'),w=1080,h=1350;c.width=w;c.height=h;var x=c.getContext('2d');
+  x.fillStyle='#050505';x.fillRect(0,0,w,h);x.strokeStyle='#d4af37';x.lineWidth=5;x.strokeRect(38,38,w-76,h-76);
+  x.textAlign='center';x.fillStyle='#fff';x.font='700 64px Arial';x.fillText('TOMAUNO',w/2,145);x.fillStyle='#ff1a1a';x.font='700 27px Arial';x.fillText('FOTOGRAFÍAS',w/2,192);
+  x.fillStyle='#63e886';x.font='700 34px Arial';x.fillText('✓ PAGO CONFIRMADO',w/2,285);x.fillStyle='#aaa';x.font='22px Arial';x.fillText('Verificado por Mercado Pago',w/2,325);
+  var lines=[['PEDIDO','#'+r.row],['TOTAL','$'+Number(r.total||0).toLocaleString('es-AR')],['EVENTO',r.eventName||'-'],['COMPRA',r.orderType||'-'],['CLIENTE',r.customer||'-'],['ID DE PAGO',r.paymentId||'-'],['MEDIO',r.paymentMethod||'-']];
+  x.textAlign='left';var y=415;lines.forEach(function(a){x.fillStyle='#888';x.font='18px Arial';x.fillText(a[0],105,y);x.fillStyle='#fff';x.font='700 25px Arial';var v=String(a[1]);if(v.length>55)v=v.slice(0,52)+'...';x.fillText(v,105,y+34);y+=105;});
+  x.textAlign='center';x.fillStyle='#aaa';x.font='20px Arial';x.fillText('Conservá este comprobante para retirar o consultar tu pedido.',w/2,1195);x.fillStyle='#fff';x.font='700 20px Arial';x.fillText('tomaunofotografias.vercel.app',w/2,1245);
+  var a=document.createElement('a');a.download='Tomauno_Comprobante_Pedido_'+r.row+'.png';a.href=c.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();
+ };
+})();
+</script>
+<!-- /TOMAUNO V105 -->
 </body>
 </html>
