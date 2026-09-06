@@ -11969,7 +11969,7 @@ if(cb&&!cb.dataset.v103){
 <!-- /TOMAUNO V103 -->
 
 
-<!-- TOMAUNO V106 - BARRA ADMIN COMPACTA / FIX TANDAS -->
+<!-- TOMAUNO V105 - BARRA ADMIN COMPACTA / FIX TANDAS -->
 <style>
 #v103Version{display:none!important}
 #v104Version{
@@ -11997,14 +11997,14 @@ if(cb&&!cb.dataset.v103){
   #v104BatchActions button{width:42px;height:42px;min-width:42px}
 }
 </style>
-<div id="v104Version">TOMAUNO FOTOS · V106</div>
+<div id="v104Version">TOMAUNO FOTOS · V105</div>
 <datalist id="v104Groups"></datalist>
 
 <script>
 (function(){
 'use strict';
-if(window.__TOMAUNO_V106__)return;
-window.__TOMAUNO_V106__=true;
+if(window.__TOMAUNO_V105__)return;
+window.__TOMAUNO_V105__=true;
 
 function E104(id){return document.getElementById(id)}
 function model104(){
@@ -12103,7 +12103,7 @@ async function visibility104(visible){
 
 /* V93 consume el click de los checks con stopImmediatePropagation.
    Por eso V103 no podía enterarse y sus botones quedaban deshabilitados.
-   En V106 nos enganchamos al render real: cada selección redibuja y luego sincronizamos. */
+   En V105 nos enganchamos al render real: cada selección redibuja y luego sincronizamos. */
 var originalRender104=window.v91Render;
 if(typeof originalRender104==='function'&&!originalRender104.__v104){
   var wrapped=function(){
@@ -12118,10 +12118,10 @@ setTimeout(install104,100);
 window.addEventListener('load',function(){setTimeout(install104,350)});
 })();
 </script>
-<!-- /TOMAUNO V106 -->
+<!-- /TOMAUNO V105 -->
 
 
-<!-- TOMAUNO V106 - COMPROBANTE MP -->
+<!-- TOMAUNO V105 - COMPROBANTE MP -->
 <style>
 .t105-card{max-width:760px!important}.t105-receipt{margin:16px 0;padding:16px;border:1px solid rgba(212,175,55,.55);border-radius:16px;background:linear-gradient(145deg,#151515,#080808);text-align:left}.t105-ok{font-size:12px;font-weight:800;letter-spacing:.8px;color:#7dff9b;margin-bottom:12px;text-align:center}.t105-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.t105-grid>div{background:#050505;border:1px solid #252525;border-radius:10px;padding:10px}.t105-grid small{display:block;color:#888;font-size:9px;letter-spacing:1px;margin-bottom:4px}.t105-grid b{font-size:12px;overflow-wrap:anywhere}.t105-keep{margin-top:12px;color:#aaa;font-size:10px;line-height:1.45;text-align:center}.v95-mp-line{border-radius:8px}.v95-mp-line:has(*){}@media(max-width:560px){.t105-grid{grid-template-columns:1fr}.mp54-foot{gap:8px}.mp54-foot .mp54-btn{width:100%;justify-content:center}}
 </style>
@@ -12140,75 +12140,196 @@ window.addEventListener('load',function(){setTimeout(install104,350)});
  };
 })();
 </script>
-<!-- /TOMAUNO V106 -->
+<!-- /TOMAUNO V105 -->
 
-<!-- TOMAUNO V106 MOBILE / PORTADA FINAL -->
-<style id="tomauno-v106-mobile-css">
-@media(max-width:760px){
-  /* Portada: acciones secundarias compactas en un solo menú. */
-  #view-events .tomauno-top-actions{justify-content:flex-end!important;margin:0 0 10px!important;gap:0!important;position:relative!important}
-  #view-events .tomauno-top-actions>button{display:none!important}
-  #view-events .tomauno-top-actions #v106MenuBtn{display:flex!important;width:44px!important;height:42px!important;min-width:44px!important;padding:0!important;margin:0!important;border-radius:12px!important;align-items:center!important;justify-content:center!important;font-size:22px!important;background:#111!important;border:1px solid #333!important;color:#fff!important}
-  #v106MobileMenu{position:absolute!important;right:0!important;top:48px!important;z-index:180000!important;width:min(82vw,290px)!important;background:#090909!important;border:1px solid #333!important;border-radius:15px!important;padding:7px!important;box-shadow:0 16px 42px rgba(0,0,0,.7)!important}
-  #v106MobileMenu button{display:flex!important;width:100%!important;min-height:42px!important;margin:0!important;padding:9px 11px!important;border:0!important;border-bottom:1px solid #1e1e1e!important;border-radius:8px!important;background:transparent!important;color:#eee!important;font-size:11px!important;text-align:left!important;align-items:center!important;gap:8px!important}
-  #v106MobileMenu button:last-child{border-bottom:0!important}
+<!-- TOMAUNO V107 · MOBILE UX CLEAN · BASE V105 -->
+<style id="tomauno-v107-mobile-css">
+/* Escritorio queda intacto. Menú compacto aparece solamente en celular. */
+#v107MobileMenuWrap{display:none}
 
-  /* Lightbox: que la foto vuelva a ser la protagonista. */
-  #lightbox{padding-bottom:10px!important;overflow-y:auto!important}
-  #lightbox>div[style*="margin-top:20px"]{gap:7px!important;margin-top:10px!important;flex-wrap:wrap!important;justify-content:center!important;width:96vw!important}
-  #lightbox>div[style*="margin-top:20px"] .btn-order{min-height:42px!important;width:auto!important;flex:1 1 42%!important;max-width:48%!important;padding:8px 7px!important;margin:0!important;font-size:10px!important;line-height:1.08!important;border-radius:13px!important}
-  #lightbox #zoomConfirmBtn{flex-basis:92%!important;max-width:92%!important}
-  #v101CoreoBtn{font-size:9px!important;padding:7px 5px!important}
-  #v101CoreoCount{font-size:10px!important;padding:5px 9px!important;margin:3px auto!important}
-  #zoomCounter{bottom:122px!important;padding:6px 10px!important;font-size:11px!important}
+@media(max-width:700px){
+  /* Portada: menos interfaz, más protagonismo para los álbumes */
+  #view-events{padding-top:8px!important}
+  #view-events .tomauno-top-actions{display:none!important}
+  #v107MobileMenuWrap{
+    display:flex!important;position:relative;justify-content:flex-end;align-items:center;
+    width:100%;margin:0 0 10px;padding:0 4px;box-sizing:border-box;z-index:5000
+  }
+  #v107MobileMenuBtn{
+    width:44px;height:40px;padding:0!important;margin:0!important;border-radius:11px!important;
+    border:1px solid #383838!important;background:#111!important;color:var(--oro)!important;
+    font-size:20px!important;line-height:1!important;box-shadow:none!important
+  }
+  #v107MobileMenuPanel{
+    display:none;position:absolute;right:4px;top:46px;width:min(86vw,310px);padding:7px;
+    background:rgba(8,8,8,.98);border:1px solid #343434;border-radius:14px;
+    box-shadow:0 16px 40px rgba(0,0,0,.68);z-index:5001
+  }
+  #v107MobileMenuPanel.open{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  #v107MobileMenuPanel button{
+    min-height:43px!important;margin:0!important;padding:8px 7px!important;border-radius:10px!important;
+    background:#141414!important;border:1px solid #2e2e2e!important;color:#ddd!important;
+    font-size:9px!important;line-height:1.15!important;font-weight:800!important;box-shadow:none!important
+  }
+  #v107MobileMenuPanel button i{color:var(--oro);margin-right:4px}
+  #view-events h2{margin:6px 0 14px!important;font-size:13px!important;letter-spacing:3px!important}
+  #albumSearchBox{margin-top:0!important;margin-bottom:14px!important}
+  #eventList.event-grid{gap:12px!important}
+  #eventList .event-card{
+    border-radius:18px!important;padding:24px 14px!important;min-height:122px!important;
+    box-shadow:0 8px 24px rgba(0,0,0,.28)!important
+  }
+  #eventList .event-card h3{font-size:16px!important;line-height:1.2!important;margin:8px 0 0!important}
+  #eventList .event-card i{font-size:42px!important;margin-bottom:5px!important}
 
-  /* Pedido: siempre comienza arriba; primero se lee el resumen y luego los datos. */
-  #modalCheckout{align-items:flex-start!important;overflow:hidden!important}
-  #modalCheckout .modal-box{height:calc(100dvh - 10px)!important;max-height:calc(100dvh - 10px)!important;overflow:hidden!important}
-  #modalCheckout .t50-body{scroll-behavior:auto!important;padding-bottom:6px!important}
-  #modalCheckout .t50-price{order:0!important}
-  #modalCheckout #orderSummary{order:1!important;max-height:none!important;min-height:170px!important;overflow:visible!important}
-  #modalCheckout .t50-photo-list{max-height:240px!important;overflow:auto!important}
-  #modalCheckout .t50-right{margin-top:10px!important}
-  #modalCheckout #extrasBox{max-height:none!important}
-  #modalCheckout .extra-row{font-size:12px!important;gap:7px!important}
-  #modalCheckout .extra-controls{gap:7px!important}
-  #modalCheckout .extra-controls button{width:34px!important;height:34px!important;min-width:34px!important}
-  #modalCheckout .t50-actions{grid-template-columns:1fr 1fr 1fr!important;gap:5px!important}
-  #modalCheckout .t50-actions .btn-order{height:36px!important;font-size:8px!important;padding:5px 3px!important;border-radius:10px!important}
-  #modalCheckout .t54-mp-pay,#modalCheckout .t54-manual{grid-column:1/-1!important;height:39px!important;font-size:9px!important}
+  /* Visor: controles compactos, sin tapar media pantalla */
+  #lightbox>span[onclick="closeZoom()"]{top:7px!important;right:13px!important;font-size:34px!important}
+  #lightbox .v107-light-actions{
+    width:calc(100vw - 20px)!important;max-width:560px!important;margin:8px auto 0!important;
+    display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important;padding:0!important
+  }
+  #lightbox .v107-light-actions .btn-order{
+    width:100%!important;min-width:0!important;min-height:42px!important;height:42px!important;
+    margin:0!important;padding:7px 5px!important;border-radius:13px!important;
+    font-size:10px!important;line-height:1.05!important;box-shadow:none!important
+  }
+  #lightbox .v107-light-actions #zoomConfirmBtn{grid-column:1/-1!important;background:var(--rojo)!important}
+  #lightbox .v107-light-actions #v101CoreoBtn{font-size:9px!important;padding:5px!important}
+  #zoomCounter{
+    left:auto!important;right:10px!important;bottom:142px!important;transform:none!important;
+    padding:6px 9px!important;font-size:10px!important;border-radius:10px!important
+  }
+  #v103CoreoCount{margin:5px auto 0!important;padding:5px 8px!important;font-size:8px!important}
+  #floatingCart{
+    right:9px!important;bottom:77px!important;min-width:0!important;width:auto!important;
+    padding:8px 11px!important;border-radius:14px!important;font-size:11px!important;
+    box-shadow:0 5px 18px rgba(224,0,11,.35)!important
+  }
+  #zoomHelp{display:none!important}
+
+  /* Checkout: comienza arriba y los controles dejan de ser aparatosos */
+  #modalCheckout{padding:4px!important;align-items:stretch!important}
+  #modalCheckout .modal-box{
+    width:100%!important;height:100dvh!important;max-height:100dvh!important;max-width:none!important;
+    border-radius:0!important;padding:10px!important;overflow:hidden!important
+  }
+  #modalCheckout .modal-box>h3{font-size:17px!important;margin:3px 0 8px!important;letter-spacing:1px!important}
+  #modalCheckout .t50-body{
+    display:block!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;
+    padding-right:1px!important
+  }
+  #modalCheckout .t50-price{padding:10px!important;margin:0 0 8px!important;border-radius:14px!important;min-height:58px!important}
+  #modalCheckout .t50-price b{font-size:25px!important}
+  #modalCheckout #orderSummary{max-height:none!important;min-height:0!important;padding:9px!important;margin-bottom:8px!important}
+  #modalCheckout .t50-photo-row{grid-template-columns:48px minmax(0,1fr)!important;padding:6px!important;gap:7px!important}
+  #modalCheckout .t50-thumb{width:48px!important;height:40px!important}
+  #modalCheckout #extrasBox{padding:10px!important;margin-top:8px!important;border-radius:14px!important}
+  #modalCheckout .extra-row{padding:8px!important;margin:5px 0!important;border-radius:11px!important}
+  #modalCheckout .extra-row strong,#modalCheckout .extra-row b{font-size:12px!important;line-height:1.2!important}
+  #modalCheckout .extra-row button{width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:50%!important}
+  #modalCheckout .t50-right input,#modalCheckout .t50-right textarea{
+    min-height:46px!important;margin:6px 0!important;padding:11px 12px!important;font-size:15px!important;border-radius:13px!important
+  }
+  #modalCheckout #userNotes{min-height:66px!important}
+  #modalCheckout .t50-actions{
+    flex:0 0 auto!important;display:grid!important;grid-template-columns:1fr 1fr!important;
+    gap:6px!important;padding:7px 0 2px!important;background:#080808!important
+  }
+  #modalCheckout .t50-actions .btn-order,
+  #modalCheckout .t54-mp-pay,#modalCheckout .t54-manual,#modalCheckout .v101-mp-services{
+    min-height:44px!important;height:44px!important;max-height:44px!important;min-width:0!important;
+    width:100%!important;margin:0!important;padding:6px 8px!important;border-radius:12px!important;
+    font-size:10px!important;line-height:1.05!important;box-shadow:none!important
+  }
+  #modalCheckout .t54-mp-pay,#modalCheckout .t54-manual,#modalCheckout .v101-mp-services{
+    grid-column:1/-1!important;min-height:46px!important;height:46px!important;max-height:46px!important;font-size:11px!important
+  }
+  #modalCheckout #v75CopyBack{grid-column:1/-1!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important;min-width:0!important}
+  #modalCheckout #v75CopyBack .btn-order{height:42px!important;min-height:42px!important;font-size:9px!important}
+  #modalCheckout .v101-service-note{font-size:8px!important;padding:0 4px!important}
 }
 </style>
-<script id="tomauno-v106-mobile-js">
+
+<script id="tomauno-v107-mobile-js">
 (function(){
   'use strict';
-  window.__TOMAUNO_V106__=true;
-  function q(id){return document.getElementById(id)}
-  function buildMenu(){
-    var row=document.querySelector('#view-events .tomauno-top-actions');
-    if(!row || q('v106MenuBtn')) return;
-    var menu=document.createElement('div'); menu.id='v106MobileMenu'; menu.style.display='none';
-    function item(html,fn){var b=document.createElement('button');b.type='button';b.innerHTML=html;b.onclick=function(){menu.style.display='none';fn();};menu.appendChild(b)}
-    item('📍 Contacto y ubicación',function(){var m=q('modalContact');if(m)m.style.display='flex'});
-    item('🔒 Descargar pedido',function(){if(typeof window.openDirectDownloadModal==='function')window.openDirectDownloadModal()});
-    item('🛡️ Familia y privacidad',function(){var m=q('modalFamilyPrivacy');if(m)m.style.display='flex'});
-    item('❓ Ayuda',function(){var m=q('modalHelpTomauno');if(m)m.style.display='flex'});
-    var btn=document.createElement('button');btn.id='v106MenuBtn';btn.type='button';btn.title='Más opciones';btn.setAttribute('aria-label','Más opciones');btn.innerHTML='☰';
-    btn.onclick=function(e){e.stopPropagation();menu.style.display=menu.style.display==='none'?'block':'none'};
-    row.appendChild(btn);row.appendChild(menu);
-    document.addEventListener('click',function(e){if(menu.style.display!=='none'&&!menu.contains(e.target)&&e.target!==btn)menu.style.display='none'});
+  if(window.__TOMAUNO_V107__) return;
+  window.__TOMAUNO_V107__=true;
+
+  function E(id){return document.getElementById(id)}
+  function mobile(){return window.matchMedia && window.matchMedia('(max-width:700px)').matches}
+
+  function closeMenu(){var p=E('v107MobileMenuPanel');if(p)p.classList.remove('open')}
+  function openModal(id){closeMenu();var m=E(id);if(m)m.style.display='flex'}
+
+  function installMenu(){
+    var view=E('view-events');
+    if(!view||E('v107MobileMenuWrap'))return;
+    var wrap=document.createElement('div');
+    wrap.id='v107MobileMenuWrap';
+    wrap.innerHTML=''+
+      '<button type="button" id="v107MobileMenuBtn" aria-label="Menú" aria-expanded="false">☰</button>'+
+      '<div id="v107MobileMenuPanel">'+
+        '<button type="button" data-a="contact"><i class="fa fa-id-badge"></i> CONTACTO</button>'+
+        '<button type="button" data-a="download"><i class="fa fa-lock"></i> DESCARGAR</button>'+
+        '<button type="button" data-a="family">🛡️ FAMILIA</button>'+
+        '<button type="button" data-a="help">❓ AYUDA</button>'+
+      '</div>';
+    var title=view.querySelector('h2');
+    if(title)view.insertBefore(wrap,title);else view.insertBefore(wrap,view.firstChild);
+    var btn=E('v107MobileMenuBtn'),panel=E('v107MobileMenuPanel');
+    btn.onclick=function(ev){ev.stopPropagation();var on=!panel.classList.contains('open');panel.classList.toggle('open',on);btn.setAttribute('aria-expanded',on?'true':'false')};
+    panel.addEventListener('click',function(ev){
+      var b=ev.target.closest('button[data-a]');if(!b)return;
+      var a=b.getAttribute('data-a');
+      if(a==='contact')openModal('modalContact');
+      else if(a==='download'){closeMenu();if(typeof window.openDirectDownloadModal==='function')window.openDirectDownloadModal();}
+      else if(a==='family')openModal('modalFamilyPrivacy');
+      else if(a==='help')openModal('modalHelpTomauno');
+    });
+    document.addEventListener('click',function(ev){if(wrap&&!wrap.contains(ev.target))closeMenu()});
   }
+
+  function markLightboxActions(){
+    var lb=E('lightbox');if(!lb)return;
+    var s=E('zoomSelectBtn');
+    var row=s&&s.parentElement;
+    if(row)row.classList.add('v107-light-actions');
+  }
+
   function resetCheckoutTop(){
-    var m=q('modalCheckout'), body=m&&m.querySelector('.t50-body');
-    if(!m || m.style.display!=='flex') return;
-    try{m.scrollTop=0;if(body)body.scrollTop=0;var box=m.querySelector('.modal-box');if(box)box.scrollTop=0;}catch(e){}
+    if(!mobile())return;
+    var modal=E('modalCheckout');if(!modal)return;
+    var box=modal.querySelector('.modal-box');
+    var body=modal.querySelector('.t50-body');
+    try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}catch(e){}
+    modal.scrollTop=0;if(box)box.scrollTop=0;if(body)body.scrollTop=0;
   }
-  var oldOpen=window.openCheckout;
-  if(typeof oldOpen==='function') window.openCheckout=function(){var r=oldOpen.apply(this,arguments);requestAnimationFrame(function(){resetCheckoutTop();setTimeout(resetCheckoutTop,60)});return r};
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(buildMenu,350)});
-  setTimeout(buildMenu,900);
+
+  /* V50 enfocaba Nombre a los 60 ms y el navegador desplazaba el checkout hacia abajo.
+     En móvil preservamos la apertura original, pero quitamos ese autofocus y volvemos arriba. */
+  var originalOpenCheckout=window.openCheckout;
+  if(typeof originalOpenCheckout==='function'){
+    window.openCheckout=function(){
+      var r=originalOpenCheckout.apply(this,arguments);
+      if(mobile()){
+        setTimeout(resetCheckoutTop,75);
+        setTimeout(resetCheckoutTop,150);
+      }
+      return r;
+    };
+  }
+
+  function version(){
+    ['v103Version','v101Version','v99Version','v98Version','v97Version','v95Version'].forEach(function(id){var n=E(id);if(n)n.textContent='TOMAUNO FOTOS · V107'});
+  }
+
+  function init(){installMenu();markLightboxActions();version()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  setTimeout(init,400);
+  setTimeout(markLightboxActions,1000);
 })();
 </script>
-<!-- /TOMAUNO V106 -->
+
 </body>
 </html>
