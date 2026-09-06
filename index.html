@@ -1505,12 +1505,6 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   </select>
   <input id="adminSearch" type="search" autocomplete="off" data-lpignore="true" data-1p-ignore="true"
          placeholder="Buscar por cliente, celular, evento o estado..." oninput="renderAdminOrders()">
-  <div id="v97ChannelTabs" class="v97-channel-tabs">
-    <button type="button" data-v97channel="" class="active">TODOS</button>
-    <button type="button" data-v97channel="MP">MERCADO PAGO</button>
-    <button type="button" data-v97channel="MANUAL">MANUAL</button>
-  </div>
-
   <div id="v70AdminTools">
     <button type="button" class="v70-tool" data-tip="Actualizar pedidos" onclick="loadAdminOrders(this)">
       <svg viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M18.5 9A7 7 0 1 0 19 15"/></svg>
@@ -1568,6 +1562,14 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 
 
     
+
+<div id="v98ChannelTabs" class="v98-channel-tabs">
+  <button type="button" data-v98channel="" class="active">TODOS <span id="v98CountAll">0</span></button>
+  <button type="button" data-v98channel="MP">MERCADO PAGO <span id="v98CountMP">0</span></button>
+  <button type="button" data-v98channel="MANUAL">MANUAL <span id="v98CountManual">0</span></button>
+</div>
+<div id="v98ChannelEmpty" class="v98-channel-empty"></div>
+
 <div id="v72AdminBar" class="v72-admin-bar">
   <button type="button" class="v72-btn" onclick="loadAdminOrders(this)" title="Actualizar pedidos">↻ <span>Actualizar</span></button>
   <button type="button" class="v72-btn" onclick="exportAdminCsv()" title="Exportar Excel / CSV">▦</button>
@@ -3301,6 +3303,7 @@ function attr(s) {
       <div class="free-field full">
         <label>CONCEPTO / SERVICIO</label>
         <input id="freeTicketConcept" type="text" tabindex="2" placeholder="Ej: Curso de Modelaje Nivel 1" autocomplete="off">
+        <div id="v100RecentConcepts" class="v100-recent-concepts" aria-label="Conceptos recientes"></div>
       </div>
       <div class="free-field full">
         <label>DESCRIPCIÓN / DETALLE</label>
@@ -10770,6 +10773,411 @@ window.addEventListener('load',function(){
 })();
 </script>
 <!-- /TOMAUNO V97 -->
+
+
+
+<!-- TOMAUNO V98 - CANALES FUERA DE ADMIN-TOOLS -->
+<style>
+#v97Version{display:none!important}
+#v95PaymentFilter,#v96ChannelTabs,#v96ChannelEmpty,#v97ChannelTabs{display:none!important}
+
+#v98Version{
+  position:fixed;right:8px;bottom:5px;z-index:45;color:#555;
+  font:700 8px Arial;letter-spacing:.08em;pointer-events:none
+}
+#modalAdmin #v98ChannelTabs{
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  align-items:center!important;
+  gap:6px!important;
+  flex-wrap:wrap!important;
+  margin:8px 0 6px!important;
+  padding:0!important;
+}
+#modalAdmin #v98ChannelTabs button{
+  display:inline-flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  height:34px!important;
+  min-width:0!important;
+  padding:0 13px!important;
+  border:1px solid #343438!important;
+  border-radius:999px!important;
+  background:#151517!important;
+  color:#999!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+  white-space:nowrap!important;
+  transition:.15s ease!important;
+}
+#modalAdmin #v98ChannelTabs button:hover{
+  color:#eee!important;
+  border-color:#555!important;
+}
+#modalAdmin #v98ChannelTabs button.active{
+  background:#e0000b!important;
+  border-color:#e0000b!important;
+  color:#fff!important;
+  box-shadow:0 0 14px rgba(224,0,11,.18)!important;
+}
+#modalAdmin #v98ChannelTabs button span{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:17px!important;
+  height:17px!important;
+  padding:0 4px!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.10)!important;
+  font-size:8px!important;
+  color:inherit!important;
+}
+#modalAdmin #v98ChannelEmpty{
+  display:none;
+  width:100%;
+  box-sizing:border-box;
+  margin:0 0 7px;
+  padding:9px 11px;
+  border:1px solid #2d2d31;
+  border-radius:10px;
+  background:#0b0b0c;
+  color:#777;
+  font-size:9px;
+}
+@media(max-width:700px){
+  #modalAdmin #v98ChannelTabs{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:5px!important;
+  }
+  #modalAdmin #v98ChannelTabs button{
+    width:100%!important;
+    padding:0 5px!important;
+    font-size:8px!important;
+  }
+}
+</style>
+
+<div id="v98Version">TOMAUNO FOTOS · V98</div>
+
+<script>
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+window.__v97ChannelFilter = window.__v97ChannelFilter || '';
+
+function isMP98(o){
+  return String(o&&o.canalPago||'').toUpperCase()==='MERCADOPAGO' ||
+         !!(o&&o.mpPaymentId) || !!(o&&o.mpPreferenceId);
+}
+function data98(){
+  try{return Array.isArray(window.adminOrdersData)?window.adminOrdersData:[]}
+  catch(e){return []}
+}
+function update98(){
+  var all=data98(),mp=0,manual=0;
+  all.forEach(function(o){isMP98(o)?mp++:manual++});
+
+  var a=E('v98CountAll'),m=E('v98CountMP'),x=E('v98CountManual');
+  if(a)a.textContent=all.length;
+  if(m)m.textContent=mp;
+  if(x)x.textContent=manual;
+
+  var tabs=E('v98ChannelTabs');
+  if(tabs){
+    tabs.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('active',String(b.dataset.v98channel||'')===String(window.__v97ChannelFilter||''));
+    });
+  }
+
+  var empty=E('v98ChannelEmpty');
+  if(empty){
+    var f=String(window.__v97ChannelFilter||'');
+    var n=f==='MP'?mp:(f==='MANUAL'?manual:all.length);
+    if(f && n===0){
+      empty.style.display='block';
+      empty.textContent=f==='MP'
+        ? 'No hay pedidos de Mercado Pago para el filtro actual.'
+        : 'No hay pedidos manuales para el filtro actual.';
+    }else{
+      empty.style.display='none';
+    }
+  }
+}
+
+function bind98(){
+  var tabs=E('v98ChannelTabs');if(!tabs)return;
+  tabs.querySelectorAll('button[data-v98channel]').forEach(function(b){
+    if(b.dataset.bound98==='1')return;
+    b.dataset.bound98='1';
+    b.onclick=function(){
+      window.__v97ChannelFilter=String(b.dataset.v98channel||'');
+
+      /* Neutralizar filtros V95/V96 */
+      var legacy=E('v95PaymentFilter');
+      if(legacy)legacy.value='';
+
+      update98();
+      if(typeof window.renderAdminOrders==='function')window.renderAdminOrders();
+      setTimeout(update98,30);
+    };
+  });
+  update98();
+}
+
+/* Después de cargar/actualizar pedidos, refrescar cantidades */
+var oldLoad98=window.loadAdminOrders;
+if(typeof oldLoad98==='function'&&!oldLoad98.__v98){
+  var wrapped=async function(){
+    var r=await oldLoad98.apply(this,arguments);
+    setTimeout(function(){bind98();update98()},40);
+    return r;
+  };
+  wrapped.__v98=true;
+  window.loadAdminOrders=wrapped;
+}
+
+var oldRender98=window.renderAdminOrders;
+if(typeof oldRender98==='function'&&!oldRender98.__v98){
+  var wrappedRender=function(){
+    var r=oldRender98.apply(this,arguments);
+    setTimeout(update98,20);
+    return r;
+  };
+  wrappedRender.__v98=true;
+  window.renderAdminOrders=wrappedRender;
+}
+
+window.addEventListener('DOMContentLoaded',bind98);
+window.addEventListener('load',function(){setTimeout(function(){bind98();update98()},350)});
+})();
+</script>
+<!-- /TOMAUNO V98 -->
+
+
+
+<!-- TOMAUNO V99 - OCULTAR / MOSTRAR PADRES -->
+<style>
+#v98Version{display:none!important}
+#v99Version{position:fixed;right:8px;bottom:5px;z-index:45;color:#555;font:700 8px Arial;letter-spacing:.08em;pointer-events:none}
+.v91-parent{position:relative!important}
+.v99-parent-visibility{
+ position:absolute!important;right:10px!important;top:10px!important;z-index:90!important;
+ height:28px!important;padding:0 9px!important;border-radius:999px!important;
+ border:1px solid #3b3b40!important;background:#111!important;color:#aaa!important;
+ font-size:8px!important;font-weight:900!important;cursor:pointer!important
+}
+.v99-parent-visibility.hidden{border-color:#e0000b!important;background:rgba(224,0,11,.12)!important;color:#ff6870!important}
+.v91-parent.v99-hidden-parent{opacity:.48!important;filter:saturate(.45)!important}
+.v91-parent.v99-hidden-parent:after{
+ content:"OCULTO";position:absolute;left:12px;bottom:9px;color:#ff6269;
+ font-size:8px;font-weight:1000;letter-spacing:.12em
+}
+</style>
+<div id="v99Version">TOMAUNO FOTOS · V99</div>
+<script>
+(function(){
+'use strict';
+function M(){return window.__v91Model||null}
+function visible99(g){var m=M(),x=m&&m.meta?m.meta[g]||{}:{};return x.visible!==false}
+
+function decorate99(){
+ var m=M();if(!m)return;
+ document.querySelectorAll('.v91-parent[data-v91parent]').forEach(function(card){
+   var g=String(card.getAttribute('data-v91parent')||''),vis=visible99(g);
+
+   /* Público: padre oculto desaparece; Admin: queda visible atenuado para recuperarlo. */
+   if(!m.admin && !vis){card.remove();return}
+
+   card.classList.toggle('v99-hidden-parent',!vis);
+   if(!m.admin)return;
+
+   var b=card.querySelector('.v99-parent-visibility');
+   if(!b){
+     b=document.createElement('button');
+     b.type='button';
+     b.className='v99-parent-visibility';
+     b.onclick=async function(e){
+       e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+       var next=!visible99(g);
+       if(typeof toggleL==='function')toggleL(true,next?'MOSTRANDO EVENTO…':'OCULTANDO EVENTO…');
+       try{
+         var r=await apiPost({action:'setAlbumGroupVisibility',pin:'3233',group:g,visible:next});
+         if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo cambiar la visibilidad');
+         if(!m.meta[g])m.meta[g]={};
+         m.meta[g].visible=next;
+         if(typeof window.v91Render==='function')window.v91Render();
+         setTimeout(decorate99,25);
+       }catch(err){
+         if(window.luxAlert)luxAlert('ERROR',err.message||String(err));
+       }finally{
+         if(typeof toggleL==='function')toggleL(false);
+       }
+     };
+     card.appendChild(b);
+   }
+   b.textContent=vis?'👁 VISIBLE':'⊘ OCULTO';
+   b.classList.toggle('hidden',!vis);
+   b.title=vis?'Ocultar este evento de la portada pública':'Volver a mostrar este evento';
+ });
+}
+
+/* Render público y Admin ya reciben visible desde albumGroups. */
+var oldRender=window.v91Render;
+if(typeof oldRender==='function'&&!oldRender.__v99){
+ var w=function(){var r=oldRender.apply(this,arguments);setTimeout(decorate99,20);return r};
+ w.__v99=true;window.v91Render=w;
+}
+
+var mo=new MutationObserver(function(){
+ clearTimeout(window.__v99mut);
+ window.__v99mut=setTimeout(decorate99,25);
+});
+window.addEventListener('DOMContentLoaded',function(){
+ var l=document.getElementById('eventList');if(l)mo.observe(l,{childList:true,subtree:true});
+});
+window.addEventListener('load',function(){setTimeout(decorate99,450)});
+})();
+</script>
+<!-- /TOMAUNO V99 -->
+
+
+
+<!-- TOMAUNO V100 - TICKET EN SHEETS + CONCEPTOS RECIENTES -->
+<style>
+#v99Version{display:none!important}
+#v100Version{position:fixed;right:8px;bottom:5px;z-index:45;color:#555;font:700 8px Arial;letter-spacing:.08em;pointer-events:none}
+.v100-recent-concepts{
+  display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;min-height:0
+}
+.v100-recent-concepts:empty{display:none}
+.v100-recent-concepts button{
+  max-width:100%;height:27px;padding:0 9px;border-radius:999px;
+  border:1px solid #d6d6d6;background:#f7f7f7;color:#555;
+  font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis
+}
+.v100-recent-concepts button:hover{border-color:#e0000b;color:#b00008;background:#fff}
+.v100-recent-label{width:100%;font-size:9px;font-weight:900;color:#999;letter-spacing:.08em;margin-bottom:1px}
+</style>
+<div id="v100Version">TOMAUNO FOTOS · V100</div>
+<script>
+(function(){
+'use strict';
+var KEY='TOMAUNO_FREE_TICKET_CONCEPTS_V100';
+var MAX=12;
+var saving=false;
+
+function E(id){return document.getElementById(id)}
+function readRecent(){
+  try{
+    var a=JSON.parse(localStorage.getItem(KEY)||'[]');
+    return Array.isArray(a)?a.filter(Boolean).slice(0,MAX):[];
+  }catch(e){return []}
+}
+function writeRecent(concept){
+  concept=String(concept||'').trim();if(!concept)return;
+  var a=readRecent().filter(function(x){return String(x).toLowerCase()!==concept.toLowerCase()});
+  a.unshift(concept);
+  try{localStorage.setItem(KEY,JSON.stringify(a.slice(0,MAX)))}catch(e){}
+  renderRecent();
+}
+function renderRecent(filter){
+  var box=E('v100RecentConcepts');if(!box)return;
+  var q=String(filter||'').trim().toLowerCase();
+  var a=readRecent().filter(function(x){return !q || x.toLowerCase().indexOf(q)>-1}).slice(0,6);
+  box.innerHTML='';
+  if(!a.length)return;
+  var lab=document.createElement('div');lab.className='v100-recent-label';lab.textContent=q?'COINCIDENCIAS':'RECIENTES';
+  box.appendChild(lab);
+  a.forEach(function(x){
+    var b=document.createElement('button');b.type='button';b.textContent=x;b.title=x;
+    b.onclick=function(){
+      var inp=E('freeTicketConcept');if(!inp)return;
+      inp.value=x;
+      inp.dispatchEvent(new Event('input',{bubbles:true}));
+      inp.focus();
+      renderRecent(x);
+    };
+    box.appendChild(b);
+  });
+}
+function ticketData(){
+  var o=window.__ticketOrder||{};
+  return {
+    action:'saveFreeTicket',
+    pin:'1234',
+    cliente:String(o.cliente||'').trim(),
+    concepto:String(o.tipo||'').trim(),
+    descripcion:String(o.descripcion||'').trim(),
+    fechaTicket:String(o.fechaTexto||'').trim(),
+    importe:Number(o.total||0),
+    estado:String(o.pago||'PENDIENTE')
+  };
+}
+async function registerOnce(){
+  var modal=E('ticketModal');
+  if(!modal || !modal.classList.contains('is-free-ticket'))return;
+  if(window.__v100TicketSaved || saving)return;
+  var d=ticketData();
+  if(!d.concepto || d.concepto==='Servicio')return;
+  saving=true;
+  try{
+    var r=await apiPost(d);
+    if(r&&r.success!==false){
+      window.__v100TicketSaved=true;
+      window.__v100TicketNumber=r.ticket||'';
+      writeRecent(d.concepto);
+      if(typeof miniToast==='function')miniToast('Ticket registrado en historial.');
+    }
+  }catch(err){
+    if(typeof miniToast==='function')miniToast('Ticket generado, pero no se pudo guardar el historial.');
+  }finally{saving=false}
+}
+
+/* Cada apertura es un ticket nuevo. No agregamos campos ni pasos. */
+var oldOpen=window.openFreeTicket;
+if(typeof oldOpen==='function'&&!oldOpen.__v100){
+  var w=function(){
+    window.__v100TicketSaved=false;
+    window.__v100TicketNumber='';
+    var r=oldOpen.apply(this,arguments);
+    setTimeout(function(){renderRecent();},20);
+    return r;
+  };
+  w.__v100=true;window.openFreeTicket=w;
+}
+
+var concept=E('freeTicketConcept');
+if(concept){
+  concept.addEventListener('input',function(){renderRecent(this.value)});
+  concept.addEventListener('focus',function(){renderRecent(this.value)});
+}
+
+/* Registrar al primer acto real de emisión: copiar, descargar o imprimir.
+   No bloquea la acción existente y evita duplicados en la misma apertura. */
+['copyTicketPng','downloadTicketPng','printCurrentTicket'].forEach(function(name){
+  var old=window[name];
+  if(typeof old!=='function' || old.__v100)return;
+  var w=function(){
+    var args=arguments,ctx=this;
+    registerOnce();
+    return old.apply(ctx,args);
+  };
+  w.__v100=true;window[name]=w;
+});
+
+window.addEventListener('load',function(){setTimeout(renderRecent,300)});
+})();
+</script>
+<!-- /TOMAUNO V100 -->
 
 </body>
 </html>
