@@ -11969,7 +11969,7 @@ if(cb&&!cb.dataset.v103){
 <!-- /TOMAUNO V103 -->
 
 
-<!-- TOMAUNO V105 - BARRA ADMIN COMPACTA / FIX TANDAS -->
+<!-- TOMAUNO V106 - BARRA ADMIN COMPACTA / FIX TANDAS -->
 <style>
 #v103Version{display:none!important}
 #v104Version{
@@ -11997,14 +11997,14 @@ if(cb&&!cb.dataset.v103){
   #v104BatchActions button{width:42px;height:42px;min-width:42px}
 }
 </style>
-<div id="v104Version">TOMAUNO FOTOS · V105</div>
+<div id="v104Version">TOMAUNO FOTOS · V106</div>
 <datalist id="v104Groups"></datalist>
 
 <script>
 (function(){
 'use strict';
-if(window.__TOMAUNO_V105__)return;
-window.__TOMAUNO_V105__=true;
+if(window.__TOMAUNO_V106__)return;
+window.__TOMAUNO_V106__=true;
 
 function E104(id){return document.getElementById(id)}
 function model104(){
@@ -12103,7 +12103,7 @@ async function visibility104(visible){
 
 /* V93 consume el click de los checks con stopImmediatePropagation.
    Por eso V103 no podía enterarse y sus botones quedaban deshabilitados.
-   En V105 nos enganchamos al render real: cada selección redibuja y luego sincronizamos. */
+   En V106 nos enganchamos al render real: cada selección redibuja y luego sincronizamos. */
 var originalRender104=window.v91Render;
 if(typeof originalRender104==='function'&&!originalRender104.__v104){
   var wrapped=function(){
@@ -12118,10 +12118,10 @@ setTimeout(install104,100);
 window.addEventListener('load',function(){setTimeout(install104,350)});
 })();
 </script>
-<!-- /TOMAUNO V105 -->
+<!-- /TOMAUNO V106 -->
 
 
-<!-- TOMAUNO V105 - COMPROBANTE MP -->
+<!-- TOMAUNO V106 - COMPROBANTE MP -->
 <style>
 .t105-card{max-width:760px!important}.t105-receipt{margin:16px 0;padding:16px;border:1px solid rgba(212,175,55,.55);border-radius:16px;background:linear-gradient(145deg,#151515,#080808);text-align:left}.t105-ok{font-size:12px;font-weight:800;letter-spacing:.8px;color:#7dff9b;margin-bottom:12px;text-align:center}.t105-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.t105-grid>div{background:#050505;border:1px solid #252525;border-radius:10px;padding:10px}.t105-grid small{display:block;color:#888;font-size:9px;letter-spacing:1px;margin-bottom:4px}.t105-grid b{font-size:12px;overflow-wrap:anywhere}.t105-keep{margin-top:12px;color:#aaa;font-size:10px;line-height:1.45;text-align:center}.v95-mp-line{border-radius:8px}.v95-mp-line:has(*){}@media(max-width:560px){.t105-grid{grid-template-columns:1fr}.mp54-foot{gap:8px}.mp54-foot .mp54-btn{width:100%;justify-content:center}}
 </style>
@@ -12140,6 +12140,75 @@ window.addEventListener('load',function(){setTimeout(install104,350)});
  };
 })();
 </script>
-<!-- /TOMAUNO V105 -->
+<!-- /TOMAUNO V106 -->
+
+<!-- TOMAUNO V106 MOBILE / PORTADA FINAL -->
+<style id="tomauno-v106-mobile-css">
+@media(max-width:760px){
+  /* Portada: acciones secundarias compactas en un solo menú. */
+  #view-events .tomauno-top-actions{justify-content:flex-end!important;margin:0 0 10px!important;gap:0!important;position:relative!important}
+  #view-events .tomauno-top-actions>button{display:none!important}
+  #view-events .tomauno-top-actions #v106MenuBtn{display:flex!important;width:44px!important;height:42px!important;min-width:44px!important;padding:0!important;margin:0!important;border-radius:12px!important;align-items:center!important;justify-content:center!important;font-size:22px!important;background:#111!important;border:1px solid #333!important;color:#fff!important}
+  #v106MobileMenu{position:absolute!important;right:0!important;top:48px!important;z-index:180000!important;width:min(82vw,290px)!important;background:#090909!important;border:1px solid #333!important;border-radius:15px!important;padding:7px!important;box-shadow:0 16px 42px rgba(0,0,0,.7)!important}
+  #v106MobileMenu button{display:flex!important;width:100%!important;min-height:42px!important;margin:0!important;padding:9px 11px!important;border:0!important;border-bottom:1px solid #1e1e1e!important;border-radius:8px!important;background:transparent!important;color:#eee!important;font-size:11px!important;text-align:left!important;align-items:center!important;gap:8px!important}
+  #v106MobileMenu button:last-child{border-bottom:0!important}
+
+  /* Lightbox: que la foto vuelva a ser la protagonista. */
+  #lightbox{padding-bottom:10px!important;overflow-y:auto!important}
+  #lightbox>div[style*="margin-top:20px"]{gap:7px!important;margin-top:10px!important;flex-wrap:wrap!important;justify-content:center!important;width:96vw!important}
+  #lightbox>div[style*="margin-top:20px"] .btn-order{min-height:42px!important;width:auto!important;flex:1 1 42%!important;max-width:48%!important;padding:8px 7px!important;margin:0!important;font-size:10px!important;line-height:1.08!important;border-radius:13px!important}
+  #lightbox #zoomConfirmBtn{flex-basis:92%!important;max-width:92%!important}
+  #v101CoreoBtn{font-size:9px!important;padding:7px 5px!important}
+  #v101CoreoCount{font-size:10px!important;padding:5px 9px!important;margin:3px auto!important}
+  #zoomCounter{bottom:122px!important;padding:6px 10px!important;font-size:11px!important}
+
+  /* Pedido: siempre comienza arriba; primero se lee el resumen y luego los datos. */
+  #modalCheckout{align-items:flex-start!important;overflow:hidden!important}
+  #modalCheckout .modal-box{height:calc(100dvh - 10px)!important;max-height:calc(100dvh - 10px)!important;overflow:hidden!important}
+  #modalCheckout .t50-body{scroll-behavior:auto!important;padding-bottom:6px!important}
+  #modalCheckout .t50-price{order:0!important}
+  #modalCheckout #orderSummary{order:1!important;max-height:none!important;min-height:170px!important;overflow:visible!important}
+  #modalCheckout .t50-photo-list{max-height:240px!important;overflow:auto!important}
+  #modalCheckout .t50-right{margin-top:10px!important}
+  #modalCheckout #extrasBox{max-height:none!important}
+  #modalCheckout .extra-row{font-size:12px!important;gap:7px!important}
+  #modalCheckout .extra-controls{gap:7px!important}
+  #modalCheckout .extra-controls button{width:34px!important;height:34px!important;min-width:34px!important}
+  #modalCheckout .t50-actions{grid-template-columns:1fr 1fr 1fr!important;gap:5px!important}
+  #modalCheckout .t50-actions .btn-order{height:36px!important;font-size:8px!important;padding:5px 3px!important;border-radius:10px!important}
+  #modalCheckout .t54-mp-pay,#modalCheckout .t54-manual{grid-column:1/-1!important;height:39px!important;font-size:9px!important}
+}
+</style>
+<script id="tomauno-v106-mobile-js">
+(function(){
+  'use strict';
+  window.__TOMAUNO_V106__=true;
+  function q(id){return document.getElementById(id)}
+  function buildMenu(){
+    var row=document.querySelector('#view-events .tomauno-top-actions');
+    if(!row || q('v106MenuBtn')) return;
+    var menu=document.createElement('div'); menu.id='v106MobileMenu'; menu.style.display='none';
+    function item(html,fn){var b=document.createElement('button');b.type='button';b.innerHTML=html;b.onclick=function(){menu.style.display='none';fn();};menu.appendChild(b)}
+    item('📍 Contacto y ubicación',function(){var m=q('modalContact');if(m)m.style.display='flex'});
+    item('🔒 Descargar pedido',function(){if(typeof window.openDirectDownloadModal==='function')window.openDirectDownloadModal()});
+    item('🛡️ Familia y privacidad',function(){var m=q('modalFamilyPrivacy');if(m)m.style.display='flex'});
+    item('❓ Ayuda',function(){var m=q('modalHelpTomauno');if(m)m.style.display='flex'});
+    var btn=document.createElement('button');btn.id='v106MenuBtn';btn.type='button';btn.title='Más opciones';btn.setAttribute('aria-label','Más opciones');btn.innerHTML='☰';
+    btn.onclick=function(e){e.stopPropagation();menu.style.display=menu.style.display==='none'?'block':'none'};
+    row.appendChild(btn);row.appendChild(menu);
+    document.addEventListener('click',function(e){if(menu.style.display!=='none'&&!menu.contains(e.target)&&e.target!==btn)menu.style.display='none'});
+  }
+  function resetCheckoutTop(){
+    var m=q('modalCheckout'), body=m&&m.querySelector('.t50-body');
+    if(!m || m.style.display!=='flex') return;
+    try{m.scrollTop=0;if(body)body.scrollTop=0;var box=m.querySelector('.modal-box');if(box)box.scrollTop=0;}catch(e){}
+  }
+  var oldOpen=window.openCheckout;
+  if(typeof oldOpen==='function') window.openCheckout=function(){var r=oldOpen.apply(this,arguments);requestAnimationFrame(function(){resetCheckoutTop();setTimeout(resetCheckoutTop,60)});return r};
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(buildMenu,350)});
+  setTimeout(buildMenu,900);
+})();
+</script>
+<!-- /TOMAUNO V106 -->
 </body>
 </html>
