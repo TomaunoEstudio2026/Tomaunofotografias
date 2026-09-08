@@ -1381,17 +1381,23 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 </header>
 
 <div class="container" id="view-events">
-  <div style="text-align:center; margin-bottom:20px">
-    <button class="btn-order" style="background:#111; border:1px solid #333; color:var(--oro)" onclick="document.getElementById('modalContact').style.display='flex'" ><i class="fa fa-id-badge"></i> CONTACTO Y UBICACIÓN</button>
-    <button class="btn-order" style="background:#111; border:1px solid #333; color:var(--oro); margin-left:8px" onclick="openDirectDownloadModal()"><i class="fa fa-lock"></i> DESCARGAR PEDIDO</button>
-  </div>
+  <nav id="tomaunoMainNav" class="tomauno-top-actions" aria-label="Accesos rápidos">
+    <button class="btn-order" type="button" onclick="document.getElementById('modalContact').style.display='flex'" title="Contacto y ubicación"><i class="fa fa-id-badge"></i><span>Contacto</span></button>
+    <button class="btn-order" type="button" onclick="openDirectDownloadModal()" title="Descargar un pedido"><i class="fa fa-lock"></i><span>Mi pedido</span></button>
+  </nav>
+  <section class="v109-album-hero17" aria-label="Galerías Tomauno">
+    <span class="v109-hero-kicker17">GALERÍAS TOMAUNO</span>
+    <h1>Tus fotos. Tu elección.</h1>
+    <p>Entrá a tu álbum, recorré las fotografías y elegí a tu manera.</p>
+    <div class="v109-hero-pills17" aria-hidden="true"><span>SELECCIONÁ</span><i></i><span>ENCARGÁ</span><i></i><span>REVIVÍ</span></div>
+  </section>
   <h2>Álbumes Disponibles</h2>
   <div id="eventList" class="event-grid"></div>
 </div>
 
 <div class="container" id="view-gallery" style="display:none">
   <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center">
-    <button onclick="location.reload()" style="background:#222; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer">VOLVER</button>
+    <button onclick="v108GoHome()" style="background:#222; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer">VOLVER</button>
     <button onclick="openDownloadCodeModal()" style="background:#111; color:var(--oro); border:1px solid #333; padding:8px 15px; border-radius:8px; cursor:pointer">🔒 DESCARGAR</button>
     <span id="currentEventTitle" style="color:var(--rojo); font-weight:bold; font-size:12px"></span>
   </div>
@@ -1408,7 +1414,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
         <h4 style="color:var(--oro)">DESCARGA HQ LISTA:</h4>
         <div id="downloadList"></div>
       </div>
-      <button class="btn-order" style="margin-top:20px" onclick="location.reload()">VOLVER AL INICIO</button>
+      <button class="btn-order" style="margin-top:20px" onclick="v108GoHome()">VOLVER AL INICIO</button>
     </div>
 </div>
 
@@ -1427,6 +1433,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   <i id="arrow-r" class="fa fa-chevron-right nav-arrow" style="right:10px" onclick="nextPhoto()"></i>
   <div style="margin-top:20px; display:flex; gap:10px; z-index:10000">
     <button id="zoomSelectBtn" class="btn-order" style="background:#fff; color:#000">SELECCIONAR</button>
+    <button id="v109ZoomPrint10" type="button" class="btn-order" style="display:none" onclick="if(window.v109OpenCurrentPrint)window.v109OpenCurrentPrint(event)">🖨 IMPRIMIR</button>
     <button id="zoomConfirmBtn" class="btn-order" onclick="forceConfirmSelection()">CONFIRMAR PEDIDO</button>
     <button class="btn-order" style="background:#222" onclick="closeZoom()">GALERIA</button>
   </div>
@@ -1614,7 +1621,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   <div class="modal-box" style="max-width:760px">
     <h3 style="color:var(--rojo); margin-top:0">¿QUÉ QUERÉS ENCARGAR?</h3>
     <p style="font-size:11px;color:#aaa;line-height:1.5">
-      Elegí primero el tipo de pedido. Si necesitás digitales e impresiones, hacé un pedido y después volvés a entrar para hacer el otro.
+      Elegí una opción para continuar. Debajo vas a ver los precios disponibles para este álbum.
     </p>
     <div id="modeOptions" class="mode-grid"></div>
     <button onclick="document.getElementById('modalMode').style.display='none'" style="background:none; border:none; color:#555; margin-top:14px; cursor:pointer">Cerrar</button>
@@ -1982,7 +1989,7 @@ function openZoom(idx) {
     var btn = document.getElementById('zoomSelectBtn');
     var isSel = !!selectedPhotos.find(function(x){ return x.id === p.id; });
 
-    btn.innerText = isSel ? "✔ FOTO SELECCIONADA - QUITAR" : "SELECCIONAR";
+    btn.innerText = isSel ? "✓ SELECCIONADA" : "SELECCIONAR";
     btn.style.background = "var(--rojo)";
 
     var badge = document.getElementById('zoomSelectedBadge');
@@ -2139,19 +2146,48 @@ function openCheckout() {
     return out;
   }
 
+  function normalizeProductLabel110(label) {
+    return String(label || '').trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/\s+/g,' ');
+  }
+  function technicalProduct110(label) {
+    var n=normalizeProductLabel110(label);
+    return !n || /(^|\b)(sinlogo|libre_libre|libre|condescarga)(\b|$)/i.test(n);
+  }
+  function productFamily110(label) {
+    var n=normalizeProductLabel110(label);
+    if(/descarga|digital/.test(n) && !/coreografia|sesion|pack/.test(n)) return 'DIGITAL';
+    if(/impres/.test(n) && /15\s*x?\s*21/.test(n)) return 'PRINT15X21';
+    if(/^seleccion/.test(n)) return 'SELECCION';
+    if(/album completo/.test(n)) return 'FULL';
+    return 'CUSTOM:'+n;
+  }
+  function sanitizeProducts110(list) {
+    var out=[], seen={};
+    (list||[]).forEach(function(p){
+      if(!p || technicalProduct110(p.label)) return;
+      var fam=productFamily110(p.label);
+      if(seen[fam]) return;
+      seen[fam]=1; out.push(p);
+    });
+    return out;
+  }
   function getProductsForEvent() {
     var rawName = activeEvent && (activeEvent.rawName || activeEvent.folderName || activeEvent.name || activeEvent.configName || activeEvent.displayName) || '';
-    var parsedExtras = parseExtraProductsFromFolderName(rawName);
+    var parsedExtras = sanitizeProducts110(parseExtraProductsFromFolderName(rawName));
 
     if(activeEvent && Array.isArray(activeEvent.products) && activeEvent.products.length) {
-      var products = activeEvent.products.slice();
-      // Si el backend todavía no mandó extras pero sí mandó el nombre crudo de carpeta, los agregamos desde el HTML.
+      var products = sanitizeProducts110(activeEvent.products.slice());
       if(parsedExtras.length) {
-        var existing = {};
-        products.forEach(function(p){ if(p && p.label) existing[p.label] = true; });
-        parsedExtras.forEach(function(p){ if(!existing[p.label]) products.push(p); });
+        var existingFamilies = {};
+        products.forEach(function(p){ existingFamilies[productFamily110(p.label)] = true; });
+        parsedExtras.forEach(function(p){
+          var fam=productFamily110(p.label);
+          if(!existingFamilies[fam]) { products.push(p); existingFamilies[fam]=true; }
+        });
       }
-      return products;
+      return sanitizeProducts110(products);
     }
 
     var fallback = [];
@@ -2163,7 +2199,7 @@ function openCheckout() {
       fallback.push({ label:"PACK ÁLBUM COMPLETO", price:Number(activeEvent.pFull) === -1 ? 0 : Number(activeEvent.pFull), perPhoto:false, includesDigital:true, selectionOnly:false, isFullAlbum:true });
     }
     parsedExtras.forEach(function(p){ fallback.push(p); });
-    return fallback;
+    return sanitizeProducts110(fallback);
   }
 
 function populateOrderTypes(preferFull) {
@@ -2280,7 +2316,7 @@ function updateFinalPrice() {
         if(vs) vs.style.display = 'none';
       };
       if(close) close.onclick = function(){ if(vs) vs.style.display = 'none'; };
-      if(home) home.onclick = function(){ location.reload(); };
+      if(home) home.onclick = function(){ v108GoHome(); };
     }
   }
 
@@ -3592,7 +3628,7 @@ function attr(s) {
   function addTopButtons(){
     var cont = qs('view-events');
     if(!cont || qs('btnFamilyPrivacy')) return;
-    var first = cont.querySelector('div[style*="text-align:center"]') || cont.firstElementChild;
+    var first = qs('tomaunoMainNav') || cont.querySelector('.tomauno-top-actions') || cont.firstElementChild;
     if(first){
       first.classList.add('tomauno-top-actions');
       var b1 = document.createElement('button');
@@ -3609,6 +3645,13 @@ function attr(s) {
       b2.onclick = function(){ qs('modalHelpTomauno').style.display = 'flex'; };
       first.appendChild(b1);
       first.appendChild(b2);
+      if(!qs('btnPhotographersInfo')){
+        var b3=document.createElement('a');
+        b3.id='btnPhotographersInfo'; b3.className='btn-order tomauno-nav-link';
+        b3.href='/preguntasfrecuentes.html'; b3.target='_blank'; b3.rel='noopener';
+        b3.title='Información para fotógrafos'; b3.innerHTML='📷 <span>Fotógrafos</span>';
+        first.appendChild(b3);
+      }
     }
   }
 
@@ -3936,7 +3979,9 @@ function attr(s) {
 
   function getMainProducts(){
     var list = (typeof getProductsForEvent === 'function') ? getProductsForEvent() : [];
-    return list.filter(function(p){ return p && !p.quantityExtra && !p.extraProduct; });
+    var seen={};
+    function cat(p){var s=norm(p&&p.label||'');if(/sinlogo|libre_libre|condescarga|^id[:#]/.test(s))return 'RESERVADO';if(s.indexOf('impres')>-1)return 'PRINT';if(s.indexOf('digital')>-1||s.indexOf('descarga')>-1)return 'DIGITAL';if(s.indexOf('seleccion')>-1||s.indexOf('fotolibro')>-1||s.indexOf('edicion')>-1)return 'SELECT';if(s.indexOf('pack album')>-1||s.indexOf('album completo')>-1)return 'FULL';return 'OTHER:'+s}
+    return list.filter(function(p){if(!p||p.quantityExtra||p.extraProduct)return false;var c=cat(p);if(c==='RESERVADO'||seen[c])return false;seen[c]=1;return true;});
   }
   window.openModeModal = function(){
     var products = getMainProducts();
@@ -9116,6 +9161,8 @@ body.v91-album-admin #v91GroupBar{display:flex}
 <div id="v91Version">TOMAUNO FOTOS · V91</div>
 <div id="v91Working" class="v91-working"></div>
 <div id="v91GroupBar">
+  <button id="v109CreateInline" type="button" class="primary" onclick="if(window.v109Open)window.v109Open()" title="Crear un álbum nuevo">CREAR ÁLBUM</button>
+  <button id="v109PhotographersInline" type="button" onclick="window.open('/preguntasfrecuentes.html','_blank')" title="Información para fotógrafos">📷 FOTÓGRAFOS</button>
   <span class="count" id="v91Count">0 seleccionados</span>
   <input id="v91GroupName" type="text" autocomplete="off" placeholder="Nombre del evento / grupo">
   <button id="v91GroupBtn" type="button" class="primary">AGRUPAR</button>
@@ -9184,7 +9231,8 @@ function albumCard(a,admin){
     (hidden?'<span class="v64-hidden-badge" style="left:47px">OCULTO</span>':'')+
     (admin?'<div class="v64-album-tools" onclick="event.stopPropagation()">'+
       '<button type="button" data-v91eye="'+esc(id)+'" title="'+(hidden?'Mostrar álbum':'Ocultar álbum')+'">'+(hidden?'◉':'◌')+'</button>'+
-      '<button type="button" data-v91key="'+esc(id)+'" title="Cambiar clave">⌁</button>'+
+      '<button type="button" data-v91key="'+esc(id)+'" title="Ver / cambiar clave">⌁</button>'+
+      '<button type="button" data-v109gear="'+esc(id)+'" title="Configurar álbum">⚙</button>'+
     '</div>':'')+
     '<i class="fa fa-camera-retro"></i>'+
     '<h3 '+(admin?'class="v64-editable-title" data-v91title="'+esc(id)+'"':'')+'>'+esc(a.displayName||'')+'</h3>'+
@@ -9195,7 +9243,7 @@ function renderRoot(){
   var list=E('eventList');if(!list)return;
   M.parent='';
   var groups=groupMap(),out=[];
-  if(M.admin)out.push('<div class="v91-admin-note"><b>Administración de álbumes</b><br>Los álbumes que ya están agrupados se administran entrando en su padre. Acá se muestran los padres y los álbumes sueltos.</div>');
+
   Object.keys(groups).sort().forEach(function(g){out.push(parentCard(g,groups[g],M.admin))});
   M.all.filter(function(a){return !String(a.group||'').trim() && (M.admin||isVisible(a))}).forEach(function(a){out.push(albumCard(a,M.admin))});
   list.innerHTML=out.join('')||'<p>Sin álbumes disponibles.</p>';
@@ -9257,6 +9305,9 @@ function bind(){
         if(window.luxAlert)luxAlert('ERROR',e.message||String(e))
       }
     }
+  });
+  document.querySelectorAll('[data-v109gear]').forEach(function(b){
+    b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();if(window.v109Open)window.v109Open(b.dataset.v109gear)}
   });
   document.querySelectorAll('[data-v91key]').forEach(function(b){
     b.onmouseenter=function(){
@@ -12142,7 +12193,7 @@ window.addEventListener('load',function(){setTimeout(install104,350)});
 </script>
 <!-- /TOMAUNO V105 -->
 
-<!-- TOMAUNO V107 · MOBILE UX CLEAN · BASE V105 -->
+<!-- TOMAUNO V108 · MOBILE UX CLEAN · BASE V105 -->
 <style id="tomauno-v107-mobile-css">
 /* Escritorio queda intacto. Menú compacto aparece solamente en celular. */
 #v107MobileMenuWrap{display:none}
@@ -12253,8 +12304,8 @@ window.addEventListener('load',function(){setTimeout(install104,350)});
 <script id="tomauno-v107-mobile-js">
 (function(){
   'use strict';
-  if(window.__TOMAUNO_V107__) return;
-  window.__TOMAUNO_V107__=true;
+  if(window.__TOMAUNO_V108__) return;
+  window.__TOMAUNO_V108__=true;
 
   function E(id){return document.getElementById(id)}
   function mobile(){return window.matchMedia && window.matchMedia('(max-width:700px)').matches}
@@ -12321,7 +12372,7 @@ window.addEventListener('load',function(){setTimeout(install104,350)});
   }
 
   function version(){
-    ['v103Version','v101Version','v99Version','v98Version','v97Version','v95Version'].forEach(function(id){var n=E(id);if(n)n.textContent='TOMAUNO FOTOS · V107'});
+    ['v103Version','v101Version','v99Version','v98Version','v97Version','v95Version'].forEach(function(id){var n=E(id);if(n)n.textContent='TOMAUNO FOTOS · V109'});
   }
 
   function init(){installMenu();markLightboxActions();version()}
@@ -12331,5 +12382,1146 @@ window.addEventListener('load',function(){setTimeout(install104,350)});
 })();
 </script>
 
+
+<!-- TOMAUNO V108 - ESTABILIDAD + CONFIGURACION DE ALBUM + EXTERNOS -->
+<style>
+#v108Version{position:fixed;right:8px;bottom:5px;z-index:45;color:#555;font:700 8px Arial;letter-spacing:.08em;pointer-events:none}
+.v108-gear{position:absolute!important;right:10px!important;top:10px!important;z-index:25!important;width:31px!important;height:31px!important;padding:0!important;border-radius:9px!important;background:#111!important;border:1px solid #555!important;color:#fff!important;font-size:15px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.v108-overlay{display:none;position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,.86);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:14px}.v108-overlay.open{display:flex}
+.v108-box{width:min(760px,96vw);max-height:92vh;overflow:auto;background:#0c0c0e;border:1px solid #3b3b40;border-radius:20px;padding:20px;color:#fff;box-shadow:0 24px 80px #000}
+.v108-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:16px}.v108-head h2{margin:0;font-size:19px}.v108-close{background:#18181b;border:1px solid #444;color:#fff;border-radius:10px;width:36px;height:36px;font-size:18px}
+.v108-section{border-top:1px solid #29292d;padding-top:14px;margin-top:14px}.v108-section h3{margin:0 0 10px;color:#ffcc48;font-size:11px;letter-spacing:.08em}.v108-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.v108-field{display:flex;flex-direction:column;gap:5px}.v108-field.full{grid-column:1/-1}.v108-field label{font-size:9px;color:#aaa;font-weight:900;letter-spacing:.05em}.v108-field input,.v108-field select,.v108-field textarea{background:#050506;border:1px solid #3c3c42;color:#fff;border-radius:10px;padding:11px;font:12px Arial;outline:none}.v108-field textarea{min-height:70px;resize:vertical}.v108-help{font-size:10px;color:#888;line-height:1.4}.v108-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:18px}.v108-actions button{border:0;border-radius:10px;padding:12px 16px;font-weight:900;font-size:10px;cursor:pointer}.v108-save{background:#e51b23;color:#fff}.v108-cancel{background:#222;color:#fff;border:1px solid #444!important}
+.v108-external-note{display:none;margin:10px 0;padding:11px;border:1px solid #66531e;background:#1d1809;border-radius:10px;color:#f4d36a;font-size:10px;line-height:1.4}
+body.v108-external-album .v108-external-note{display:block}
+.t54-mp-pay.v108-external,.v101-mp-services.v108-external{background:#333!important;color:#ddd!important;border:1px solid #666!important}
+.v108-neutral-brand{font-weight:900;letter-spacing:.12em;text-transform:uppercase}.v108-album-logo{max-height:42px;max-width:170px;object-fit:contain;display:none}
+@media(max-width:700px){.v108-grid{grid-template-columns:1fr}.v108-field.full{grid-column:auto}.v108-box{padding:15px;border-radius:15px}.v108-actions{position:sticky;bottom:-15px;background:#0c0c0e;padding:10px 0 15px}.v108-gear{width:29px!important;height:29px!important}}
+/* PIN/clave enmascarados sin type=password: evita que el navegador los trate como credenciales */
+input.v108-secret{-webkit-text-security:disc;text-security:disc}
+</style>
+<div id="v108Version">V109 FIX5</div>
+<div id="v108Config" class="v108-overlay" aria-hidden="true"><div class="v108-box">
+  <div class="v108-head"><div><h2>⚙ CONFIGURAR ÁLBUM</h2><div id="v108CfgAlbum" class="v108-help"></div></div><button class="v108-close" type="button" onclick="v108CloseConfig()">×</button></div>
+  <div class="v108-section"><h3>IDENTIDAD</h3><div class="v108-grid">
+    <div class="v108-field"><label>NOMBRE VISIBLE</label><input id="v108Title" autocomplete="off"></div>
+    <div class="v108-field"><label>FOTÓGRAFO / RESPONSABLE</label><input id="v108Photographer" autocomplete="off" placeholder="Ej.: Juan Pérez"></div>
+    <div class="v108-field full"><label>DESCRIPCIÓN</label><textarea id="v108Description" autocomplete="off"></textarea></div>
+    <div class="v108-field"><label>LOGO</label><select id="v108LogoMode"><option value="TOMAUNO">Tomauno</option><option value="NEUTRO">Neutro / sin autoría Tomauno</option><option value="PERSONALIZADO">Logo personalizado por URL</option></select></div>
+    <div class="v108-field"><label>URL DEL LOGO PERSONALIZADO</label><input id="v108LogoUrl" autocomplete="off" placeholder="https://..."></div>
+  </div></div>
+  <div class="v108-section"><h3>VENTA Y RESPONSABLE</h3><div class="v108-grid">
+    <div class="v108-field"><label>TIPO DE GESTIÓN</label><select id="v108Gestion"><option value="TOMAUNO">Tomauno</option><option value="EXTERNO">Fotógrafo externo</option></select></div>
+    <div class="v108-field"><label>WHATSAPP DE PEDIDOS</label><input id="v108Whatsapp" inputmode="numeric" autocomplete="off" placeholder="5493764..."></div>
+    <div class="v108-field"><label>FORMA DE PAGO</label><select id="v108Pago"><option value="TOMAUNO">Mercado Pago Tomauno verificado</option><option value="EXTERNO">Pago al fotógrafo / alias</option><option value="NINGUNO">Sin pago online</option></select></div>
+    <div class="v108-field"><label>ALIAS / CVU PARA PAGO EXTERNO</label><input id="v108Alias" autocomplete="off" placeholder="alias.del.fotografo"></div>
+    <div class="v108-field full"><div class="v108-help">En gestión EXTERNO no se genera clave de descarga Tomauno. El cliente envía su comprobante al WhatsApp del fotógrafo. El fotógrafo no necesita acceso a tu ADM.</div></div>
+  </div></div>
+  <div class="v108-section"><h3>PRECIOS</h3><div class="v108-grid">
+    <div class="v108-field"><label>FOTO DIGITAL</label><input id="v108PDigital" type="number" min="0" step="1"></div>
+    <div class="v108-field"><label>IMPRESIÓN</label><input id="v108PPrint" type="number" min="0" step="1"></div>
+    <div class="v108-field"><label>ÁLBUM COMPLETO</label><input id="v108PFull" type="number" min="0" step="1"></div>
+    <div class="v108-field"><label>CLAVE DEL ÁLBUM</label><input id="v108Pass" class="v108-secret" type="text" inputmode="numeric" autocomplete="off" name="album_code_setting"></div>
+  </div><div class="v108-help" style="margin-top:8px">Estos valores pisan la sintaxis de la carpeta para este álbum. Los productos adicionales existentes siguen siendo compatibles.</div></div>
+  <div class="v108-actions"><button class="v108-cancel" type="button" onclick="v108CloseConfig()">CANCELAR</button><button class="v108-save" type="button" onclick="v108SaveConfig()">GUARDAR CONFIGURACIÓN</button></div>
+</div></div>
+<script>
+(function(){
+'use strict';
+var cfgId108='',cfgAlbum108=null;
+function E(id){return document.getElementById(id)}
+function model(){return window.__TOMAUNO_V91_MODEL__||window.__v91Model||null}
+function currentAlbum108(){try{return (typeof activeEvent!=='undefined'&&activeEvent)?activeEvent:null}catch(e){return null}}
+
+/* 1) NAVEGACIÓN ÚNICA: nunca volver al render antiguo */
+window.v108GoHome=function(){
+  ['modalCheckout','modalMode','lightbox','view-success','modalAdmin'].forEach(function(id){var x=E(id);if(x)x.style.display='none'});
+  var g=E('view-gallery');if(g)g.style.display='none';
+  var h=E('view-home');if(h)h.style.display='block';
+  try{selectedPhotos=[];if(typeof updateFooter==='function')updateFooter()}catch(e){}
+  try{sessionStorage.removeItem('TOMAUNO_ADMIN_OK')}catch(e){}
+  document.body.classList.remove('v91-album-admin','v64-album-admin','v80-inside-group');
+  if(typeof window.loadEvents==='function')window.loadEvents();
+};
+function logout108(){
+  try{sessionStorage.removeItem('TOMAUNO_ADMIN_OK');sessionStorage.removeItem('TOMAUNO_TICKET_OK')}catch(e){}
+  var dock=E('v73AdminDock');if(dock)dock.style.display='none';
+  var menu=E('v74AdmMenu');if(menu)menu.style.display='none';
+  window.v108GoHome();
+  if(typeof miniToast==='function')miniToast('Sesión administrativa cerrada');
+}
+window.v77Logout=logout108;window.v71LogoutAdmin=logout108;window.v74Logout=logout108;
+
+/* 2) No ofrecer guardar contraseña: visualmente enmascarado, semánticamente no-password */
+function hardenSecrets108(root){
+  (root||document).querySelectorAll('input[type="password"],#adminPinInput,#inputPass,#v70KeyInput').forEach(function(n){
+    try{n.type='text'}catch(e){} n.classList.add('v108-secret');n.autocomplete='off';n.setAttribute('data-lpignore','true');n.setAttribute('data-1p-ignore','true');n.setAttribute('data-form-type','other');n.name='tomauno_code_'+Math.random().toString(36).slice(2);
+  });
+}
+
+/* 3) Configuración simple por álbum */
+window.v108OpenConfig=function(id){
+  var m=model();if(!m)return;cfgId108=String(id||'');cfgAlbum108=(m.all||[]).find(function(a){return String(a.bridgeId||'')===cfgId108})||null;if(!cfgAlbum108)return;
+  E('v108CfgAlbum').textContent=cfgAlbum108.displayName||'';E('v108Title').value=cfgAlbum108.displayName||'';E('v108Description').value=cfgAlbum108.description||'';E('v108Photographer').value=cfgAlbum108.fotografo||'';
+  E('v108Gestion').value=cfgAlbum108.gestion||'TOMAUNO';E('v108Whatsapp').value=cfgAlbum108.whatsappVentas||'';E('v108Pago').value=cfgAlbum108.pagoModo||'TOMAUNO';E('v108Alias').value=cfgAlbum108.aliasPago||'';
+  E('v108LogoMode').value=cfgAlbum108.logoModo||'TOMAUNO';E('v108LogoUrl').value=cfgAlbum108.logoUrl||'';E('v108PDigital').value=Number(cfgAlbum108.pDigital||0);E('v108PPrint').value=Number(cfgAlbum108.pPrint||0);E('v108PFull').value=Number(cfgAlbum108.pFull||0);E('v108Pass').value=cfgAlbum108.pass||'';
+  E('v108Config').classList.add('open');E('v108Config').setAttribute('aria-hidden','false');hardenSecrets108(E('v108Config'));
+};
+window.v108CloseConfig=function(){E('v108Config').classList.remove('open');E('v108Config').setAttribute('aria-hidden','true')};
+window.v108SaveConfig=async function(){
+  if(!cfgId108)return;var payload={action:'updateAlbumConfig',pin:'3233',bridgeId:cfgId108,title:E('v108Title').value.trim(),description:E('v108Description').value.trim(),pass:E('v108Pass').value.trim(),fotografo:E('v108Photographer').value.trim(),gestion:E('v108Gestion').value,whatsappVentas:E('v108Whatsapp').value.trim(),pagoModo:E('v108Pago').value,aliasPago:E('v108Alias').value.trim(),logoModo:E('v108LogoMode').value,logoUrl:E('v108LogoUrl').value.trim(),pDigital:E('v108PDigital').value,pPrint:E('v108PPrint').value,pFull:E('v108PFull').value};
+  if(payload.gestion==='EXTERNO'&&!payload.whatsappVentas){if(window.luxAlert)return luxAlert('FALTA WHATSAPP','Para un fotógrafo externo indicá el WhatsApp que recibirá los pedidos.');return}
+  if(typeof toggleL==='function')toggleL(true,'GUARDANDO CONFIGURACIÓN…');
+  try{var r=await apiPost(payload);if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');Object.assign(cfgAlbum108,{displayName:payload.title||cfgAlbum108.displayName,description:payload.description,pass:payload.pass,fotografo:payload.fotografo,gestion:payload.gestion,whatsappVentas:payload.whatsappVentas,pagoModo:payload.pagoModo,aliasPago:payload.aliasPago,logoModo:payload.logoModo,logoUrl:payload.logoUrl,pDigital:Number(payload.pDigital||0),pPrint:Number(payload.pPrint||0),pFull:Number(payload.pFull||0)});window.v108CloseConfig();if(typeof window.v91Render==='function')window.v91Render();if(typeof miniToast==='function')miniToast('Configuración guardada');}
+  catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e))}finally{if(typeof toggleL==='function')toggleL(false)}
+};
+function addGears108(){var m=model();if(!m||!m.admin)return;document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(c){if(c.querySelector('.v108-gear'))return;var b=document.createElement('button');b.type='button';b.className='v108-gear';b.textContent='⚙';b.title='Configurar álbum';b.onclick=function(e){e.preventDefault();e.stopPropagation();window.v108OpenConfig(c.getAttribute('data-v91album'))};c.style.position='relative';c.appendChild(b)})}
+var oldRender108=window.v91Render;if(typeof oldRender108==='function')window.v91Render=function(){var r=oldRender108.apply(this,arguments);setTimeout(function(){addGears108();bindMultiDrag108();hardenSecrets108(document)},20);return r};
+
+/* 4) Drag múltiple: si arrastrás un seleccionado, viajan todos */
+var dragIds108=[];
+function bindMultiDrag108(){if(innerWidth<=700)return;var m=model();if(!m||!m.admin)return;document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){if(card.dataset.v108drag==='1')return;card.dataset.v108drag='1';card.setAttribute('draggable','true');card.addEventListener('dragstart',function(e){var id=String(card.getAttribute('data-v91album')||'');dragIds108=(m.selected&&m.selected.has(id))?Array.from(m.selected):[id];try{e.dataTransfer.setData('application/x-tomauno-albums',JSON.stringify(dragIds108));e.dataTransfer.effectAllowed='move'}catch(_){}} ,true)});
+ document.querySelectorAll('#eventList .v91-parent[data-v91parent]').forEach(function(p){if(p.dataset.v108drop==='1')return;p.dataset.v108drop='1';p.addEventListener('drop',async function(e){var raw='';try{raw=e.dataTransfer.getData('application/x-tomauno-albums')}catch(_){}if(!raw)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var ids=[];try{ids=JSON.parse(raw)}catch(_){ids=dragIds108.slice()}var group=String(p.getAttribute('data-v91parent')||'');if(!ids.length||!group)return;try{var r=await apiPost({action:'setAlbumsGroup',pin:'3233',bridgeIds:ids,group:group});if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo mover');(m.all||[]).forEach(function(a){if(ids.indexOf(String(a.bridgeId||''))>=0)a.group=group});m.selected.clear();if(typeof window.v91Render==='function')window.v91Render();if(typeof miniToast==='function')miniToast(ids.length+' álbum'+(ids.length===1?'':'es')+' movido'+(ids.length===1?'':'s'))}catch(err){if(window.luxAlert)luxAlert('ERROR',err.message||String(err))}},true)})}
+
+/* 5) Notificaciones: al atender, desaparecen */
+function clearFloating108(){var s=E('v73NotifyStack');if(s)s.innerHTML=''}
+document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('#v73NotifyStack .v73-note'):null;if(n)setTimeout(clearFloating108,0)},true);
+
+/* 6) Pedidos siempre llevan bridgeId; backend deriva WhatsApp correcto */
+var api108=window.apiPost;if(typeof api108==='function')window.apiPost=function(data){try{if(data&&data.action==='submitOrder'&&!data.bridgeId){var a=currentAlbum108();if(a&&a.bridgeId)data.bridgeId=a.bridgeId}}catch(e){}return api108.apply(this,arguments)};
+
+/* 7) Flujo externo: jamás usa el MP verificado de Tomauno */
+function externalAlbum108(){var a=currentAlbum108();return a&&String(a.gestion||'TOMAUNO').toUpperCase()==='EXTERNO'?a:null}
+function externalPay108(){var a=externalAlbum108();if(!a)return false;var alias=String(a.aliasPago||'').trim(),wa=String(a.whatsappVentas||'').replace(/\D/g,'');if(alias&&navigator.clipboard)navigator.clipboard.writeText(alias).catch(function(){});var msg='Este álbum es gestionado directamente por '+(a.fotografo||'el fotógrafo responsable')+'.';if(alias)msg+='\n\nAlias de pago: '+alias+'\n(Ya lo copiamos al portapapeles.)';msg+='\n\nDespués de pagar, enviá el comprobante al fotógrafo por WhatsApp para continuar con la operación. No se genera una clave de descarga Tomauno.';if(window.luxAlert)luxAlert('PAGO AL FOTÓGRAFO',msg);if(wa)setTimeout(function(){window.open('https://wa.me/'+wa+'?text='+encodeURIComponent('Hola. Realicé/quiero realizar el pago del pedido del álbum '+(a.displayName||'')+'. Enviaré el comprobante por este medio.'),'_blank')},450);return true}
+var oldPay108=window.payWithMercadoPago;if(typeof oldPay108==='function')window.payWithMercadoPago=function(){if(externalPay108())return;return oldPay108.apply(this,arguments)};
+var oldServ108=window.payServices101;if(typeof oldServ108==='function')window.payServices101=function(){if(externalPay108())return;return oldServ108.apply(this,arguments)};
+function syncExternalButtons108(){var a=currentAlbum108(),ext=a&&String(a.gestion||'TOMAUNO').toUpperCase()==='EXTERNO';document.body.classList.toggle('v108-external-album',!!ext);document.querySelectorAll('.t54-mp-pay,.v101-mp-services').forEach(function(b){if(ext){b.classList.add('v108-external');b.textContent=(String(a.pagoModo||'').toUpperCase()==='NINGUNO')?'PAGO ONLINE NO DISPONIBLE':'💳 PAGAR AL FOTÓGRAFO';if(String(a.pagoModo||'').toUpperCase()==='NINGUNO'){b.disabled=true}else b.disabled=false}else{b.classList.remove('v108-external')}})}
+
+/* 8) Identidad del álbum: Tomauno / neutra / logo URL */
+function syncBrand108(){var a=currentAlbum108(),logo=document.querySelector('header .logo-txt');if(!logo||!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();if(mode==='NEUTRO'){logo.innerHTML='<span class="v108-neutral-brand">FOTOGRAFÍAS DEL EVENTO</span>';logo.onclick=window.v108GoHome}else if(mode==='PERSONALIZADO'&&a.logoUrl){logo.innerHTML='<img class="v108-album-logo" style="display:block" src="'+String(a.logoUrl).replace(/"/g,'&quot;')+'" alt="Logo del fotógrafo">';logo.onclick=window.v108GoHome}else{logo.innerHTML='Estudio Toma<span>uno</span>';logo.onclick=window.v108GoHome}}
+setInterval(function(){hardenSecrets108(document);addGears108();bindMultiDrag108();syncExternalButtons108()},900);
+document.addEventListener('DOMContentLoaded',function(){hardenSecrets108(document);setTimeout(function(){addGears108();bindMultiDrag108()},300)});
+})();
+</script>
+<!-- /TOMAUNO V108 -->
+
+
+<!-- TOMAUNO V109 · ADMINISTRADOR ESTRUCTURADO -->
+<style>
+#v109Manager{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100090;display:none;overflow:auto;padding:22px;color:#eee}#v109Manager.open{display:block}.v109-shell{max-width:1040px;margin:auto;background:linear-gradient(145deg,#090909,#111);border:1px solid #352020;border-radius:24px;padding:22px;box-shadow:0 0 70px #d11b1b20}.v109-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.v109-head h2{margin:0;font-size:25px}.v109-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.v109-field{display:flex;flex-direction:column;gap:6px}.v109-field label{font-size:11px;letter-spacing:.12em;color:#c9a94c;font-weight:800}.v109-field input,.v109-field select,.v109-field textarea{background:#050505;border:1px solid #333;border-radius:12px;color:#fff;padding:12px;font:inherit}.v109-wide{grid-column:1/-1}.v109-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.v109-btn{border:1px solid #333;background:#171717;color:#fff;border-radius:999px;padding:11px 17px;font-weight:800;cursor:pointer}.v109-btn.red{background:#e22;border-color:#e22}.v109-btn.gold{color:#e8c657;border-color:#665526}.v109-products{display:grid;gap:7px}.v109-product{display:grid;grid-template-columns:1fr 130px 100px 38px;gap:7px}.v109-summary{margin:14px 0;padding:13px;border:1px solid #272727;border-radius:15px;color:#aaa}.v109-gear2{position:absolute;right:48px;top:8px;z-index:6}.v109-empty{padding:50px 20px;text-align:center}.v109-empty strong{display:block;font-size:26px;color:#fff}.v109-empty span{color:#aaa}.v109-faq-link{position:fixed;right:16px;bottom:16px;z-index:7000;border:1px solid #333;background:#111;color:#ddd;padding:8px 12px;border-radius:999px;font-size:12px;text-decoration:none}@media(max-width:700px){.v109-grid{grid-template-columns:1fr}.v109-wide{grid-column:auto}.v109-product{grid-template-columns:1fr 90px 38px}.v109-product select{display:none}#v109Manager{padding:8px}.v109-shell{border-radius:18px;padding:14px}.v109-faq-link{display:none}}
+</style>
+<div id="v109Manager"><div class="v109-shell"><div class="v109-head"><div><h2 id="v109Title">CREAR ÁLBUM</h2></div><button class="v109-btn" onclick="v109Close()">✕</button></div><div class="v109-grid">
+<div class="v109-field"><label>NOMBRE DEL ÁLBUM</label><input id="v109Name"></div><div class="v109-field"><label>FOTÓGRAFO / RESPONSABLE</label><input id="v109Photographer"></div>
+<div class="v109-field v109-span2"><label>DESCRIPCIÓN</label><input id="v109Description" placeholder="Descripción breve del álbum"></div><div class="v109-field"><label>INSTAGRAM DEL FOTÓGRAFO</label><input id="v109Instagram" placeholder="@usuario"></div><div class="v109-field"><label>TELÉFONO PÚBLICO / CONTACTO</label><input id="v109PhonePublic" inputmode="numeric" placeholder="3764..."></div>
+<div class="v109-field"><label>GESTIÓN</label><select id="v109Gestion"><option value="TOMAUNO">Tomauno</option><option value="EXTERNO">Fotógrafo externo</option></select></div><div class="v109-field"><label>FOTOS</label><div class="v109-choice" id="v109OriginChoice"><button type="button" data-value="ROOT" title="Carpeta dentro del Drive administrado por Tomauno">📁 CARPETA</button><button type="button" data-value="EXTERNO" title="Usar una carpeta existente mediante enlace o ID de Drive">🔗 LINK DRIVE</button></div><select id="v109Origin" class="v109-hidden-select"><option value="ROOT">ROOT</option><option value="EXTERNO">EXTERNO</option></select></div>
+<div class="v109-field v109-wide v109-conditional" id="v109DriveWrap"><label>LINK / ID DRIVE</label><input id="v109Drive" placeholder="Pegá enlace o ID de Drive"></div>
+<div class="v109-field"><label>WHATSAPP DE VENTAS</label><input id="v109Wa" inputmode="numeric"></div><div class="v109-field"><label>CLAVE DE ACCESO AL ÁLBUM</label><input id="v109Pass" autocomplete="off"></div>
+<div class="v109-field v109-span2"><label>PAGO</label><div class="v109-choice" id="v109PayChoice"><button type="button" data-value="TOMAUNO" title="Checkout verificado de Mercado Pago Tomauno">💳 MP TOMAUNO</button><button type="button" data-value="EXTERNO" title="Pago directo al fotógrafo mediante alias y comprobante">↗ EXTERNO</button><button type="button" data-value="NINGUNO" title="No ofrecer pago online para este álbum">⊘ SIN PAGO</button></div><select id="v109Pay" class="v109-hidden-select"><option value="TOMAUNO">TOMAUNO</option><option value="EXTERNO">EXTERNO</option><option value="NINGUNO">NINGUNO</option></select></div><div class="v109-field v109-conditional" id="v109AliasWrap"><label>ALIAS / DATO DE PAGO</label><input id="v109Alias"></div>
+<div class="v109-field v109-span2"><label>MARCA DE AGUA</label><div class="v109-choice" id="v109LogoChoice"><button type="button" data-value="TOMAUNO" title="Usar la marca de agua Tomauno sobre las fotografías">TOMAUNO</button><button type="button" data-value="NEUTRO" title="Protección neutra sin identificar a ningún estudio">NEUTRA</button><button type="button" data-value="PERSONALIZADO" title="Usar un logo externo mediante URL">PERSONAL</button><button type="button" data-value="NINGUNO" title="Mostrar las fotografías sin marca de agua">SIN PROTECCIÓN</button></div><select id="v109Logo" class="v109-hidden-select"><option value="TOMAUNO">TOMAUNO</option><option value="NEUTRO">NEUTRO</option><option value="PERSONALIZADO">PERSONALIZADO</option><option value="NINGUNO">SIN PROTECCIÓN</option></select></div><div class="v109-field v109-conditional" id="v109LogoUrlWrap"><label>URL LOGO PERSONALIZADO</label><input id="v109LogoUrl"></div>
+<div class="v109-field"><label>PRECIO DIGITAL</label><input id="v109PD" type="number" placeholder="0"></div><div class="v109-field"><label>PRECIO IMPRESIÓN</label><input id="v109PI" type="number" placeholder="0"></div><div class="v109-field"><label>ÁLBUM COMPLETO</label><input id="v109PFull" type="number" placeholder="0"></div>
+<div class="v109-field v109-wide"><label>PRODUCTOS / SERVICIOS ADICIONALES</label><div id="v109Products" class="v109-products"></div><button class="v109-add-mini" type="button" onclick="v109AddProduct()" title="Agregar producto o servicio">＋</button></div>
+<div class="v109-field" id="v109ModelWrap"><label>ACUERDO</label><select id="v109Model"><option value="NINGUNO">Sin acuerdo registrado</option><option value="MENSUAL">Tarifa mensual</option><option value="COMISION">Comisión por ventas</option></select></div><div class="v109-field v109-conditional" id="v109FeeWrap"><label>TARIFA MENSUAL</label><input id="v109Fee" type="number"></div>
+<div class="v109-field v109-conditional" id="v109PctWrap"><label>COMISIÓN TOMAUNO %</label><input id="v109Pct" type="number" step="0.1"></div><div class="v109-field"><label>VENCIMIENTO / ESTADÍA</label><input id="v109Expiry" type="date"></div>
+<div class="v109-field"><label>AVISOS EXTERNOS</label><select id="v109Notify"><option value="SI">ON · avisar</option><option value="NO">OFF · no molestar</option></select></div><div class="v109-field"><label>CLAVE REPORTES DEL FOTÓGRAFO</label><input id="v109ReportKey" inputmode="numeric" placeholder="Automática al crear"></div>
+<div class="v109-field v109-wide"><label>MENSAJE SI TODAVÍA NO HAY FOTOS</label><input id="v109Empty" value="Muy pronto las fotografías"></div>
+</div><div id="v109Status" class="v109-status"></div><div class="v109-actions"><button class="v109-btn red" onclick="v109Save()">GUARDAR</button><button class="v109-btn" onclick="v109Qr()">▦ GENERAR QR</button><button id="v109OpenDriveBtn" class="v109-btn" onclick="v109OpenDrive()">↗ ABRIR DRIVE</button><button id="v109Delete" class="v109-btn" style="margin-left:auto;color:#f66" onclick="v109DeleteAlbum()">ELIMINAR DEFINITIVAMENTE</button></div></div></div>
+
+<script>
+(function(){var edit=null,products=[];function E(i){return document.getElementById(i)}function M(){return window.__v91||window.__V91||window.__v91Model||null}function digits(v){return String(v||'').replace(/\D/g,'')}function moneyBlank(v){var n=Number(v||0);return n>0?String(n):''}function ownDefaults(a){var own=!a||String(a.gestion||'TOMAUNO').toUpperCase()==='TOMAUNO';return{wa:own?'5493764354522':'',pay:own?'TOMAUNO':'EXTERNO',alias:own?'tomaunoestudio':''}}window.v109Open=function(id){var m=M(),a=id&&m?(m.all||[]).find(x=>String(x.bridgeId)===String(id)):null,d=ownDefaults(a);edit=a||null;E('v109Title').textContent=a?'CONFIGURAR ÁLBUM':'CREAR ÁLBUM';E('v109Name').value=a?a.displayName:'';E('v109Photographer').value=a?a.fotografo||'Javier Móttola':'';E('v109Description').value=a?a.description||'':'';E('v109Instagram').value=a?a.instagram||'':'';E('v109PhonePublic').value=a?a.telefonoPublico||'':'';E('v109Gestion').value=a?a.gestion:'TOMAUNO';E('v109Origin').value=a?a.origenFotos||'ROOT':'ROOT';E('v109Drive').value=a&&a.origenFotos==='EXTERNO'?(a.sourceFolderId||a.id||''):'';var wa=a?digits(a.whatsappVentas):'';if(a&&String(a.gestion||'TOMAUNO').toUpperCase()==='TOMAUNO'&&(wa.length<10||wa.length>14))wa=d.wa;E('v109Wa').value=wa||d.wa;E('v109Pass').value=a?a.pass||'':'';E('v109Pay').value=a?a.pagoModo||d.pay:d.pay;E('v109Alias').value=a?(a.aliasPago||d.alias):d.alias;E('v109Logo').value=a?a.logoModo||'TOMAUNO':'TOMAUNO';E('v109LogoUrl').value=a?a.logoUrl||'':'';E('v109PD').value=a?moneyBlank(a.pDigital):'';E('v109PI').value=a?moneyBlank(a.pPrint):'';E('v109PFull').value=a?moneyBlank(a.pFull):'';E('v109Model').value=a?(a.modeloComercial||(String(a.gestion||'TOMAUNO').toUpperCase()==='EXTERNO'?'COMISION':'NINGUNO')):'NINGUNO';E('v109Fee').value=a?moneyBlank(a.tarifaMensual):'';E('v109Pct').value=a?moneyBlank(a.comisionPct):'';E('v109Expiry').value=a&&a.fechaVencimiento?String(a.fechaVencimiento).slice(0,10):'';E('v109Notify').value=a&&a.avisosExternos===false?'NO':'SI';E('v109ReportKey').value=a?a.claveReportes||'':'';E('v109Empty').value=a?a.mensajeVacio||'Muy pronto las fotografías':'Muy pronto las fotografías';if(E('v109FullDownload'))E('v109FullDownload').value=a&&a.descargaCompleta?'SI':'NO';products=[];if(a&&a.products)products=a.products.filter(function(p){var l=String(p.label||'').trim();return l&&!/^(Descargas?\s+Digitales?|Impresi[oó]n(?:es)?\s*15x21|Selecci[oó]n|PACK\s+ÁLBUM|SINLOGO|LIBRE|CONDESCARGA)/i.test(l)}).map(p=>({label:p.label,price:p.price||0,mode:p.mode||'cant',type:p.type||(/impresi[oó]n/i.test(String(p.label||''))?'impresion':'producto')}));renderP();E('v109Delete').style.display=a?'':'none';E('v109Status').className='v109-status';E('v109Status').textContent='';E('v109Manager').classList.add('open')};window.v109Close=()=>E('v109Manager').classList.remove('open');window.v109AddProduct=()=>{products.push({label:'',price:'',mode:'cant',type:'producto'});renderP()};function renderP(){E('v109Products').innerHTML=products.map((p,i)=>'<div class="v109-product"><input data-i="'+i+'" data-k="label" value="'+String(p.label||'').replace(/"/g,'&quot;')+'" placeholder="Ej. Ampliación 30x40"><input data-i="'+i+'" data-k="price" type="number" value="'+(Number(p.price||0)>0?Number(p.price):'')+'" placeholder="0"><select data-i="'+i+'" data-k="type"><option value="producto" '+(p.type==='producto'?'selected':'')+'>Producto</option><option value="servicio" '+(p.type==='servicio'?'selected':'')+'>Servicio</option><option value="impresion" '+(p.type==='impresion'?'selected':'')+'>🖨 Impresión</option></select><select data-i="'+i+'" data-k="mode"><option value="cant">Por unidad</option><option value="fijo" '+(p.mode==='fijo'?'selected':'')+'>Fijo</option></select><button class="v109-btn" onclick="v109RemoveProduct('+i+')">×</button></div>').join('');E('v109Products').querySelectorAll('[data-i]').forEach(n=>n.oninput=()=>{products[+n.dataset.i][n.dataset.k]=n.dataset.k==='price'?(n.value===''?'':Number(n.value)):n.value})}window.v109RemoveProduct=i=>{products.splice(i,1);renderP()};E('v109Gestion').addEventListener('change',function(){var own=this.value==='TOMAUNO',d=ownDefaults(own?null:{gestion:'EXTERNO'});if(own){if(!digits(E('v109Wa').value))E('v109Wa').value=d.wa;E('v109Pay').value='TOMAUNO';if(!E('v109Alias').value.trim())E('v109Alias').value=d.alias}else{if(E('v109Wa').value==='5493764354522')E('v109Wa').value='';if(E('v109Alias').value==='tomaunoestudio')E('v109Alias').value='';if(E('v109Pay').value==='TOMAUNO')E('v109Pay').value='EXTERNO'}});function payload(){return{pin:'3233',title:E('v109Name').value.trim(),description:E('v109Description').value.trim(),fotografo:E('v109Photographer').value.trim(),instagram:E('v109Instagram').value.trim(),telefonoPublico:E('v109PhonePublic').value.trim(),gestion:E('v109Gestion').value,origenFotos:E('v109Origin').value,sourceFolderId:E('v109Drive').value.trim(),whatsappVentas:digits(E('v109Wa').value),pass:E('v109Pass').value.trim(),pagoModo:E('v109Pay').value,aliasPago:E('v109Alias').value.trim(),logoModo:E('v109Logo').value,logoUrl:E('v109LogoUrl').value.trim(),pDigital:E('v109PD').value,pPrint:E('v109PI').value,pFull:E('v109PFull').value,productosJson:JSON.stringify(products.filter(x=>x.label)),modeloComercial:E('v109Model').value,tarifaMensual:E('v109Fee').value,comisionPct:E('v109Pct').value,fechaVencimiento:E('v109Expiry').value,avisosExternos:E('v109Notify').value==='SI',claveReportes:E('v109ReportKey').value.trim(),mensajeVacio:E('v109Empty').value.trim(),descargaCompleta:E('v109FullDownload')?E('v109FullDownload').value==='SI':false}}window.v109Save=async()=>{var p=payload();p.action=edit?'updateAlbumConfig':'createAlbumV109';if(edit)p.bridgeId=edit.bridgeId;var st=E('v109Status');try{st.textContent='Actualizando datos…';st.className='v109-status on';var r=await apiPost(p);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo guardar');st.textContent='Guardado. Actualizando álbumes…';if(typeof loadEvents==='function')await loadEvents();st.textContent='Listo';setTimeout(function(){v109Close();if(typeof miniToast==='function')miniToast(edit?'Álbum actualizado':'Álbum creado')},250)}catch(e){st.textContent='Error: '+e.message;st.className='v109-status on';if(window.luxAlert)luxAlert('ERROR',e.message)}};window.v109OpenDrive=()=>{var a=edit;if(a&&(a.sourceFolderId||a.id))window.open('https://drive.google.com/drive/folders/'+(a.sourceFolderId||a.id),'_blank')};window.v109Qr=()=>{var a=edit;if(!a){if(window.luxAlert)luxAlert('GUARDÁ PRIMERO','Guardá el álbum para generar su QR.');return}var url='https://tomaunofotografias.vercel.app/?album='+encodeURIComponent(a.bridgeId),q='https://quickchart.io/qr?size=700&text='+encodeURIComponent(url);window.open(q,'_blank')};window.v109DeleteAlbum=async()=>{if(!edit)return;if(!confirm('Esto elimina configuración y pedidos de este álbum. Si la carpeta fue creada por Tomauno también irá a la papelera.'))return;try{var r=await apiPost({action:'deleteAlbumV109',pin:'3233',bridgeId:edit.bridgeId,confirm:'ELIMINAR'});if(!r||r.success===false)throw Error((r&&r.msg)||'Error');E('v109Status').textContent='Eliminando y actualizando…';E('v109Status').className='v109-status on';if(typeof loadEvents==='function')await loadEvents();v109Close()}catch(e){if(window.luxAlert)luxAlert('ERROR',e.message)}};function addInlineTools(){var bar=E('v91GroupBar');if(!bar)return;if(!E('v109CreateInline')){var b=document.createElement('button');b.id='v109CreateInline';b.type='button';b.textContent='CREAR ÁLBUM';b.onclick=function(){v109Open()};bar.insertBefore(b,bar.firstChild)}}function decorate(){var m=M();if(!m)return;var isAdmin=!!m.admin;if(isAdmin)addInlineTools();document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(c=>{var old=c.querySelector('.v108-gear');if(old)old.style.display='none';var gear=c.querySelector('.v109-gear2');if(isAdmin&&!gear){var b=document.createElement('button');b.className='v109-btn v109-gear2';b.textContent='⚙';b.title='Configurar álbum';b.onclick=e=>{e.preventDefault();e.stopPropagation();v109Open(c.getAttribute('data-v91album'))};c.appendChild(b)}else if(!isAdmin&&gear)gear.remove();var a=(m.all||[]).find(x=>String(x.bridgeId)===String(c.getAttribute('data-v91album')));if(a&&!c.querySelector('.v109-public-meta')&&(a.instagram||a.telefonoPublico)){var d=document.createElement('div');d.className='v109-public-meta';if(a.instagram){var ig=document.createElement('a');var u=String(a.instagram).replace(/^@/,'');ig.href='https://instagram.com/'+u;ig.target='_blank';ig.textContent='@'+u;ig.onclick=e=>e.stopPropagation();d.appendChild(ig)}if(a.telefonoPublico){var ph=document.createElement('a');var waTxt='Hola, vengo del álbum '+String(a.displayName||'').trim()+' publicado en Tomauno Fotografías.';ph.href='https://wa.me/'+digits(a.telefonoPublico)+'?text='+encodeURIComponent(waTxt);ph.target='_blank';ph.textContent='WhatsApp';ph.onclick=e=>e.stopPropagation();d.appendChild(ph)}c.appendChild(d)}})}function syncWatermark(){return;/* FIX8: controlador V109 anterior desactivado */var a=currentAlbum108();if(!a){document.body.classList.remove('v109-neutral-watermark','v109-custom-watermark');return}if(a.configurado!==true)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();document.body.classList.remove('no-watermark-all','v109-neutral-watermark','v109-custom-watermark');document.documentElement.style.removeProperty('--v109-watermark-url');if(mode==='NEUTRO')document.body.classList.add('v109-neutral-watermark');else if(mode==='PERSONALIZADO'&&a.logoUrl){document.body.classList.add('v109-custom-watermark');document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/"/g,'')+'")')}}var __v109RenderBase=window.v91Render;if(typeof __v109RenderBase==='function'){window.v91Render=function(){var r=__v109RenderBase.apply(this,arguments);decorate();syncWatermark();return r}}decorate();syncWatermark();setInterval(syncWatermark,1500);})();
+</script>
+<!-- /TOMAUNO V109 -->
+
+<style id="tomauno-v109-fix-css">
+/* V109 FIX — cabecera única, compacta y sin capas duplicadas */
+#view-events{padding-top:12px!important}
+#tomaunoMainNav,.tomauno-top-actions{
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;
+  flex-wrap:wrap!important;margin:0 auto 18px!important;padding:0!important;max-width:760px!important
+}
+#tomaunoMainNav .btn-order,.tomauno-top-actions>.btn-order,.tomauno-top-actions>.tomauno-nav-link{
+  width:auto!important;min-width:0!important;min-height:34px!important;height:34px!important;margin:0!important;
+  padding:0 12px!important;border:1px solid #292929!important;border-radius:999px!important;background:#0d0d0d!important;
+  color:#ddd!important;font-size:10px!important;font-weight:800!important;letter-spacing:.03em!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;
+  text-decoration:none!important;box-shadow:none!important
+}
+#tomaunoMainNav .btn-order:hover,.tomauno-top-actions>.btn-order:hover,.tomauno-top-actions>.tomauno-nav-link:hover{border-color:#f01818!important;color:#fff!important;background:#151010!important}
+#tomaunoMainNav i,.tomauno-top-actions i{color:#f01818!important}
+#view-events>h2{margin-top:4px!important}
+.v109-faq-link{display:none!important}
+.v91-admin-note{display:none!important}
+#v109AdminTools{display:none!important;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;margin:4px auto 14px;padding:0 8px}
+#v109AdminTools button,#v109AdminTools a{height:36px;border-radius:999px;border:1px solid #333;background:#111;color:#eee;padding:0 13px;font-size:10px;font-weight:900;text-decoration:none;display:inline-flex;align-items:center;cursor:pointer}
+#v109AdminTools #v109Create{background:#ef1818;border-color:#ef1818;color:#fff}
+@media(max-width:700px){
+  #tomaunoMainNav{display:none!important} /* el menú ☰ V107 queda como único acceso móvil */
+  #v107MobileMenuWrap{margin:2px auto 10px!important}
+  #view-events{padding-top:5px!important}
+  #v109AdminTools{justify-content:stretch!important}
+  #v109AdminTools button,#v109AdminTools a{flex:1;justify-content:center;min-width:130px}
+}
+</style>
+
+<style id="tomauno-v109-fix2-css">
+/* FIX2: un solo sistema de configuración. V108 queda desactivado visualmente. */
+.v108-gear,#v108Config{display:none!important}
+.v109-gear2{display:none!important}
+#v91GroupBar #v109CreateInline{background:#ef1818!important;border-color:#ef1818!important;color:#fff!important}
+#v91GroupBar #v109PhotographersInline{border-color:#444!important}
+.v109-status{display:none;margin:10px 0;padding:10px 12px;border:1px solid #3a3a3a;border-radius:12px;background:#080808;color:#ddd;font-size:12px}
+.v109-status.on{display:block}
+.v109-public-meta{margin-top:7px;font-size:10px;color:#888;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.v109-public-meta a{color:#aaa;text-decoration:none;border-bottom:1px dotted #555}
+body.v109-neutral-watermark .photo-watermark,body.v109-neutral-watermark .zoom-watermark{background-image:none!important}
+body.v109-neutral-watermark .photo-watermark:after,body.v109-neutral-watermark .zoom-watermark:after{content:'FOTOGRAFÍA PROTEGIDA';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transform:rotate(-24deg);font:900 clamp(22px,6vw,72px) Arial;color:rgba(255,255,255,.22);letter-spacing:.08em;text-shadow:0 0 2px rgba(0,0,0,.5)}
+body.v109-custom-watermark .photo-watermark,body.v109-custom-watermark .zoom-watermark{background-image:var(--v109-watermark-url)!important;background-size:38% auto!important;background-repeat:repeat!important;background-position:center!important;opacity:.44!important}
+@media(min-width:1100px){.v109-grid{grid-template-columns:repeat(3,1fr)}.v109-wide{grid-column:1/-1}.v109-shell{max-width:1240px}.v109-field.v109-span2{grid-column:span 2}}
+</style>
+
+<style id="tomauno-v109-fix3-css">
+/* FIX3 — configurador compacto y contextual */
+.v109-summary{display:none!important}
+#v109Manager{padding:10px!important}
+.v109-shell{max-width:1320px!important;padding:16px 18px!important;border-radius:18px!important}
+.v109-head h2{font-size:21px!important}.v109-head small{font-size:9px!important}
+.v109-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:9px 10px!important;margin-top:10px}
+.v109-field{gap:4px!important}.v109-field label{font-size:9px!important;letter-spacing:.09em!important}
+.v109-field input,.v109-field select,.v109-field textarea{min-height:38px!important;padding:7px 10px!important;border-radius:9px!important;font-size:13px!important}
+.v109-wide{grid-column:1/-1!important}.v109-span2{grid-column:span 2!important}
+.v109-hidden-select{display:none!important}.v109-conditional.v109-off{display:none!important}
+.v109-choice{display:flex;gap:5px;align-items:center;flex-wrap:wrap;min-height:38px}
+.v109-choice button{height:34px;padding:0 10px;border-radius:9px;border:1px solid #343434;background:#0b0b0b;color:#aaa;font-size:10px;font-weight:900;cursor:pointer}
+.v109-choice button.on{border-color:#f01818;background:#1b0909;color:#fff;box-shadow:0 0 0 1px #f0181833 inset}
+.v109-products{gap:5px!important}.v109-product{grid-template-columns:minmax(180px,1fr) 105px 90px 32px!important;gap:5px!important}
+.v109-product input,.v109-product select{min-height:34px!important;padding:5px 8px!important;font-size:12px!important}
+.v109-product .v109-btn{width:32px!important;height:32px!important;padding:0!important;border-radius:8px!important}
+.v109-add-mini{width:34px;height:34px;border-radius:9px;border:1px solid #665526;background:#15120a;color:#e8c657;font-size:20px;font-weight:900;cursor:pointer;margin-top:4px}
+.v109-actions{margin-top:12px!important;gap:7px!important}.v109-actions .v109-btn{padding:8px 12px!important;font-size:10px!important}
+.v109-actions .v109-btn:disabled{opacity:.28!important;cursor:not-allowed!important;filter:grayscale(1)}
+.v109-status{margin:7px 0!important;padding:7px 10px!important}
+.v109-gear2{display:none!important}
+/* El logo elegido es SOLO marca de agua de fotos; nunca altera el encabezado de la web. */
+.v108-album-logo,.v108-neutral-brand{display:none!important}
+body.v109-custom-watermark .zoom-watermark img,body.v109-neutral-watermark .zoom-watermark img{display:none!important}
+body.v109-custom-watermark .photo-watermark,body.v109-custom-watermark .zoom-watermark{background-image:var(--v109-watermark-url)!important;background-size:34% auto!important;background-repeat:repeat!important;background-position:center!important;opacity:.42!important}
+@media(max-width:900px){.v109-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.v109-span2{grid-column:1/-1!important}}
+@media(max-width:600px){.v109-grid{grid-template-columns:1fr!important}.v109-span2,.v109-wide{grid-column:auto!important}.v109-shell{padding:12px!important}.v109-product{grid-template-columns:1fr 80px 32px!important}.v109-product select{display:none!important}}
+</style>
+<script id="tomauno-v109-fix3-js">
+(function(){
+  function E(id){return document.getElementById(id)}
+  function choice(boxId,selectId,onChange){var box=E(boxId),sel=E(selectId);if(!box||!sel)return;box.querySelectorAll('button[data-value]').forEach(function(b){b.onclick=function(){sel.value=b.dataset.value;sync();sel.dispatchEvent(new Event('change',{bubbles:true}))}});function sync(){box.querySelectorAll('button[data-value]').forEach(function(b){b.classList.toggle('on',b.dataset.value===sel.value)});if(onChange)onChange(sel.value)}sel.addEventListener('change',sync);sync()}
+  function conditional(){
+    var origin=E('v109Origin'),pay=E('v109Pay'),logo=E('v109Logo'),model=E('v109Model'),gestion=E('v109Gestion');
+    if(E('v109DriveWrap'))E('v109DriveWrap').classList.toggle('v109-off',!origin||origin.value!=='EXTERNO');
+    if(E('v109AliasWrap'))E('v109AliasWrap').classList.toggle('v109-off',!pay||pay.value!=='EXTERNO');
+    if(E('v109LogoUrlWrap'))E('v109LogoUrlWrap').classList.toggle('v109-off',!logo||logo.value!=='PERSONALIZADO');
+    if(E('v109FeeWrap'))E('v109FeeWrap').classList.toggle('v109-off',!model||model.value!=='MENSUAL');
+    if(E('v109PctWrap'))E('v109PctWrap').classList.toggle('v109-off',!model||model.value!=='COMISION');
+    var nb=E('v109Notify');if(nb&&nb.closest('.v109-field'))nb.closest('.v109-field').style.display=(gestion&&gestion.value==='EXTERNO')?'':'none';
+    var db=E('v109OpenDriveBtn'),a=window.__v91&&window.__v91.currentAlbum; if(db){var direct=E('v109Drive')&&E('v109Drive').value.trim();db.disabled=!direct && !(window.__v109EditHasDrive===true)}
+  }
+  choice('v109OriginChoice','v109Origin',conditional);choice('v109PayChoice','v109Pay',conditional);choice('v109LogoChoice','v109Logo',conditional);
+  ['v109Model','v109Gestion','v109Drive'].forEach(function(id){var n=E(id);if(n)n.addEventListener(id==='v109Drive'?'input':'change',conditional)});
+  var oldOpen=window.v109Open;
+  if(typeof oldOpen==='function')window.v109Open=function(id){var r=oldOpen.apply(this,arguments);setTimeout(function(){var m=window.__v91||window.__V91||window.__v91Model||null,a=id&&m?(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null;window.__v109EditHasDrive=!!(a&&(a.sourceFolderId||a.id));['v109Origin','v109Pay','v109Logo'].forEach(function(sid){var n=E(sid);if(n)n.dispatchEvent(new Event('change',{bubbles:true}))});conditional()},0);return r};
+  /* Clave de reportes: lo que escribas queda persistido; no se fuerza una nueva en cada apertura. */
+  /* Limpia opciones técnicas/duplicadas del selector inicial después de cada render heredado. */
+  function cleanMode(){var box=E('modeOptions');if(!box)return;var seen={};Array.from(box.children).forEach(function(c){var t=(c.textContent||'').toLowerCase();if(/sinlogo|libre_libre|condescarga/.test(t)){c.remove();return}var k=/impres/.test(t)?'p':/digital|descarga/.test(t)?'d':/seleccion/.test(t)?'s':/servicios|packs/.test(t)?'x':'';if(k&&seen[k])c.remove();else if(k)seen[k]=1})}
+  document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('.event-card'))setTimeout(cleanMode,30)},true);
+  setInterval(cleanMode,1200);
+  conditional();
+})();
+</script>
+
+<style id="tomauno-v109-fix4-css">
+/* FIX4: menos ruido para álbumes Tomauno y controles administrativos simultáneos */
+#v109ModelWrap.v109-own-hide,#v109FeeWrap.v109-own-hide,#v109PctWrap.v109-own-hide{display:none!important}
+.v109-gear2{display:none!important}
+</style>
+<script id="tomauno-v109-fix4-js">
+(function(){
+  'use strict';
+  function E(id){return document.getElementById(id)}
+  function syncOwnAgreement(){
+    var g=E('v109Gestion'), model=E('v109Model'), own=!g||g.value==='TOMAUNO';
+    var mw=E('v109ModelWrap'), fw=E('v109FeeWrap'), pw=E('v109PctWrap');
+    if(mw)mw.classList.toggle('v109-own-hide',own);
+    if(fw)fw.classList.toggle('v109-own-hide',own);
+    if(pw)pw.classList.toggle('v109-own-hide',own);
+    if(own){ if(model)model.value='NINGUNO'; }
+    else if(model && (!model.value || model.value==='NINGUNO')) model.value='COMISION';
+    if(model)model.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  var g=E('v109Gestion'); if(g)g.addEventListener('change',syncOwnAgreement);
+  var prevOpen=window.v109Open;
+  if(typeof prevOpen==='function')window.v109Open=function(){var r=prevOpen.apply(this,arguments);setTimeout(syncOwnAgreement,0);return r};
+  syncOwnAgreement();
+
+  /* La clave privada se recuerda durante la sesión de navegación de ese dispositivo. */
+  var originalAsk=window.askPass, originalCheck=window.checkPass;
+  function unlockKey(ev){return 'TOMAUNO_ALBUM_UNLOCKED_'+String(ev&&(ev.bridgeId||ev.id)||'')}
+  if(typeof originalAsk==='function')window.askPass=function(id){
+    var ev=(window.eventsData||[]).find(function(x){return String(x.id)===String(id)});
+    if(ev && ev.pass && sessionStorage.getItem(unlockKey(ev))==='1'){
+      activeEvent=ev; selectedMainProduct=null; extraQuantities={}; selectedPhotos=[];
+      if(typeof updateFooter==='function')updateFooter();
+      return openModeModal();
+    }
+    return originalAsk.apply(this,arguments);
+  };
+  if(typeof originalCheck==='function')window.checkPass=function(){
+    var typed=(E('inputPass')||{}).value||'';
+    if(window.activeEvent && typed===String(activeEvent.pass||'')){
+      try{sessionStorage.setItem(unlockKey(activeEvent),'1')}catch(e){}
+    }
+    return originalCheck.apply(this,arguments);
+  };
+
+  /* Evita la sensación de controles que aparecen por tandas: al render final del ADM, agrega la rueda inmediatamente. */
+  function instantGear(){
+    var m=window.__v91Model;if(!m||!m.admin)return;
+    document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(c){
+      if(c.querySelector('.v109-gear2'))return;
+      var b=document.createElement('button');b.className='v109-btn v109-gear2';b.textContent='⚙';b.title='Configurar álbum';
+      b.onclick=function(e){e.preventDefault();e.stopPropagation();if(window.v109Open)window.v109Open(c.getAttribute('data-v91album'))};c.appendChild(b);
+    });
+  }
+  var rr=window.v91Render;if(typeof rr==='function')window.v91Render=function(){var r=rr.apply(this,arguments);instantGear();return r};
+  instantGear();
+})();
+</script>
+
+<style id="tomauno-v109-fix5-css">
+/* FIX5 · Configurador más oscuro, seccionado y marca de agua estable */
+#v109Manager{background:rgba(0,0,0,.94)!important}
+#v109Manager .v109-shell{background:#050505!important;border-color:#242424!important;box-shadow:0 28px 90px rgba(0,0,0,.75),0 0 0 1px rgba(239,24,24,.08)!important}
+#v109Manager .v109-field input,#v109Manager .v109-field select,#v109Manager .v109-field textarea{background:#020202!important;border-color:#292929!important}
+#v109Manager .v109-field input:focus,#v109Manager .v109-field select:focus,#v109Manager .v109-field textarea:focus{outline:none!important;border-color:#ef1818!important;box-shadow:0 0 0 2px rgba(239,24,24,.10)!important}
+.v109-section-title{grid-column:1/-1!important;margin:6px 0 0;padding:8px 2px 6px;border-bottom:1px solid #1e1e1e;color:#f3f3f3;font-size:10px;font-weight:950;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.v109-section-title::before{content:'';width:4px;height:13px;border-radius:99px;background:#ef1818;box-shadow:0 0 12px rgba(239,24,24,.55)}
+/* Contactos reconocibles de un vistazo */
+#v109Instagram{border-color:#6f315d!important;color:#ff77c8!important}
+#v109Instagram::placeholder{color:#81586f!important}
+#v109PhonePublic,#v109Wa{border-color:#255d3a!important;color:#63df8a!important}
+#v109PayChoice button[data-value="TOMAUNO"].on{background:#062332!important;border-color:#23a9e6!important;color:#8edcff!important;box-shadow:0 0 0 1px rgba(35,169,230,.22) inset!important}
+#v109PayChoice button[data-value="TOMAUNO"]{color:#58bde9!important}
+#v109AliasWrap label{color:#7bcff2!important}
+#v109Alias{border-color:#1d5268!important;color:#7fd5fa!important}
+/* Marca de agua: la cabecera NO cambia; solo la fotografía */
+body.v109-tomauno-watermark .photo-watermark,
+body.v109-tomauno-watermark .zoom-watermark,
+body.v109-neutral-watermark .photo-watermark,
+body.v109-neutral-watermark .zoom-watermark{background-image:none!important;opacity:1!important}
+body.v109-tomauno-watermark .photo-watermark::before,
+body.v109-tomauno-watermark .zoom-watermark::before{content:'TOMAUNO'!important;display:flex!important;position:absolute!important;inset:0!important;align-items:center!important;justify-content:center!important;transform:rotate(-24deg)!important;font:900 clamp(30px,7vw,92px)/1 Arial,sans-serif!important;letter-spacing:.10em!important;color:rgba(255,255,255,.27)!important;text-shadow:0 3px 10px rgba(0,0,0,.42)!important;pointer-events:none!important}
+body.v109-neutral-watermark .photo-watermark::before,
+body.v109-neutral-watermark .zoom-watermark::before{content:'\f030'!important;display:flex!important;position:absolute!important;inset:0!important;align-items:center!important;justify-content:center!important;transform:rotate(-18deg)!important;font-family:FontAwesome!important;font-size:clamp(70px,16vw,210px)!important;color:rgba(255,255,255,.24)!important;text-shadow:0 3px 12px rgba(0,0,0,.45)!important;pointer-events:none!important}
+body.v109-tomauno-watermark .photo-watermark::after,
+body.v109-tomauno-watermark .zoom-watermark::after,
+body.v109-neutral-watermark .photo-watermark::after,
+body.v109-neutral-watermark .zoom-watermark::after{content:none!important;display:none!important}
+body.v109-custom-watermark .photo-watermark::before,body.v109-custom-watermark .zoom-watermark::before,
+body.v109-custom-watermark .photo-watermark::after,body.v109-custom-watermark .zoom-watermark::after{content:none!important;display:none!important}
+body.v109-custom-watermark .photo-watermark,body.v109-custom-watermark .zoom-watermark{background-image:var(--v109-watermark-url)!important;background-size:38% auto!important;background-repeat:repeat!important;background-position:center!important;opacity:.42!important}
+@media(max-width:600px){.v109-section-title{font-size:9px;margin-top:8px}.v109-section-title:first-of-type{margin-top:2px}}
+</style>
+<script id="tomauno-v109-fix5-js">
+(function(){
+  function E(id){return document.getElementById(id)}
+  function addSections(){
+    var grid=document.querySelector('#v109Manager .v109-grid'); if(!grid||grid.dataset.fix5sections==='1')return;
+    grid.dataset.fix5sections='1';
+    var defs=[
+      ['v109Name','Identidad del álbum'],
+      ['v109Instagram','Contacto público'],
+      ['v109Gestion','Gestión y ubicación de fotos'],
+      ['v109Wa','Venta y cobro'],
+      ['v109LogoChoice','Protección de las fotografías'],
+      ['v109PD','Precios y productos'],
+      ['v109ModelWrap','Acuerdo y vigencia'],
+      ['v109Notify','Publicación y reportes']
+    ];
+    defs.forEach(function(d){var target=E(d[0]);if(!target)return;var field=target.classList&&target.classList.contains('v109-field')?target:target.closest('.v109-field');if(!field)return;var h=document.createElement('div');h.className='v109-section-title';h.textContent=d[1];grid.insertBefore(h,field)});
+  }
+  function album(){try{return (typeof activeEvent!=='undefined'&&activeEvent)?activeEvent:null}catch(_){return null}}
+  function applyWatermark(){return;/* FIX8: controlador anterior desactivado */
+    var a=album(),b=document.body;
+    b.classList.remove('v109-tomauno-watermark','v109-neutral-watermark','v109-custom-watermark');
+    document.documentElement.style.removeProperty('--v109-watermark-url');
+    if(!a)return;
+    var mode=String(a.logoModo||'TOMAUNO').toUpperCase();
+    /* Si el álbum está configurado, la opción del ADM manda. Los históricos conservan la marca base. */
+    if(a.configurado===true){
+      b.classList.remove('no-watermark-all');
+      if(mode==='NEUTRO') b.classList.add('v109-neutral-watermark');
+      else if(mode==='PERSONALIZADO'&&String(a.logoUrl||'').trim()){
+        b.classList.add('v109-custom-watermark');
+        document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/["\n\r]/g,'')+'")');
+      } else b.classList.add('v109-tomauno-watermark');
+    }
+  }
+  var oldOpen=window.v109Open;
+  if(typeof oldOpen==='function')window.v109Open=function(){var r=oldOpen.apply(this,arguments);setTimeout(addSections,0);return r};
+  var oldAsk=window.askPass;
+  if(typeof oldAsk==='function')window.askPass=function(){var r=oldAsk.apply(this,arguments);applyWatermark();return r};
+  var oldMode=window.openModeModal;
+  if(typeof oldMode==='function')window.openModeModal=function(){applyWatermark();return oldMode.apply(this,arguments)};
+  var oldZoom=window.openZoom;
+  if(typeof oldZoom==='function')window.openZoom=function(){applyWatermark();return oldZoom.apply(this,arguments)};
+  var oldAppend=window.appendPhotos;
+  if(typeof oldAppend==='function')window.appendPhotos=function(){var r=oldAppend.apply(this,arguments);applyWatermark();return r};
+  window.addEventListener('load',function(){addSections();applyWatermark()});
+})();
+</script>
+
+<style id="tomauno-v109-fix6-css">
+/* FIX6: controles ADM forman parte del render base; no aparecen después. */
+.v64-album-tools [data-v109gear]{color:#fff!important;border-color:#454545!important}
+#v91GroupBar #v109CreateInline{background:#ef1818!important;border-color:#ef1818!important;color:#fff!important}
+#v91GroupBar #v109PhotographersInline{border-color:#444!important}
+</style>
+
+<!-- TOMAUNO V109 FIX7 · CIERRE ESTABLE CONFIG / IMPRESION -->
+<style id="tomauno-v109-fix7-css">
+:root{--tomauno-red:#ff1717;--mp:#20a9e8;--wa:#25d366;--ig:#ff4f9a}
+/* Una sola entrada pública para fotógrafos; no repetirla en ADM */
+#v109PhotographersInline{display:none!important}
+#v91GroupBar #v109CreateInline{white-space:nowrap!important;padding:0 12px!important;min-width:96px!important;font-size:9px!important;letter-spacing:.02em!important}
+/* Formulario oscuro, compacto, estilo Tomauno */
+#v109Manager{background:rgba(0,0,0,.93)!important;padding:12px!important}
+#v109Manager .v109-shell{max-width:1280px!important;background:linear-gradient(155deg,#070707,#0c0c0c 58%,#090909)!important;border:1px solid #262626!important;border-radius:16px!important;padding:15px 16px!important;box-shadow:0 24px 80px #000,0 0 35px rgba(255,23,23,.06)!important}
+#v109Manager .v109-head{margin-bottom:10px!important;border-bottom:1px solid #1e1e1e;padding-bottom:9px!important}
+#v109Manager .v109-head h2{font-size:18px!important;letter-spacing:.02em!important}
+#v109Manager .v109-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px 9px!important}
+#v109Manager .v109-field{gap:3px!important;background:#090909;border:1px solid #1c1c1c;border-radius:10px;padding:7px 8px!important;min-width:0}
+#v109Manager .v109-field label{font-size:8px!important;letter-spacing:.09em!important;color:#9b9b9b!important;line-height:1.15}
+#v109Manager .v109-field input,#v109Manager .v109-field select,#v109Manager .v109-field textarea{min-height:32px!important;padding:5px 8px!important;border-radius:7px!important;background:#030303!important;border:1px solid #292929!important;font-size:11px!important}
+#v109Manager #v109Instagram{border-color:rgba(255,79,154,.45)!important;color:#ff9bc8!important}
+#v109Manager #v109Wa,#v109Manager #v109PhonePublic{border-color:rgba(37,211,102,.42)!important;color:#77eaa1!important}
+#v109Manager #v109PayChoice button[data-value="TOMAUNO"].on{border-color:var(--mp)!important;background:rgba(32,169,232,.13)!important;color:#8bd8ff!important;box-shadow:0 0 0 1px rgba(32,169,232,.12) inset!important}
+#v109Manager .v109-choice{min-height:30px!important;gap:4px!important}
+#v109Manager .v109-choice button{height:29px!important;padding:0 8px!important;border-radius:7px!important;font-size:9px!important}
+#v109Manager .v109-wide{grid-column:1/-1!important}.v109-span2{grid-column:span 2!important}
+#v109Manager .v109-product{grid-template-columns:minmax(170px,1fr) 95px 92px 30px!important;gap:4px!important}
+#v109Manager .v109-product input,#v109Manager .v109-product select{min-height:30px!important;padding:4px 7px!important;font-size:10px!important}
+#v109Manager .v109-product .v109-btn{width:29px!important;height:29px!important;padding:0!important;border-radius:7px!important}
+#v109Manager .v109-add-mini{float:right!important;width:30px!important;height:30px!important;min-height:30px!important;padding:0!important;margin:4px 0 0 auto!important;border-radius:7px!important;font-size:17px!important}
+#v109Manager .v109-actions{margin-top:10px!important;border-top:1px solid #1e1e1e;padding-top:10px!important;align-items:center!important}
+#v109Manager .v109-actions .red{order:99!important;margin-left:auto!important;background:var(--tomauno-red)!important;border-color:var(--tomauno-red)!important;color:#fff!important;box-shadow:0 0 18px rgba(255,23,23,.18)!important}
+#v109Manager .v109-actions #v109Delete{margin-left:0!important}
+/* No usar el formulario como pantalla de progreso */
+#v109Status{position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:100120!important;min-width:220px!important;text-align:center!important;background:#080808!important;border:1px solid #333!important;box-shadow:0 18px 70px #000!important}
+/* TOMAUNO vuelve a la marca histórica ya incluida en la web. FIX7 solo interviene neutra/personal. */
+body.v109-tomauno-watermark .photo-watermark::before,body.v109-tomauno-watermark .zoom-watermark::before{content:none!important;display:none!important}
+body.v109-tomauno-watermark .photo-watermark,body.v109-tomauno-watermark .zoom-watermark{background-image:revert-layer!important}
+/* Neutra: cámara roja, transparente, sin atribución */
+body.v109-neutral-watermark .photo-watermark,body.v109-neutral-watermark .zoom-watermark{background-image:none!important;opacity:1!important}
+body.v109-neutral-watermark .photo-watermark::before,body.v109-neutral-watermark .zoom-watermark::before{content:'📷'!important;display:flex!important;position:absolute!important;inset:0!important;align-items:center!important;justify-content:center!important;transform:rotate(-18deg)!important;font-size:clamp(48px,11vw,150px)!important;filter:grayscale(1) sepia(1) saturate(10) hue-rotate(320deg)!important;opacity:.32!important}
+/* Logo personal: contener, no repetir ni estirar */
+body.v109-custom-watermark .photo-watermark,body.v109-custom-watermark .zoom-watermark{background-image:var(--v109-watermark-url)!important;background-repeat:no-repeat!important;background-position:center!important;background-size:min(48%,320px) auto!important;opacity:.52!important}
+/* Impresión por foto */
+.v109-print-btn{border-color:#6d5522!important;color:#ffd56c!important}.v109-print-btn.active{background:#6c4a00!important;color:#fff!important;border-color:#e6aa1c!important}
+.v109-print-badge{display:inline-flex;align-items:center;gap:3px;background:#191000;border:1px solid #805b00;color:#ffd56c;border-radius:999px;padding:3px 7px;font-size:9px;font-weight:900}
+#v109PrintModal{position:fixed;inset:0;z-index:100150;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:14px}#v109PrintModal.open{display:flex}.v109-print-box{width:min(420px,94vw);background:#090909;border:1px solid #333;border-radius:16px;padding:16px;box-shadow:0 20px 70px #000}.v109-print-box h3{margin:0 0 5px;font-size:16px}.v109-print-box p{margin:0 0 12px;color:#888;font-size:11px}.v109-print-option{display:flex;width:100%;justify-content:space-between;align-items:center;margin:6px 0;padding:10px;border:1px solid #292929;border-radius:9px;background:#111;color:#fff;cursor:pointer}.v109-print-option:hover{border-color:#a87500}.v109-print-remove{color:#ff7777!important}
+@media(max-width:760px){#v109Manager .v109-grid{grid-template-columns:1fr!important}#v109Manager .v109-wide,#v109Manager .v109-span2{grid-column:auto!important}#v109Manager .v109-shell{padding:11px!important}#v109Manager .v109-field{padding:7px!important}#v109Manager .v109-actions .red{width:100%!important;justify-content:center!important}}
+</style>
+<div id="v109PrintModal"><div class="v109-print-box"><h3>🖨 IMPRIMIR ESTA FOTO</h3><p>Elegí el producto de impresión configurado para este álbum.</p><div id="v109PrintOptions"></div><div class="v109-print-actions"><button type="button" class="v109-btn v109-print-cancel" onclick="v109CancelPrint12()">CANCELAR</button><button type="button" class="v109-btn v109-print-accept" onclick="v109AcceptPrint12()">ACEPTAR</button></div></div></div>
+<script>
+(function(){
+  function curAlbum(){try{var m=window.__v91||window.__V91||window.__v91Model||null;if(!m)return null;var id=window.currentEventId||window.currentAlbumId||window.selectedEventId||'';return (m.all||[]).find(function(a){return String(a.bridgeId)===String(id)||String(a.id)===String(id)})||null}catch(e){return null}}
+  function printProducts(){var a=curAlbum();var ps=(a&&a.products)||[];return ps.filter(function(p){return (String(p.type||'').toLowerCase()==='impresion'||(!p.type&&/impresi[oó]n|\b10x15\b|\b13x18\b|\b15x21\b|\b20x30\b/i.test(String(p.label||'')))) && Number(p.price||0)>=0})}
+  function pm(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};window.__tomaunoPhotoMeta[id]=window.__tomaunoPhotoMeta[id]||{};return window.__tomaunoPhotoMeta[id]}
+  function ensureSelected(id){try{if(!window.selectedPhotos)return;var has=selectedPhotos.some(function(x){return String(x.id)===String(id)});if(!has&&window.allPhotos){var p=allPhotos.find(function(x){return String(x.id)===String(id)});if(p)selectedPhotos.push(p)}}catch(e){}}
+  function changeExtra(label,delta){window.extraQuantities=window.extraQuantities||{};window.extraQuantities[label]=Math.max(0,Number(window.extraQuantities[label]||0)+delta);try{if(window.renderExtras)window.renderExtras();if(window.updateFinalPrice)window.updateFinalPrice()}catch(e){}}
+  var pending='';
+  window.v109ClosePrint=function(){document.getElementById('v109PrintModal').classList.remove('open');pending=''};
+  window.v109ChoosePrint=function(label){if(!pending)return;var m=pm(pending),old=m.printProduct||'';if(old===label){v109ClosePrint();return}if(old)changeExtra(old,-1);m.printProduct=label;changeExtra(label,1);ensureSelected(pending);v109ClosePrint();decoratePrint();try{if(window.updateSelectionUI)window.updateSelectionUI()}catch(e){}}
+  window.v109RemovePrint=function(){if(!pending)return;var m=pm(pending);if(m.printProduct)changeExtra(m.printProduct,-1);m.printProduct='';v109ClosePrint();decoratePrint()};
+  function openPrint(id){var ps=printProducts();if(!ps.length)return;pending=String(id);if(ps.length===1){var m=pm(pending);if(m.printProduct===ps[0].label){if(m.printProduct)changeExtra(m.printProduct,-1);m.printProduct='';decoratePrint();return}v109ChoosePrint(ps[0].label);return}var box=document.getElementById('v109PrintOptions'),m=pm(pending);box.innerHTML=ps.map(function(p){return '<button class="v109-print-option" onclick="v109ChoosePrint('+JSON.stringify(String(p.label))+')"><b>'+String(p.label).replace(/</g,'&lt;')+'</b><span>$'+Number(p.price||0).toLocaleString('es-AR')+'</span></button>'}).join('')+(m.printProduct?'<button class="v109-print-option v109-print-remove" onclick="v109RemovePrint()">QUITAR IMPRESIÓN</button>':'');document.getElementById('v109PrintModal').classList.add('open')}
+  function decoratePrint(){var ps=printProducts();document.querySelectorAll('.v109-print-btn,.v109-print-badge').forEach(function(n){n.remove()});if(!ps.length)return;
+    document.querySelectorAll('[data-selection-action][data-photo-id]').forEach(function(ref){var id=ref.getAttribute('data-photo-id');var host=ref.parentElement;if(!host||host.querySelector('.v109-print-btn[data-photo-id="'+CSS.escape(id)+'"]'))return;var b=document.createElement('button');b.type='button';b.className='selection-mini-btn v109-print-btn'+(pm(id).printProduct?' active':'');b.setAttribute('data-photo-id',id);b.textContent=pm(id).printProduct?'🖨 '+pm(id).printProduct:'🖨 Imprimir';b.title='Marcar esta fotografía para impresión';b.onclick=function(e){e.preventDefault();e.stopPropagation();openPrint(id)};host.appendChild(b)});
+    document.querySelectorAll('[data-photo-id]').forEach(function(card){var id=card.getAttribute('data-photo-id');if(!id||!pm(id).printProduct||card.querySelector('.v109-print-badge'))return;var badge=document.createElement('span');badge.className='v109-print-badge';badge.textContent='🖨 '+pm(id).printProduct;var target=card.querySelector('.selection-badges,.t50-badges,.photo-badges')||card;target.appendChild(badge)});
+  }
+  document.addEventListener('click',function(e){var z=e.target.closest&&e.target.closest('[data-zoom-action]');if(z)setTimeout(decoratePrint,20)},true);
+  var oldAppend=window.appendPhotos;if(typeof oldAppend==='function')window.appendPhotos=function(){var r=oldAppend.apply(this,arguments);setTimeout(decoratePrint,0);return r};
+  var oldZoom=window.openZoom;if(typeof oldZoom==='function')window.openZoom=function(){var r=oldZoom.apply(this,arguments);setTimeout(function(){var p=null;try{p=allPhotos[currentPhotoIndex]}catch(e){};var tools=document.querySelector('.zoom-selection-tools,.selection-zoom-tools');if(p&&tools&&printProducts().length&&!tools.querySelector('.v109-print-btn')){var b=document.createElement('button');b.className='selection-mini-btn v109-print-btn'+(pm(p.id).printProduct?' active':'');b.textContent=pm(p.id).printProduct?'🖨 '+pm(p.id).printProduct:'🖨 Imprimir';b.onclick=function(ev){ev.preventDefault();openPrint(p.id)};tools.appendChild(b)}},20);return r};
+  /* Configurador: secciones visuales, ocultar acuerdo para Tomauno y usar COMISION por defecto en externos */
+  function tuneForm(){var g=document.getElementById('v109Gestion'),mw=document.getElementById('v109ModelWrap'),fee=document.getElementById('v109FeeWrap'),pct=document.getElementById('v109PctWrap');if(!g)return;var ext=g.value==='EXTERNO';if(mw)mw.style.display=ext?'':'none';if(!ext){if(fee)fee.style.display='none';if(pct)pct.style.display='none'}else if(document.getElementById('v109Model')&&document.getElementById('v109Model').value==='NINGUNO')document.getElementById('v109Model').value='COMISION'}
+  var oldOpen=window.v109Open;if(typeof oldOpen==='function')window.v109Open=function(){var r=oldOpen.apply(this,arguments);setTimeout(tuneForm,0);return r};
+  var g=document.getElementById('v109Gestion');if(g)g.addEventListener('change',tuneForm);
+  /* Marca: Tomauno histórica; neutra/personal se aplican también al visor */
+  function wm(){return;/* FIX8: reemplazado por marca única */var a=curAlbum(),b=document.body;b.classList.remove('v109-tomauno-watermark','v109-neutral-watermark','v109-custom-watermark');document.documentElement.style.removeProperty('--v109-watermark-url');if(!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();if(mode==='NEUTRO')b.classList.add('v109-neutral-watermark');else if(mode==='PERSONALIZADO'&&a.logoUrl){b.classList.add('v109-custom-watermark');document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/["\n\r]/g,'')+'")')}else b.classList.add('v109-tomauno-watermark')}
+  window.addEventListener('load',function(){wm();decoratePrint();tuneForm()});setInterval(function(){decoratePrint()},1200);
+})();
+</script>
+<!-- /TOMAUNO V109 FIX7 -->
+
+<!-- TOMAUNO V109 FIX8: estabilización funcional -->
+<style>
+/* Formulario todavía más negro y compacto */
+#v109Manager .v109-shell{background:#030303!important;border-color:#181818!important}
+#v109Manager .v109-field,#v109Manager .v109-section{background:#050505!important;border-color:#171717!important}
+#v109Manager input,#v109Manager select,#v109Manager textarea{background:#090909!important;border-color:#222!important}
+#v109Manager .v109-product{grid-template-columns:minmax(150px,1.6fr) 92px 116px 105px 30px!important;gap:5px!important}
+@media(max-width:760px){#v109Manager .v109-product{grid-template-columns:1fr 82px!important}#v109Manager .v109-product select{grid-column:auto!important}}
+/* Marca única: neutral/personal nunca deja ver por debajo la marca Tomauno histórica. */
+body.v109-neutral-watermark .photo-watermark,body.v109-neutral-watermark .zoom-watermark,
+body.v109-custom-watermark .photo-watermark,body.v109-custom-watermark .zoom-watermark{background-image:none!important}
+body.v109-neutral-watermark .photo-watermark img,body.v109-neutral-watermark .zoom-watermark img,
+body.v109-custom-watermark .photo-watermark img,body.v109-custom-watermark .zoom-watermark img{display:none!important}
+body.v109-neutral-watermark .photo-watermark::after,body.v109-neutral-watermark .zoom-watermark::after,
+body.v109-custom-watermark .photo-watermark::after,body.v109-custom-watermark .zoom-watermark::after{content:none!important;display:none!important}
+body.v109-neutral-watermark .photo-watermark::before,body.v109-neutral-watermark .zoom-watermark::before{content:'📷'!important;display:flex!important;position:absolute!important;inset:0!important;align-items:center!important;justify-content:center!important;transform:rotate(-18deg)!important;font-size:clamp(48px,11vw,150px)!important;filter:grayscale(1) sepia(1) saturate(18) hue-rotate(320deg)!important;opacity:.34!important}
+body.v109-custom-watermark .photo-watermark::before,body.v109-custom-watermark .zoom-watermark::before{content:''!important;display:block!important;position:absolute!important;inset:0!important;background-image:var(--v109-watermark-url)!important;background-repeat:no-repeat!important;background-position:center!important;background-size:min(46%,300px) auto!important;opacity:.58!important}
+.v109-refresh-photos{border-color:#333!important;color:#ddd!important;background:#0a0a0a!important}
+.v109-public-meta .v109-photographer{color:#ddd;font-weight:800}
+.v109-print-gift{display:block;color:#9d9d9d;font-size:10px;margin-top:3px}
+</style>
+<script>
+(function(){
+  function model(){return window.__v91||window.__V91||window.__v91Model||null}
+  function currentAlbum(){var m=model();if(!m)return null;var id=window.currentEventId||window.currentAlbumId||window.selectedEventId||'';return (m.all||[]).find(function(a){return String(a.bridgeId)===String(id)||String(a.id)===String(id)})||window.activeEvent||null}
+  function applySingleWatermark(){
+    var a=currentAlbum(),b=document.body;
+    b.classList.remove('v109-tomauno-watermark','v109-neutral-watermark','v109-custom-watermark');
+    document.documentElement.style.removeProperty('--v109-watermark-url');
+    if(!a)return;
+    var mode=String(a.logoModo||'TOMAUNO').toUpperCase();
+    if(mode==='NEUTRO'){b.classList.add('v109-neutral-watermark');}
+    else if(mode==='PERSONALIZADO'&&a.logoUrl){b.classList.add('v109-custom-watermark');document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/["\n\r]/g,'')+'")');}
+    else {b.classList.add('v109-tomauno-watermark');}
+  }
+  window.v109ApplySingleWatermark=applySingleWatermark;
+  /* Aplicar solo en eventos reales de render/cambio, no con temporizadores que provoquen parpadeos. */
+  ['appendPhotos','openZoom','nextPhoto','prevPhoto'].forEach(function(fn){var old=window[fn];if(typeof old==='function'&&!old.__v109wm8){var wrap=function(){var r=old.apply(this,arguments);requestAnimationFrame(applySingleWatermark);return r};wrap.__v109wm8=true;window[fn]=wrap;}});
+  window.addEventListener('load',function(){requestAnimationFrame(applySingleWatermark)});
+
+  /* Datos públicos del fotógrafo: nombre + Instagram + WhatsApp en tarjeta de álbum. */
+  function decoratePhotographers(){var m=model();if(!m)return;document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(c){var id=c.getAttribute('data-v91album'),a=(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)});if(!a)return;var old=c.querySelector('.v109-public-meta');if(old)old.remove();if(!(a.fotografo||a.instagram||a.telefonoPublico))return;var d=document.createElement('div');d.className='v109-public-meta';if(a.fotografo){var n=document.createElement('span');n.className='v109-photographer';n.textContent='📷 '+a.fotografo;d.appendChild(n)}if(a.instagram){var ig=document.createElement('a'),u=String(a.instagram).replace(/^@/,'');ig.href='https://instagram.com/'+u;ig.target='_blank';ig.textContent='@'+u;ig.onclick=function(e){e.stopPropagation()};d.appendChild(ig)}if(a.telefonoPublico){var ph=document.createElement('a'),num=String(a.telefonoPublico).replace(/\D/g,''),txt='Hola, vengo del álbum '+String(a.displayName||'').trim()+' publicado en Tomauno Fotografías.';ph.href='https://wa.me/'+num+'?text='+encodeURIComponent(txt);ph.target='_blank';ph.textContent='WhatsApp';ph.onclick=function(e){e.stopPropagation()};d.appendChild(ph)}c.appendChild(d)});}
+  var r0=window.v91Render;if(typeof r0==='function'&&!r0.__v109meta8){var rw=function(){var r=r0.apply(this,arguments);decoratePhotographers();return r};rw.__v109meta8=true;window.v91Render=rw;}
+  decoratePhotographers();
+
+  /* Botón manual para invalidar caché de fotos del álbum actual desde su configuración. */
+  function addRefreshButton(){var actions=document.querySelector('#v109Manager .v109-actions');if(!actions||document.getElementById('v109RefreshPhotos'))return;var b=document.createElement('button');b.id='v109RefreshPhotos';b.type='button';b.className='v109-btn v109-refresh-photos';b.textContent='↻ ACTUALIZAR FOTOS';b.title='Vacía la caché de este álbum y vuelve a leer las fotos de Drive';b.onclick=async function(){var a=currentAlbum();if(!a||!a.bridgeId){if(window.luxAlert)luxAlert('GUARDÁ PRIMERO','Guardá el álbum antes de actualizar sus fotos.');return}var old=b.textContent;try{b.disabled=true;b.textContent='ACTUALIZANDO…';var res=await apiPost({action:'refreshAlbumPhotosV109',pin:'3233',bridgeId:a.bridgeId});if(!res||res.success===false)throw Error((res&&res.msg)||'No se pudo actualizar');try{var key=String(a.bridgeId||a.id||'');if(window.__albumPhotoCache){delete window.__albumPhotoCache[key];delete window.__albumPhotoCache[String(a.id||'')];}}catch(e){}if(typeof miniToast==='function')miniToast('Caché de fotos actualizada');else if(window.luxAlert)luxAlert('LISTO','La próxima apertura leerá nuevamente las fotos de Drive.')}catch(e){if(window.luxAlert)luxAlert('ERROR',e.message)}finally{b.disabled=false;b.textContent=old}};actions.insertBefore(b,actions.firstChild)}
+  var op=window.v109Open;if(typeof op==='function'&&!op.__v109refresh8){var ow=function(){var r=op.apply(this,arguments);setTimeout(addRefreshButton,0);return r};ow.__v109refresh8=true;window.v109Open=ow;}
+
+  /* Regla comercial: una foto impresa incluye su digital. No cobrar digital dos veces. */
+  var baseTotal=window.getOrderTotal;
+  if(typeof baseTotal==='function'&&!baseTotal.__v109printgift8){var gt=function(product){var total=Number(baseTotal.apply(this,arguments)||0);try{product=product||window.getSelectedProduct();var isDigital=product&&product.perPhoto&&(/digital|descarga/i.test(String(product.label||''))||product.includesDigital);if(isDigital){var price=Number(product.price||0),seen={};(window.selectedPhotos||[]).forEach(function(ph){var id=String(ph.id||ph.fileId||ph.name||'');var m=(window.__tomaunoPhotoMeta||{})[id];if(m&&m.printProduct&&!seen[id]){total-=price;seen[id]=1}});}}catch(e){}return Math.max(0,total)};gt.__v109printgift8=true;window.getOrderTotal=gt;}
+
+  /* Mostrar la regla al cliente cuando una foto tiene impresión. */
+  function printGiftNote(){document.querySelectorAll('.v109-print-gift').forEach(function(x){x.remove()});document.querySelectorAll('.v109-print-badge').forEach(function(b){var n=document.createElement('small');n.className='v109-print-gift';n.textContent='Incluye digital sin cargo';b.parentNode&&b.parentNode.appendChild(n)})}
+  document.addEventListener('click',function(){setTimeout(printGiftNote,30)},true);
+})();
+</script>
+<!-- /TOMAUNO V109 FIX8 -->
+
+
+<!-- TOMAUNO V109 FIX9: consolidación impresión/protección/UX -->
+<style id="tomauno-v109-fix9-css">
+/* La protección final la decide una sola clase. */
+body.v109-no-watermark .photo-watermark,body.v109-no-watermark .zoom-watermark{display:none!important}
+body.v109-tomauno-final .photo-watermark,body.v109-tomauno-final .zoom-watermark{display:block!important;background:none!important;opacity:1!important}
+body.v109-tomauno-final .photo-watermark::before,body.v109-tomauno-final .photo-watermark::after,body.v109-tomauno-final .zoom-watermark::before,body.v109-tomauno-final .zoom-watermark::after{content:none!important;display:none!important}
+body.v109-tomauno-final .zoom-watermark img{display:block!important;width:min(75vw,520px)!important;opacity:.26!important;transform:rotate(-24deg)!important}
+/* En miniaturas el logo histórico está en el contenedor: usamos la misma imagen embebida del visor. */
+body.v109-tomauno-final .photo-watermark{background-image:var(--v109-tomauno-logo)!important;background-repeat:no-repeat!important;background-position:center!important;background-size:52% auto!important;opacity:.30!important}
+body.v109-neutral-final .photo-watermark,body.v109-neutral-final .zoom-watermark{display:block!important;background:none!important;opacity:1!important}
+body.v109-neutral-final .zoom-watermark img{display:none!important}
+body.v109-neutral-final .photo-watermark::before,body.v109-neutral-final .zoom-watermark::before{content:'📷'!important;display:flex!important;position:absolute!important;inset:0!important;align-items:center!important;justify-content:center!important;font-size:clamp(46px,10vw,145px)!important;transform:rotate(-15deg)!important;filter:grayscale(1) sepia(1) saturate(20) hue-rotate(320deg)!important;opacity:.34!important}
+body.v109-custom-final .photo-watermark,body.v109-custom-final .zoom-watermark{display:block!important;background:none!important;opacity:1!important}
+body.v109-custom-final .zoom-watermark img{display:none!important}
+body.v109-custom-final .photo-watermark::before,body.v109-custom-final .zoom-watermark::before{content:''!important;display:block!important;position:absolute!important;inset:12%!important;background-image:var(--v109-watermark-url)!important;background-repeat:no-repeat!important;background-position:center!important;background-size:contain!important;opacity:.50!important}
+.v109-gallery-print{position:absolute;left:8px;bottom:8px;z-index:25;border:1px solid rgba(255,196,64,.75);background:rgba(5,5,5,.86);color:#ffd56c;border-radius:999px;padding:6px 9px;font:800 10px Arial;cursor:pointer}.v109-gallery-print.active{background:#7a5100;color:#fff}.photo-box{position:relative!important}
+#v109PrintOptions .v109-pq-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px;border:1px solid #252525;border-radius:10px;margin:7px 0;background:#080808}.v109-pq-ctrl{display:flex;align-items:center;gap:7px}.v109-pq-ctrl button{width:30px;height:30px;border:1px solid #444;border-radius:8px;background:#111;color:#fff;font-size:18px}.v109-pq-ctrl b{min-width:20px;text-align:center}.v109-pq-price{font-size:10px;color:#999;margin-top:3px}
+#v109SaveBtn9:disabled{opacity:.28!important;cursor:not-allowed!important;filter:grayscale(1)}
+#v109Manager .v109-status{position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:100300!important;max-width:360px!important;background:#080808!important;border:1px solid #333!important;border-radius:12px!important;padding:12px 18px!important;box-shadow:0 20px 70px #000!important}
+#v109Manager .v109-status:not(.on){display:none!important}
+</style>
+<script id="tomauno-v109-fix9-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function album(){try{return window.activeEvent||null}catch(e){return null}}
+function products(){var a=album();return ((a&&a.products)||[]).filter(function(p){return String(p.type||'').toLowerCase()==='impresion'})}
+function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
+function photo(id){try{return (window.allPhotos||[]).find(function(p){return String(p.id)===String(id)})}catch(e){return null}}
+function ensureSelected(id){var p=photo(id);if(!p)return;window.selectedPhotos=window.selectedPhotos||[];if(!window.selectedPhotos.some(function(x){return String(x.id)===String(id)}))window.selectedPhotos.push(p)}
+function recomputePrintExtras(){window.extraQuantities=window.extraQuantities||{};products().forEach(function(p){var n=0;Object.keys(window.__tomaunoPhotoMeta||{}).forEach(function(id){n+=Number((((window.__tomaunoPhotoMeta||{})[id]||{}).prints||{})[p.label]||0)});window.extraQuantities[p.label]=n});try{if(window.updateFooter)window.updateFooter();if(window.updateFinalPrice)window.updateFinalPrice()}catch(e){}}
+function totalPrints(id){var s=0,pr=meta(id).prints;Object.keys(pr).forEach(function(k){s+=Number(pr[k]||0)});return s}
+window.v109PrintQty9=function(id,label,delta){var m=meta(id),q=Math.max(0,Number(m.prints[label]||0)+Number(delta||0));m.prints[label]=q;if(q>0)ensureSelected(id);m.printProduct=Object.keys(m.prints).find(function(k){return Number(m.prints[k]||0)>0})||'';recomputePrintExtras();renderPrintModal(id);decorateGallery();};
+function renderPrintModal(id){var box=E('v109PrintOptions'),ps=products();if(!box)return;box.innerHTML=ps.map(function(p){var q=Number(meta(id).prints[p.label]||0);return '<div class="v109-pq-row"><div><b>'+String(p.label).replace(/</g,'&lt;')+'</b><div class="v109-pq-price">$'+Number(p.price||0).toLocaleString('es-AR')+' c/u · incluye digital</div></div><div class="v109-pq-ctrl"><button type="button" onclick="v109PrintQty9('+JSON.stringify(String(id))+','+JSON.stringify(String(p.label))+',-1)">−</button><b>'+q+'</b><button type="button" onclick="v109PrintQty9('+JSON.stringify(String(id))+','+JSON.stringify(String(p.label))+',1)">+</button></div></div>'}).join('');}
+window.v109OpenPrint9=function(id){if(!products().length)return;window.__v109PrintId9=String(id);renderPrintModal(id);E('v109PrintModal').classList.add('open')};
+function decorateGallery(){document.querySelectorAll('.v109-gallery-print').forEach(function(n){n.remove()});if(!products().length)return;(window.allPhotos||[]).forEach(function(p){var card=E('p-'+p.id);if(!card)return;var b=document.createElement('button');b.type='button';b.className='v109-gallery-print'+(totalPrints(p.id)>0?' active':'');b.textContent=totalPrints(p.id)>0?'🖨 '+totalPrints(p.id):'🖨 IMPRIMIR';b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();window.v109OpenPrint9(p.id)};card.appendChild(b)});}
+/* Marca final: sin configuración nueva = Tomauno. NINGUNO es la única forma de quitarla. */
+function applyWM(){var a=album(),b=document.body;b.classList.remove('v109-tomauno-watermark','v109-neutral-watermark','v109-custom-watermark','v109-no-watermark','v109-tomauno-final','v109-neutral-final','v109-custom-final');document.documentElement.style.removeProperty('--v109-watermark-url');if(!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();if(mode==='NINGUNO'||mode==='SIN_PROTECCION'||mode==='SIN PROTECCION'){b.classList.add('v109-no-watermark');return}b.classList.remove('no-watermark-all');if(mode==='NEUTRO')b.classList.add('v109-neutral-final');else if(mode==='PERSONALIZADO'&&String(a.logoUrl||'').trim()){b.classList.add('v109-custom-final');document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/["\n\r]/g,'')+'")')}else b.classList.add('v109-tomauno-final')}
+/* Tomar la imagen Tomauno original ya embebida en el visor para miniaturas. */
+function seedTomauno(){var img=document.querySelector('#lightbox .zoom-watermark img');if(img&&img.src)document.documentElement.style.setProperty('--v109-tomauno-logo','url("'+img.src+'")')}
+['appendPhotos','openZoom','loadMorePhotos'].forEach(function(fn){var old=window[fn];if(typeof old==='function'&&!old.__fix9){var w=function(){var r=old.apply(this,arguments);setTimeout(function(){applyWM();decorateGallery()},0);return r};w.__fix9=true;window[fn]=w}});
+/* Clave incorrecta: conservar lo escrito y devolver inmediatamente el foco. */
+var oldCheck=window.checkPass;if(typeof oldCheck==='function'){window.checkPass=function(){var inp=E('inputPass'),before=inp?inp.value:'';var ok=window.activeEvent&&(before===String(activeEvent.pass||'')||before===String(window.ADMIN_PIN||'3233'));var r=oldCheck.apply(this,arguments);if(!ok&&inp){inp.value=before;setTimeout(function(){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length)},30)}return r}}
+var ip=E('inputPass');if(ip)ip.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();window.checkPass()}});
+/* Guardar solo cuando hubo cambios. Actualizar fotos NO ensucia el formulario. */
+var dirty=false,saveBtn=null;function setDirty(v){dirty=!!v;if(saveBtn)saveBtn.disabled=!dirty}
+function setupDirty(){var mgr=E('v109Manager');if(!mgr)return;saveBtn=Array.from(mgr.querySelectorAll('.v109-actions button')).find(function(b){return /GUARDAR/.test(b.textContent)});if(saveBtn){saveBtn.id='v109SaveBtn9';saveBtn.disabled=true}mgr.querySelectorAll('input,select,textarea').forEach(function(n){if(n.id==='v109Status')return;n.addEventListener('input',function(){setDirty(true)});n.addEventListener('change',function(){setDirty(true)})});mgr.addEventListener('click',function(e){if(e.target.closest('.v109-add-mini')||e.target.closest('.v109-product button'))setDirty(true)})}
+var oldOpenCfg=window.v109Open;if(typeof oldOpenCfg==='function'){window.v109Open=function(){var r=oldOpenCfg.apply(this,arguments);setTimeout(function(){setupDirty();setDirty(false)},30);return r}}
+var oldSave=window.v109Save;if(typeof oldSave==='function'){window.v109Save=async function(){if(!dirty)return;var r=await oldSave.apply(this,arguments);setDirty(false);return r}}
+/* Quitar impresiones del listado genérico de servicios: se eligen sobre cada foto. */
+var oldExtras=window.getExtraProducts;if(typeof oldExtras==='function'){window.getExtraProducts=function(){return (oldExtras.apply(this,arguments)||[]).filter(function(p){return String(p.type||'').toLowerCase()!=='impresion'})}}
+/* Menú inicial: una sola entrada de fotografías; la impresión se decide dentro de la galería. */
+var oldMode=window.openModeModal;if(typeof oldMode==='function'){window.openModeModal=function(){var r=oldMode.apply(this,arguments);setTimeout(function(){var box=E('modeOptions');if(!box)return;Array.from(box.children).forEach(function(card){var t=(card.textContent||'').toLowerCase();if(t.indexOf('impres')>=0)card.style.display='none';if(t.indexOf('digital')>=0){var b=card.querySelector('b');if(b)b.textContent='COMPRAR FOTOGRAFÍAS';var spans=card.querySelectorAll('span');if(spans.length)spans[spans.length-1].textContent='Digitales e impresiones'}})},0);return r}}
+/* Descarga completa configurada desde ADM: conservar compatibilidad con álbumes viejos. */
+function fullDownload(){var a=album();if(!a||!a.descargaCompleta)return;var old=E('btnFullDownloadCentered')||E('btnFullDownloadEvent');if(old)return;var host=E('galleryStatus');if(!host)return;var b=document.createElement('button');b.id='v109FullDownload9';b.className='btn-order';b.style.cssText='display:block;margin:8px auto;background:#063d21;border:1px solid #16d56b';b.textContent='⬇ DESCARGAR TODO EL ÁLBUM';b.onclick=function(){window.open('https://drive.google.com/drive/folders/'+encodeURIComponent(a.id),'_blank')};host.parentNode.insertBefore(b,host)}
+var oldLoad=window.loadPhotos;if(typeof oldLoad==='function'){window.loadPhotos=function(){var r=oldLoad.apply(this,arguments);setTimeout(function(){seedTomauno();applyWM();decorateGallery();fullDownload()},0);return r}}
+window.addEventListener('load',function(){seedTomauno();applyWM();setupDirty()});
+})();
+</script>
+<!-- /TOMAUNO V109 FIX9 -->
+
+<!-- TOMAUNO V109 FIX10: configuración comercial, impresión y portada pública -->
+<style id="tomauno-v109-fix10-css">
+body.v109-custom-final .photo-watermark::before,
+body.v109-custom-final .zoom-watermark::before{
+  inset:0!important;
+  background-position:50% 50%!important;
+  background-size:90% auto!important;
+  transform:none!important;
+}
+body.v109-tomauno-final .photo-watermark{background-size:90% auto!important;opacity:.34!important}
+body.v109-tomauno-final #lightbox .zoom-watermark,
+body.v109-neutral-final #lightbox .zoom-watermark,
+body.v109-custom-final #lightbox .zoom-watermark{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;pointer-events:none!important;z-index:20!important}
+body.v109-tomauno-final #lightbox .zoom-watermark img{display:block!important;position:absolute!important;left:50%!important;top:50%!important;width:92%!important;height:92%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;opacity:.32!important;transform:translate(-50%,-50%) rotate(-24deg)!important}
+body.v109-neutral-final .photo-watermark::before,
+body.v109-neutral-final #lightbox .zoom-watermark::before{content:'\f030'!important;display:flex!important;position:absolute!important;inset:0!important;align-items:center!important;justify-content:center!important;font-family:FontAwesome!important;font-size:clamp(76px,20vw,260px)!important;color:rgba(239,24,24,.42)!important;filter:none!important;text-shadow:0 3px 12px rgba(0,0,0,.55)!important;transform:rotate(-15deg)!important}
+body.v109-custom-final .photo-watermark::before,
+body.v109-custom-final #lightbox .zoom-watermark::before{content:''!important;display:block!important;position:absolute!important;inset:0!important;background-image:var(--v109-watermark-url)!important;background-repeat:no-repeat!important;background-position:center!important;background-size:90% auto!important;opacity:.56!important;transform:none!important}
+#v109ZoomPrint10{background:#171006!important;border-color:#a87500!important;color:#ffd56c!important}
+#v109ZoomPrint10.active{background:#7a5100!important;color:#fff!important}
+.v109-public-meta{position:relative!important;z-index:30!important}
+.v109-public-meta a{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border:1px solid #333;border-radius:999px;background:#0b0b0b;text-decoration:none!important}
+.v109-public-meta .v109-photographer{color:#eee!important;border-color:#4b4b4b!important}
+#v109FullDownloadWrap select{border-color:#245b3a!important;color:#6ee596!important}
+#v109Manager .v109-section-title.v109-license-title{grid-column:1/-1!important}
+@media(max-width:600px){#lightbox>div[style*="margin-top:20px"]{flex-wrap:wrap!important;justify-content:center!important}#v109ZoomPrint10{order:2}}
+</style>
+<script id="tomauno-v109-fix10-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function currentAlbum(){try{return activeEvent||window.activeEvent||null}catch(e){return window.activeEvent||null}}
+function allProducts(){var a=currentAlbum();return a&&Array.isArray(a.products)?a.products:[]}
+function isPrint(p){var t=norm(p&&p.type),l=norm(p&&p.label);if(t)return t==='impresion';return /impresion|\b10\s*x\s*15\b|\b13\s*x\s*18\b|\b15\s*x\s*21\b|\b20\s*x\s*30\b/.test(l)}
+function printProducts(){var seen={},out=[];allProducts().slice().reverse().forEach(function(p){if(!p||!isPrint(p)||Number(p.price||0)<=0)return;var size=(norm(p.label).match(/(10|13|15|20|21|30|45)\s*x?\s*(10|13|15|18|20|21|30|45)/)||[]).slice(1).join('x'),k=size?'impresion:'+size:norm(p.label);if(seen[k])return;seen[k]=1;out.unshift(p)});return out}
+function photoMeta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
+function totalPrints(id){var total=0,ps=photoMeta(id).prints;Object.keys(ps).forEach(function(k){total+=Number(ps[k]||0)});return total}
+function selectedPhoto(id){try{return (allPhotos||[]).find(function(p){return String(p.id)===String(id)})}catch(e){return null}}
+function ensureSelected(id){var p=selectedPhoto(id);if(!p)return;try{if(!(selectedPhotos||[]).some(function(x){return String(x.id)===String(id)}))selectedPhotos.push(p)}catch(e){}}
+function recompute(){window.extraQuantities=window.extraQuantities||{};printProducts().forEach(function(p){var n=0;Object.keys(window.__tomaunoPhotoMeta||{}).forEach(function(id){n+=Number((photoMeta(id).prints||{})[p.label]||0)});window.extraQuantities[p.label]=n});try{updateFooter()}catch(e){}try{updateFinalPrice()}catch(e){}}
+function renderPrint(id){var box=E('v109PrintOptions');if(!box)return;box.innerHTML=printProducts().map(function(p){var q=Number(photoMeta(id).prints[p.label]||0);return '<div class="v109-pq-row"><div><b>'+esc(p.label)+'</b><div class="v109-pq-price">$'+Number(p.price||0).toLocaleString('es-AR')+' c/u · incluye digital</div></div><div class="v109-pq-ctrl"><button type="button" data-v109-delta="-1">−</button><b>'+q+'</b><button type="button" data-v109-delta="1">+</button></div></div>'}).join('');Array.from(box.querySelectorAll('.v109-pq-row')).forEach(function(row,i){var p=printProducts()[i];row.querySelectorAll('[data-v109-delta]').forEach(function(btn){btn.onpointerdown=function(e){e.stopPropagation()};btn.onclick=function(e){e.preventDefault();e.stopPropagation();window.v109PrintQty10(String(id),p.label,Number(btn.dataset.v109Delta))}})})}
+window.v109PrintQty10=function(id,label,delta){var m=photoMeta(id),q=Math.max(0,Number(m.prints[label]||0)+Number(delta||0));m.prints[label]=q;m.printProduct=Object.keys(m.prints).find(function(k){return Number(m.prints[k]||0)>0})||'';if(q>0)ensureSelected(id);recompute();renderPrint(id);decorateGallery();decorateZoom()}
+var modal=E('v109PrintModal');if(modal&&!modal.dataset.fix10){modal.dataset.fix10='1';modal.addEventListener('click',function(e){var b=e.target.closest('[data-v109-delta]');if(!b)return;e.preventDefault();e.stopPropagation();window.v109PrintQty10(b.dataset.v109Id,b.dataset.v109Label,Number(b.dataset.v109Delta))})}
+window.v109OpenPrint10=function(id){var ps=printProducts();if(!ps.length)return;id=String(id);window.__v109PrintId10=id;var q=totalPrints(id);if(q===0){var m=photoMeta(id);m.prints[ps[0].label]=1;m.printProduct=ps[0].label;ensureSelected(id);recompute();decorateGallery();decorateZoom()}if(ps.length===1&&q===0)return;renderPrint(id);if(modal)modal.classList.add('open')}
+window.v109OpenCurrentPrint=function(e){if(e){e.preventDefault();e.stopPropagation()}var p=null;try{p=(allPhotos||[])[currentZoomIdx]}catch(_e){}if(p)window.v109OpenPrint10(p.id)}
+function decorateGallery(){document.querySelectorAll('.v109-gallery-print').forEach(function(n){n.remove()});if(!printProducts().length)return;try{(allPhotos||[]).forEach(function(p){var card=E('p-'+p.id);if(!card)return;var b=document.createElement('button');b.type='button';b.className='v109-gallery-print'+(totalPrints(p.id)?' active':'');b.textContent=totalPrints(p.id)?'🖨 '+totalPrints(p.id):'🖨 IMPRIMIR';b.onclick=function(e){e.preventDefault();e.stopPropagation();window.v109OpenPrint10(p.id)};card.appendChild(b)})}catch(e){}}
+function decorateZoom(){var tools=E('zoomSelectBtn')&&E('zoomSelectBtn').parentElement;if(!tools)return;var b=E('v109ZoomPrint10');if(!b){b=document.createElement('button');b.id='v109ZoomPrint10';b.type='button';b.className='btn-order';b.textContent='🖨 IMPRIMIR';tools.insertBefore(b,E('zoomConfirmBtn')||null)}var p=null;try{p=(allPhotos||[])[currentZoomIdx]}catch(e){}var enabled=!!(p&&printProducts().length);b.style.display=enabled?'inline-flex':'none';if(enabled){var q=totalPrints(p.id);b.textContent=q?'🖨 IMPRESIONES ('+q+')':'🖨 IMPRIMIR';b.classList.toggle('active',q>0);b.onclick=function(e){e.preventDefault();e.stopPropagation();window.v109OpenPrint10(p.id)}}}
+function configuredModes(){var list=allProducts(),out=[],seen={};function add(p,key){if(!p||seen[key])return;seen[key]=1;out.push(p)}list.forEach(function(p){var l=norm(p.label),t=norm(p.type),price=Number(p.price||0);if(isPrint(p))return;if(p.isFullAlbum){if(price>0||price===-1)add(p,'full');return}if(p.selectionOnly||t==='seleccion'||/seleccion|fotolibro|edicion/.test(l)){add(p,'selection');return}if(t==='digital'||/digital|descarga/.test(l)){add(p,'photos');return}if(!p.extraProduct&&!p.quantityExtra)add(p,'other:'+l)});if(!seen.photos){var base=list.find(function(p){return p&&!p.selectionOnly&&!p.isFullAlbum&&!p.extraProduct&&!p.quantityExtra&&!isPrint(p)});if(base)out.unshift(base)}return out}
+function offeredPrices(){var a=currentAlbum(),parts=[],pd=Number(a&&a.pDigital||0),prints=printProducts().map(function(p){return Number(p.price||0)}).filter(function(n){return n>0});if(pd>0)parts.push('Digital $'+pd.toLocaleString('es-AR'));if(prints.length)parts.push('Impresiones desde $'+Math.min.apply(Math,prints).toLocaleString('es-AR'));return parts.join(' · ')}
+window.openModeModal=function(){var ps=configuredModes(),box=E('modeOptions');window.__v109Modes10=ps;if(box)box.innerHTML=ps.map(function(p,i){var l=norm(p.label),isSelection=!!(p.selectionOnly||/seleccion|fotolibro|edicion/.test(l)),label=p.isFullAlbum?'PACK ÁLBUM COMPLETO':(isSelection?'SELECCIONAR FOTOGRAFÍAS':(/digital|descarga/.test(l)?'COMPRAR FOTOGRAFÍAS':String(p.label||'')));var icon=p.isFullAlbum?'📦':(isSelection?'📋':'📷');var price=Number(p.price||0),detail=isSelection?'Solo lista e indicaciones':(p.isFullAlbum?(price>0?'$'+price.toLocaleString('es-AR'):'GRATIS'):(offeredPrices()||'Elegí las fotografías que querés comprar'));return '<div class="mode-card" onclick="chooseOrderMode('+i+')"><span class="ico">'+icon+'</span><b>'+esc(label)+'</b><span>'+esc(detail)+'</span></div>'}).join('')||'<p style="color:#888">Este álbum todavía no tiene opciones configuradas.</p>';if(E('modalMode'))E('modalMode').style.display='flex'}
+window.chooseOrderMode=async function(idx){var p=(window.__v109Modes10||configuredModes())[Number(idx)];if(!p)return;var isSelection=!!(p.selectionOnly||/seleccion|fotolibro|edicion/.test(norm(p.label)));if(isSelection){var ok=typeof luxConfirmAsync==='function'?await luxConfirmAsync('ATENCIÓN','Esta opción no compra impresiones ni archivos digitales. Sólo sirve para enviar una selección e indicaciones al fotógrafo.\n\n¿Querés continuar?'):confirm('Esta opción sólo sirve para enviar una selección e indicaciones. ¿Querés continuar?');if(!ok)return}selectedMainProduct=p;window.selectedMainProduct=p;extraQuantities={};selectedPhotos=[];window.__tomaunoPhotoMeta={};if(E('modalMode'))E('modalMode').style.display='none';if(p.isFullAlbum){isFullAlbumMode=true;updateFooter();openCheckout();return}isFullAlbumMode=false;loadPhotos(currentAlbum().id,currentAlbum().displayName);setTimeout(function(){try{updateFooter()}catch(e){}decorateGallery()},100)}
+function usableLogoUrl(value){var u=String(value||'').trim(),m=u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([-\w]{20,})/i);return m?'https://drive.google.com/uc?export=view&id='+m[1]:u}
+function centerLogo(){var a=currentAlbum();if(!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase(),logo=usableLogoUrl(a.logoUrl);document.body.classList.remove('v109-no-watermark','v109-tomauno-final','v109-neutral-final','v109-custom-final');document.documentElement.style.removeProperty('--v109-watermark-url');if(mode==='NINGUNO'||mode==='SIN_PROTECCION'||mode==='SIN PROTECCION'){document.body.classList.add('v109-no-watermark')}else if(mode==='PERSONALIZADO'&&logo){document.body.classList.add('v109-custom-final');document.documentElement.style.setProperty('--v109-watermark-url','url("'+logo.replace(/["\n\r]/g,'')+'")')}else if(mode==='NEUTRO'){document.body.classList.add('v109-neutral-final')}else{document.body.classList.add('v109-tomauno-final')}}
+function albumModel(){return window.__v91||window.__V91||window.__v91Model||null}
+function decorateCovers(){var m=albumModel();if(!m)return;document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){var id=card.getAttribute('data-v91album'),a=(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)});if(!a)return;var old=card.querySelector('.v109-public-meta');if(old)old.remove();if(!(a.fotografo||a.instagram||a.telefonoPublico))return;var row=document.createElement('div');row.className='v109-public-meta';var ig=String(a.instagram||'').replace(/^@/,'').trim(),wa=String(a.telefonoPublico||'').replace(/\D/g,''),igUrl=ig?'https://instagram.com/'+ig:'',waUrl=wa?'https://wa.me/'+wa+'?text='+encodeURIComponent('Hola, vengo del álbum '+String(a.displayName||'')+' publicado en Tomauno Fotografías.'):'';if(a.fotografo){var name=document.createElement('a');name.className='v109-photographer';name.href=igUrl||waUrl||'#';name.target=(igUrl||waUrl)?'_blank':'';name.textContent='📷 '+a.fotografo;name.onclick=function(e){e.stopPropagation();if(!(igUrl||waUrl))e.preventDefault()};row.appendChild(name)}if(igUrl){var ia=document.createElement('a');ia.href=igUrl;ia.target='_blank';ia.textContent='📸 @'+ig;ia.onclick=function(e){e.stopPropagation()};row.appendChild(ia)}if(waUrl){var w=document.createElement('a');w.href=waUrl;w.target='_blank';w.textContent='💬 WhatsApp';w.onclick=function(e){e.stopPropagation()};row.appendChild(w)}card.appendChild(row)})}
+function addDownloadControl(){var grid=document.querySelector('#v109Manager .v109-grid');if(!grid||E('v109FullDownload'))return;var field=document.createElement('div');field.id='v109FullDownloadWrap';field.className='v109-field';field.innerHTML='<label>DESCARGA COMPLETA DESDE DRIVE</label><select id="v109FullDownload"><option value="NO">NO MOSTRAR</option><option value="SI">MOSTRAR DESCARGAR ÁLBUM</option></select>';var empty=E('v109Empty')&&E('v109Empty').closest('.v109-field');grid.insertBefore(field,empty||null)}
+function mergeLegalSections(){var titles=document.querySelectorAll('#v109Manager .v109-section-title'),agreement=null;titles.forEach(function(t){var s=norm(t.textContent);if(s.indexOf('acuerdo')>=0){agreement=t;t.textContent='Acuerdo de licencia, publicación y reportes';t.classList.add('v109-license-title')}else if(s.indexOf('publicacion')>=0&&s.indexOf('report')>=0)t.remove()});return agreement}
+var oldOpen=window.v109Open;if(typeof oldOpen==='function')window.v109Open=function(){var id=arguments[0];addDownloadControl();mergeLegalSections();var r=oldOpen.apply(this,arguments);setTimeout(function(){mergeLegalSections();var a=null;try{var m=albumModel();a=id&&m?(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null}catch(e){}if(E('v109FullDownload'))E('v109FullDownload').value=a&&a.descargaCompleta?'SI':'NO'},40);return r}
+function syncFullDownload(){document.querySelectorAll('#v109FullDownload9,#v109FullDownload10').forEach(function(n){n.remove()});var a=currentAlbum();if(!a||!a.descargaCompleta)return;var host=E('galleryStatus');if(!host)return;var b=document.createElement('button');b.id='v109FullDownload10';b.type='button';b.className='btn-order';b.style.cssText='display:block;margin:8px auto;background:#063d21;border:1px solid #16d56b';b.textContent='⬇ DESCARGAR TODO EL ÁLBUM';b.onclick=function(){window.open('https://drive.google.com/drive/folders/'+encodeURIComponent(a.sourceFolderId||a.id),'_blank','noopener')};host.parentNode.insertBefore(b,host)}
+var oldLoadPhotos=window.loadPhotos;if(typeof oldLoadPhotos==='function')window.loadPhotos=function(){var r=oldLoadPhotos.apply(this,arguments);setTimeout(syncFullDownload,0);return r}
+['openZoom','nextPhoto','prevPhoto'].forEach(function(fn){var old=window[fn];if(typeof old==='function'){window[fn]=function(){var r=old.apply(this,arguments);setTimeout(function(){decorateZoom();centerLogo()},0);return r}}})
+['appendPhotos','loadMorePhotos'].forEach(function(fn){var old=window[fn];if(typeof old==='function'){window[fn]=function(){var r=old.apply(this,arguments);setTimeout(function(){decorateGallery();centerLogo()},0);return r}}})
+var observer=new MutationObserver(function(){decorateCovers()});var eventList=E('eventList');if(eventList)observer.observe(eventList,{childList:true,subtree:true});
+window.addEventListener('load',function(){addDownloadControl();mergeLegalSections();decorateCovers();decorateZoom();centerLogo()});
+})();
+</script>
+<!-- /TOMAUNO V109 FIX10 -->
+<!-- TOMAUNO V109 FIX11: cierre funcional de visor y administración -->
+<style id="tomauno-v109-fix11-css">
+#lightbox>div[style*="position:relative"]{position:relative!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;width:fit-content!important;height:fit-content!important;max-width:92vw!important;max-height:74vh!important;line-height:0!important}
+#lightbox #zoomImg{display:block!important;border:0!important;outline:0!important;box-shadow:none!important;margin:0!important}
+#lightbox.selected-zoom #zoomImg{border:0!important;outline:0!important;box-shadow:none!important}
+#lightbox .zoom-watermark{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;transform:none!important;margin:0!important;border:0!important;outline:0!important;overflow:hidden!important}
+body.v109-tomauno-final #lightbox .zoom-watermark img{left:50%!important;top:50%!important;width:88%!important;height:88%!important;transform:translate(-50%,-50%) rotate(-24deg)!important;object-fit:contain!important}
+body.v109-custom-final #lightbox .zoom-watermark::before{inset:4%!important;background-size:contain!important;background-position:center!important}
+#v91GroupBar{max-width:calc(100vw - 20px)!important;overflow:hidden!important;flex-wrap:wrap!important}
+#v91GroupBar>*{box-sizing:border-box!important;max-width:100%!important}
+#v91GroupName{min-width:0!important;flex:1 1 180px!important}
+#v91ClearBtn{margin:0!important;flex:0 1 auto!important}
+#v109CbuWrap input{border-color:#1d5268!important;color:#7fd5fa!important}
+.v109-external-payment-data{margin:8px 0;padding:10px 12px;border:1px solid #245b3a;border-radius:12px;background:#06150d;color:#b9efca;font-size:12px;line-height:1.55;text-align:left}
+@media(max-width:600px){#v91GroupBar button{flex:1 1 auto!important;padding:0 8px!important}#v91GroupBar .count{min-width:0!important}}
+</style>
+<script id="tomauno-v109-fix11-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function currentAlbum11(){try{return activeEvent||window.activeEvent||null}catch(e){return window.activeEvent||null}}
+function printLines11(){var totals={};Object.keys(window.__tomaunoPhotoMeta||{}).forEach(function(id){var ps=((window.__tomaunoPhotoMeta[id]||{}).prints)||{};Object.keys(ps).forEach(function(label){var q=Number(ps[label]||0);if(q>0)totals[label]=Number(totals[label]||0)+q})});return Object.keys(totals).map(function(label){return label+' x'+totals[label]})}
+
+/* Los ítems impresos forman parte del nombre y del detalle persistido del pedido. */
+var api11=window.apiPost;if(typeof api11==='function'&&!api11.__fix11){var apiWrap11=function(data){if(data&&data.action==='submitOrder'){var lines=printLines11();if(lines.length){var detail='Impresiones: '+lines.join(' | '),notes=String(data.notes||'').trim();if(notes.indexOf(detail)<0)data.notes=(notes?notes+'\n\n':'')+detail;var base=String(data.orderType||'Fotografías').replace(/\s*\+\s*Impresiones.*$/i,'');data.orderType=base+' + '+lines.join(', ')}}if(data&&(data.action==='updateAlbumConfig'||data.action==='createAlbumV109')){var cbu=E('v109Cbu');data.cbuPago=cbu?String(cbu.value||'').replace(/\D/g,''):''}return api11.apply(this,arguments)};apiWrap11.__fix11=true;window.apiPost=apiWrap11}
+
+/* Campo CBU separado del alias para álbumes con cobro externo. */
+function addCbu11(){var alias=E('v109AliasWrap'),grid=document.querySelector('#v109Manager .v109-grid');if(!alias||!grid||E('v109Cbu'))return;var f=document.createElement('div');f.id='v109CbuWrap';f.className='v109-field v109-conditional';f.innerHTML='<label>CBU PARA PAGO EXTERNO</label><input id="v109Cbu" inputmode="numeric" maxlength="22" autocomplete="off" placeholder="22 dígitos">';alias.parentNode.insertBefore(f,alias.nextSibling)}
+function syncCbu11(a){addCbu11();var pay=E('v109Pay'),wrap=E('v109CbuWrap'),input=E('v109Cbu');if(wrap)wrap.classList.toggle('v109-off',!pay||pay.value!=='EXTERNO');if(input)input.value=String(a&&a.cbuPago||'')}
+var openCfg11=window.v109Open;if(typeof openCfg11==='function'){window.v109Open=function(id){var model=window.__v91||window.__V91||window.__v91Model,a=id&&model?(model.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null;addCbu11();var r=openCfg11.apply(this,arguments);setTimeout(function(){syncCbu11(a)},30);return r}}
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='v109Pay'){var wrap=E('v109CbuWrap');if(wrap)wrap.classList.toggle('v109-off',e.target.value!=='EXTERNO')}});
+
+/* Guardar configuración sin mantener el aviso bloqueado mientras se relee la portada. */
+var save11=window.v109Save;if(typeof save11==='function'){window.v109Save=async function(){var realLoad=window.loadEvents;try{if(typeof realLoad==='function')window.loadEvents=function(){Promise.resolve(realLoad.apply(this,arguments)).catch(function(){});return Promise.resolve()};return await save11.apply(this,arguments)}finally{window.loadEvents=realLoad;var st=E('v109Status');if(st&&!/^Error:/i.test(st.textContent||'')){st.className='v109-status';st.textContent=''}}}}
+
+/* Sin recarga si Administrar álbumes ya está abierto. */
+window.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('button'):null;if(!b||!/administrar\s+álbumes/i.test(b.textContent||''))return;var m=window.__v91||window.__V91||window.__v91Model;if((m&&m.admin)||document.body.classList.contains('v91-album-admin')){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var menu=E('v74AdmMenu');if(menu)menu.style.display='none'}},true);
+
+/* F4 abre directamente Administración de álbumes. */
+window.addEventListener('keydown',function(e){if(e.key!=='F4')return;e.preventDefault();e.stopImmediatePropagation();var m=window.__v91||window.__V91||window.__v91Model;if((m&&m.admin)||document.body.classList.contains('v91-album-admin'))return;var ok=false;try{ok=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(_e){}if(ok&&typeof window.enterAlbumAdminMode==='function')window.enterAlbumAdminMode();else if(typeof window.openAdminPin==='function'){window.__v109OpenAlbumsAfterPin=true;window.openAdminPin()}},true);
+var pinTimer11=setInterval(function(){if(!window.__v109OpenAlbumsAfterPin)return;var ok=false;try{ok=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(e){}if(ok){window.__v109OpenAlbumsAfterPin=false;if(typeof window.enterAlbumAdminMode==='function')window.enterAlbumAdminMode()}},250);
+
+/* Datos de pago externo visibles en el checkout. */
+function externalData11(){var a=currentAlbum11(),modal=E('modalCheckout');if(!modal)return;var old=modal.querySelector('.v109-external-payment-data');if(old)old.remove();if(!a||String(a.pagoModo||'').toUpperCase()!=='EXTERNO')return;var alias=String(a.aliasPago||'').trim(),cbu=String(a.cbuPago||'').replace(/\D/g,'');if(!alias&&!cbu)return;var n=document.createElement('div');n.className='v109-external-payment-data';n.innerHTML='<b>Datos para pagar al fotógrafo</b>'+(alias?'<br>Alias: '+alias:'')+(cbu?'<br>CBU: '+cbu:'');var actions=modal.querySelector('.t50-actions');if(actions)actions.parentNode.insertBefore(n,actions)}
+
+/* El botón del visor se actualiza desde el lightbox real, no desde wrappers antiguos. */
+function syncZoom11(){var b=E('v109ZoomPrint10'),lb=E('lightbox');if(!b||!lb)return;var p=null;try{p=(allPhotos||[])[currentZoomIdx]}catch(e){}var a=currentAlbum11(),has=!!(p&&a&&Array.isArray(a.products)&&a.products.some(function(x){return String(x.type||'').toLowerCase()==='impresion'&&Number(x.price||0)>0}));b.style.display=has?'inline-flex':'none';if(has){var q=0,ps=((window.__tomaunoPhotoMeta||{})[String(p.id)]||{}).prints||{};Object.keys(ps).forEach(function(k){q+=Number(ps[k]||0)});b.textContent=q?'🖨 IMPRESIONES ('+q+')':'🖨 IMPRIMIR'}}
+var lb11=E('lightbox');if(lb11){new MutationObserver(function(){syncZoom11();externalData11()}).observe(lb11,{attributes:true,attributeFilter:['style','class'],subtree:false})}
+document.addEventListener('click',function(){setTimeout(function(){syncZoom11();externalData11()},20);setTimeout(syncZoom11,120)},true);
+window.addEventListener('load',function(){addCbu11();syncZoom11();externalData11()});
+})();
+</script>
+<!-- /TOMAUNO V109 FIX11 -->
+<!-- TOMAUNO V109 FIX12: impresión integrada al carrito y al cierre -->
+<style id="tomauno-v109-fix12-css">
+.v109-print-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.v109-print-actions .v109-btn{width:100%!important;margin:0!important}
+.v109-print-cancel{background:#181818!important;border-color:#3a3a3a!important;color:#ddd!important}
+.v109-print-accept{background:#e21!important;border-color:#ff3434!important;color:#fff!important}
+.t50-print-detail{display:flex;flex-direction:column;gap:4px;margin-top:7px}
+.t50-print-detail .t50-badge{width:max-content;max-width:100%;color:#ffd56c;border-color:#805b00;background:#191000}
+</style>
+<script id="tomauno-v109-fix12-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()}
+function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
+function selectedProduct(){try{return window.getSelectedProduct?window.getSelectedProduct():(window.selectedMainProduct||selectedMainProduct)}catch(e){return window.selectedMainProduct||null}}
+function selectionOnly(){var p=selectedProduct();return !!(p&&(p.selectionOnly||/seleccion|fotolibro|edicion/.test(norm(p.label))))}
+function products(){var a=album(),seen={},out=[];((a&&a.products)||[]).slice().reverse().forEach(function(p){if(!p||norm(p.type)!=='impresion'||Number(p.price||0)<=0)return;var size=(norm(p.label).match(/(10|13|15|20|21|30|45)\s*x?\s*(10|13|15|18|20|21|30|45)/)||[]).slice(1).join('x'),k=size?'impresion:'+size:norm(p.label);if(seen[k])return;seen[k]=1;out.unshift(p)});return out}
+function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
+function printRows(){var byLabel={},byPhoto={};Object.keys(window.__tomaunoPhotoMeta||{}).forEach(function(id){var ps=meta(id).prints;Object.keys(ps).forEach(function(label){var q=Math.max(0,Number(ps[label]||0));if(!q)return;byLabel[label]=Number(byLabel[label]||0)+q;(byPhoto[id]||(byPhoto[id]=[])).push({label:label,qty:q})})});return {byLabel:byLabel,byPhoto:byPhoto}}
+function printTotal(){var prices={};products().forEach(function(p){prices[norm(p.label)]=Number(p.price||0)});var sum=0,rows=printRows().byLabel;Object.keys(rows).forEach(function(label){sum+=Number(rows[label]||0)*Number(prices[norm(label)]||0)});return sum}
+function printText(sep){sep=sep||'\n';var prices={};products().forEach(function(p){prices[norm(p.label)]=Number(p.price||0)});var rows=printRows().byLabel;return Object.keys(rows).filter(function(label){return Number(rows[label]||0)>0}).map(function(label){var q=Number(rows[label]||0),sub=q*Number(prices[norm(label)]||0);return label+' x'+q+' = $'+sub.toLocaleString('es-AR')}).join(sep)}
+
+/* El total base ya descuenta el digital de cada foto impresa; aquí se suman las copias. */
+var total0=window.getOrderTotal;if(typeof total0==='function'&&!total0.__fix12){var total12=function(){return Math.max(0,Number(total0.apply(this,arguments)||0)+printTotal())};total12.__fix12=true;window.getOrderTotal=total12}
+var text0=window.getExtrasText;if(typeof text0==='function'&&!text0.__fix12){var text12=function(sep){var a=String(text0.call(this,sep)||''),b=selectionOnly()?'':printText(sep);return [a,b].filter(Boolean).join(sep||'\n')};text12.__fix12=true;window.getExtrasText=text12}
+
+/* ACEPTAR conserva; CANCELAR restaura exactamente lo que había al abrir. */
+var open0=window.v109OpenPrint10,printId='',snapshot={};if(typeof open0==='function'){window.v109OpenPrint10=function(id){if(selectionOnly())return;printId=String(id);snapshot=Object.assign({},meta(printId).prints);return open0.apply(this,arguments)}}
+function close(){var m=E('v109PrintModal');if(m)m.classList.remove('open')}
+window.v109AcceptPrint12=function(){close();printId='';snapshot={};refresh()}
+window.v109CancelPrint12=function(){if(printId){var m=meta(printId);m.prints=Object.assign({},snapshot);m.printProduct=Object.keys(m.prints).find(function(k){return Number(m.prints[k]||0)>0})||''}close();refresh();printId='';snapshot={}}
+window.v109ClosePrint=window.v109CancelPrint12;
+
+function refresh(){try{if(window.updateFooter)window.updateFooter()}catch(e){}try{if(window.updateFinalPrice)window.updateFinalPrice()}catch(e){}try{if(window.renderOrderSummary)window.renderOrderSummary()}catch(e){}setTimeout(decorate,0)}
+function decorate(){
+  var rows=printRows().byPhoto;
+  document.querySelectorAll('.v109-gallery-print').forEach(function(b){var card=b.closest('[id^="p-"]'),id=card?String(card.id).replace(/^p-/,''):'';var q=(rows[id]||[]).reduce(function(s,x){return s+x.qty},0);b.textContent=q?'🖨 '+q+' IMP.':'🖨 IMPRIMIR';b.classList.toggle('active',q>0);b.style.display=selectionOnly()?'none':''});
+  var zb=E('v109ZoomPrint10');if(zb&&selectionOnly())zb.style.display='none';
+}
+
+/* Detalle por fotografía dentro del pedido final. */
+var summary0=window.renderOrderSummary;if(typeof summary0==='function'&&!summary0.__fix12){var summary12=function(){var r=summary0.apply(this,arguments),rows=printRows().byPhoto;Object.keys(rows).forEach(function(id){var row=document.querySelector('#orderSummary .t50-photo-row[data-photo-id="'+(window.CSS&&CSS.escape?CSS.escape(id):id.replace(/"/g,'\\"'))+'"]');if(!row)return;var host=row.querySelector('.t50-badges')||row.lastElementChild;if(!host)return;var detail=document.createElement('div');detail.className='t50-print-detail';rows[id].forEach(function(x){var b=document.createElement('span');b.className='t50-badge';b.textContent='🖨 '+x.label+' × '+x.qty;detail.appendChild(b)});host.appendChild(detail)});var titles=document.querySelectorAll('#orderSummary .t50-summary-title');titles.forEach(function(t){if(/^Productos adicionales:/i.test(t.textContent||''))t.firstChild.textContent='Detalle del pedido:'});return r};summary12.__fix12=true;window.renderOrderSummary=summary12}
+
+/* Mantener el carrito y el resumen sincronizados inmediatamente. */
+var qty0=window.v109PrintQty10;if(typeof qty0==='function'&&!qty0.__fix12){var qty12=function(){var r=qty0.apply(this,arguments);refresh();return r};qty12.__fix12=true;window.v109PrintQty10=qty12}
+var checkout0=window.openCheckout;if(typeof checkout0==='function'&&!checkout0.__fix12){var checkout12=function(){var r=checkout0.apply(this,arguments);setTimeout(function(){refresh();var b=E('extrasBox');if(b&&b.style.display!=='none'){var h=b.querySelector(':scope>b');if(h)h.textContent='Servicios adicionales'}} ,0);return r};checkout12.__fix12=true;window.openCheckout=checkout12}
+document.addEventListener('click',function(){setTimeout(decorate,30)},true);
+window.addEventListener('load',decorate);
+})();
+</script>
+<!-- /TOMAUNO V109 FIX12 -->
+<!-- TOMAUNO V109 FIX13: catálogo sin duplicados, marcas y Mercado Pago -->
+<style id="tomauno-v109-fix13-css">
+/* En el visor grande usar el nombre de marca limpio, horizontal y sin el marco de la imagen histórica. */
+body.v109-tomauno-final #lightbox .zoom-watermark img{display:none!important}
+body.v109-tomauno-final #lightbox .zoom-watermark::before,
+body.v109-tomauno-final #lightbox .zoom-watermark::after{display:block!important;position:absolute!important;top:50%!important;font-family:Tahoma,Arial,sans-serif!important;font-size:clamp(64px,13vw,190px)!important;font-weight:500!important;line-height:1!important;letter-spacing:-.08em!important;opacity:.34!important;transform:translateY(-50%)!important;text-shadow:none!important;background:none!important;border:0!important}
+body.v109-tomauno-final #lightbox .zoom-watermark::before{content:'toma'!important;right:50%!important;color:#585858!important}
+body.v109-tomauno-final #lightbox .zoom-watermark::after{content:'uno'!important;left:50%!important;color:#e51b23!important}
+/* Los logos personalizados nunca se rotan ni reciben borde o sombra. */
+body.v109-custom-final .photo-watermark::before,
+body.v109-custom-final #lightbox .zoom-watermark::before{transform:none!important;border:0!important;outline:0!important;box-shadow:none!important;background-size:contain!important;background-position:center!important}
+/* Cámara discreta en miniatura y de mayor presencia solamente en el visor. */
+body.v109-neutral-final .photo-watermark::before{font-size:52px!important;transform:rotate(-10deg)!important}
+body.v109-neutral-final #lightbox .zoom-watermark::before{font-size:clamp(110px,20vw,260px)!important;transform:rotate(-10deg)!important}
+</style>
+<script id="tomauno-v109-fix13-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
+function norm(v){return String(v||'').toUpperCase().trim()}
+function selectionOnly(){var p=null;try{p=window.getSelectedProduct?window.getSelectedProduct():window.selectedMainProduct}catch(e){}return !!(p&&(p.selectionOnly||/SELECCI[ÓO]N|FOTOLIBRO|EDICI[ÓO]N/.test(norm(p.label))))}
+
+/* Mercado Pago depende de la configuración del álbum, no de que haya impresiones o servicios. */
+function ensureMp13(){
+  var a=album(),modal=E('modalCheckout');if(!a||!modal||getComputedStyle(modal).display==='none')return;
+  var payMode=norm(a.pagoModo||'TOMAUNO'),own=norm(a.gestion||'TOMAUNO')==='TOMAUNO',mp=payMode==='TOMAUNO'||payMode==='MERCADOPAGO'||payMode==='MERCADO PAGO',total=0;
+  try{total=Number(window.getOrderTotal(window.getSelectedProduct?window.getSelectedProduct():window.selectedMainProduct)||0)}catch(e){}
+  var actions=modal.querySelector('.t50-actions'),submit=E('btnSubmit');if(!actions||!submit)return;
+  var old=actions.querySelector('.t54-mp-pay');
+  if(!own||!mp||selectionOnly()||!(total>0)){if(old)old.remove();return}
+  submit.textContent='💬 CONTINUAR POR WHATSAPP';submit.classList.add('t54-manual');
+  if(!old){old=document.createElement('button');old.type='button';old.className='btn-order t54-mp-pay';old.textContent='💳 PAGAR CON MERCADO PAGO';old.onclick=function(e){e.preventDefault();if(typeof window.payWithMercadoPago==='function')window.payWithMercadoPago()};actions.insertBefore(old,submit)}
+}
+var checkout13=window.openCheckout;if(typeof checkout13==='function'&&!checkout13.__fix13){var c13=function(){var r=checkout13.apply(this,arguments);setTimeout(ensureMp13,80);return r};c13.__fix13=true;window.openCheckout=c13}
+var price13=window.updateFinalPrice;if(typeof price13==='function'&&!price13.__fix13){var p13=function(){var r=price13.apply(this,arguments);setTimeout(ensureMp13,0);return r};p13.__fix13=true;window.updateFinalPrice=p13}
+
+/* Al editar, actualizar el modelo visible sin volver a solicitar todos los álbumes. Crear sí requiere recarga. */
+var save13=window.v109Save;if(typeof save13==='function'&&!save13.__fix13){var s13=async function(){
+  var editing=!!(E('v109Delete')&&E('v109Delete').style.display!=='none'),realLoad=window.loadEvents,captured=null,realApi=window.apiPost;
+  if(editing&&typeof realLoad==='function')window.loadEvents=function(){return Promise.resolve()};
+  if(editing&&typeof realApi==='function')window.apiPost=function(data){if(data&&data.action==='updateAlbumConfig')captured=Object.assign({},data);return realApi.apply(this,arguments)};
+  try{var r=await save13.apply(this,arguments);if(editing&&captured){var m=window.__v91||window.__V91||window.__v91Model,a=m&&(m.all||[]).find(function(x){return String(x.bridgeId)===String(captured.bridgeId)});if(a){Object.assign(a,{displayName:captured.title||a.displayName,description:captured.description||'',pass:captured.pass||'',fotografo:captured.fotografo||'',instagram:captured.instagram||'',telefonoPublico:captured.telefonoPublico||'',gestion:captured.gestion||'TOMAUNO',whatsappVentas:captured.whatsappVentas||'',pagoModo:captured.pagoModo||'TOMAUNO',aliasPago:captured.aliasPago||'',cbuPago:captured.cbuPago||'',logoModo:captured.logoModo||'TOMAUNO',logoUrl:captured.logoUrl||'',pDigital:Number(captured.pDigital||0),pPrint:Number(captured.pPrint||0),pFull:Number(captured.pFull||0),descargaCompleta:!!captured.descargaCompleta});if(typeof window.v91Render==='function')window.v91Render()}}return r}
+  finally{window.loadEvents=realLoad;window.apiPost=realApi}
+};s13.__fix13=true;window.v109Save=s13}
+
+document.addEventListener('click',function(){setTimeout(ensureMp13,40)},true);
+})();
+</script>
+<!-- /TOMAUNO V109 FIX13 -->
+<!-- TOMAUNO V109 FIX14: marca estable por proporción de foto -->
+<style id="tomauno-v109-fix14-css">
+/* Anular definitivamente los dos textos independientes del visor. */
+body.v109-tomauno-final #lightbox .zoom-watermark::before,
+body.v109-tomauno-final #lightbox .zoom-watermark::after{content:none!important;display:none!important}
+body.v109-tomauno-final #lightbox .zoom-watermark img{display:none!important}
+#lightbox .zoom-watermark{container-type:inline-size!important}
+#lightbox .v109-clean-wordmark{position:absolute!important;inset:0!important;display:none;align-items:center!important;justify-content:center!important;white-space:nowrap!important;line-height:1!important;font-family:Tahoma,Arial,sans-serif!important;font-size:min(14vw,28cqw,170px)!important;font-weight:500!important;letter-spacing:-.075em!important;opacity:.46!important;transform:none!important;pointer-events:none!important;border:0!important;outline:0!important;box-shadow:none!important;text-shadow:0 1px 2px rgba(0,0,0,.22)!important}
+body.v109-tomauno-final #lightbox .v109-clean-wordmark{display:flex!important}
+#lightbox .v109-clean-wordmark .toma{color:#555!important}
+#lightbox .v109-clean-wordmark .uno{color:#e21c2b!important}
+/* Protección neutra: más visible y apenas mayor, sin perder el rojo. */
+body.v109-neutral-final .photo-watermark::before{font-size:62px!important;color:rgba(185,0,0,.88)!important;opacity:.68!important;filter:none!important;transform:rotate(-10deg)!important;text-shadow:0 2px 5px rgba(0,0,0,.42)!important}
+body.v109-neutral-final #lightbox .zoom-watermark::before{font-size:clamp(135px,22vw,300px)!important;color:rgba(185,0,0,.88)!important;opacity:.68!important;filter:none!important;transform:rotate(-10deg)!important;text-shadow:0 3px 8px rgba(0,0,0,.46)!important}
+@media(max-width:600px){body.v109-neutral-final .photo-watermark::before{font-size:56px!important}#lightbox .v109-clean-wordmark{font-size:min(19vw,27cqw,145px)!important}}
+</style>
+<script id="tomauno-v109-fix14-js">
+(function(){
+'use strict';
+function installWordmark14(){var wm=document.querySelector('#lightbox .zoom-watermark');if(!wm||wm.querySelector('.v109-clean-wordmark'))return;var mark=document.createElement('div');mark.className='v109-clean-wordmark';mark.setAttribute('aria-hidden','true');mark.innerHTML='<span class="toma">toma</span><span class="uno">uno</span>';wm.appendChild(mark)}
+var lb=document.getElementById('lightbox');if(lb)new MutationObserver(installWordmark14).observe(lb,{childList:true,subtree:true});
+document.addEventListener('click',function(){setTimeout(installWordmark14,0)},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installWordmark14);else installWordmark14();
+})();
+</script>
+<!-- /TOMAUNO V109 FIX14 -->
+<!-- TOMAUNO V109 FIX15: mismo logo original en miniaturas y visor -->
+<style id="tomauno-v109-fix15-css">
+body.v109-tomauno-final #lightbox .v109-clean-wordmark{display:none!important}
+body.v109-tomauno-final #lightbox .zoom-watermark::before,
+body.v109-tomauno-final #lightbox .zoom-watermark::after{content:none!important;display:none!important}
+body.v109-tomauno-final #lightbox .zoom-watermark{
+  display:block!important;
+  background-image:var(--v109-tomauno-logo)!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:58% auto!important;
+  opacity:.38!important;
+  transform:none!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+body.v109-tomauno-final #lightbox .zoom-watermark img{display:none!important}
+@media(max-width:600px){body.v109-tomauno-final #lightbox .zoom-watermark{background-size:66% auto!important}}
+</style>
+<script id="tomauno-v109-fix15-js">
+(function(){
+'use strict';
+function useOriginalLogo15(){var img=document.querySelector('#lightbox .zoom-watermark img');if(img&&img.src)document.documentElement.style.setProperty('--v109-tomauno-logo','url("'+String(img.src).replace(/["\n\r]/g,'')+'")')}
+document.addEventListener('click',function(){setTimeout(useOriginalLogo15,0)},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',useOriginalLogo15);else useOriginalLogo15();
+})();
+</script>
+<!-- /TOMAUNO V109 FIX15 -->
+<!-- TOMAUNO V109 FIX16: interfaz estable del visor y acciones de miniatura -->
+<style id="tomauno-v109-fix16-css">
+/* Fondo Tomauno liviano: solo gradientes CSS, sin imágenes ni animación permanente. */
+#view-gallery::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(circle at 50% 42%,rgba(180,0,16,.16),transparent 42%),linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:auto,64px 64px,64px 64px;background-position:center}
+#view-gallery{position:relative;z-index:1}
+#lightbox{padding-bottom:84px!important;background-color:#020202!important;background-image:radial-gradient(circle at 50% 42%,rgba(180,0,16,.15),transparent 43%),linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px)!important;background-size:auto,64px 64px,64px 64px!important}
+#lightbox>div[style*="position:relative"]{max-height:calc(100vh - 145px)!important}
+#lightbox #zoomImg{max-height:calc(100vh - 155px)!important;transition:opacity .16s ease,filter .18s ease!important;filter:drop-shadow(0 0 10px rgba(220,0,20,.18))!important}
+#lightbox #zoomImg.v109-changing16{opacity:.42!important}
+/* Barra principal fija: mismas medidas aunque cambien los textos o la foto. */
+#lightbox .v107-light-actions{position:fixed!important;left:50%!important;bottom:14px!important;transform:translateX(-50%)!important;z-index:10060!important;width:min(760px,calc(100vw - 24px))!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;margin:0!important;padding:8px!important;border:1px solid rgba(255,35,45,.28)!important;border-radius:17px!important;background:rgba(3,3,3,.92)!important;box-shadow:0 12px 35px rgba(0,0,0,.72),0 0 22px rgba(210,0,15,.08)!important;backdrop-filter:blur(10px)!important}
+#lightbox .v107-light-actions .btn-order{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:none!important;height:40px!important;min-height:40px!important;margin:0!important;padding:6px 9px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;border:1px solid #383838!important;border-radius:11px!important;background:#0a0a0a!important;color:#fff!important;box-shadow:none!important;font-size:10px!important;letter-spacing:.02em!important;transition:border-color .16s ease,background .16s ease,box-shadow .16s ease,transform .12s ease!important}
+#lightbox .v107-light-actions .btn-order:hover{border-color:#f12632!important;background:linear-gradient(135deg,#0a0a0a,#260307)!important;box-shadow:0 0 15px rgba(235,20,35,.18)!important;transform:translateY(-1px)!important}
+#lightbox .v107-light-actions .btn-order:active{transform:translateY(0)!important}
+#lightbox .v107-light-actions #v109BackGallery16{order:1!important}
+#lightbox .v107-light-actions #zoomSelectBtn{order:2!important}
+#lightbox .v107-light-actions #v109ZoomPrint10{order:3!important}
+#lightbox .v107-light-actions #zoomConfirmBtn{order:4!important;border-color:#b91620!important;box-shadow:inset 0 0 0 1px rgba(255,25,35,.08)!important}
+#lightbox.selected-zoom .v107-light-actions #zoomSelectBtn,
+#lightbox .v107-light-actions #v109ZoomPrint10.active{border-color:#f12632!important;background:linear-gradient(135deg,#170104,#340309)!important;box-shadow:0 0 14px rgba(235,20,35,.2)!important}
+body.v109-lightbox-open #floatingCart{display:none!important}
+#zoomCounter{position:fixed!important;top:10px!important;bottom:auto!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;margin:0!important;z-index:10055!important}
+#zoomSelectionTools{position:fixed!important;left:50%!important;bottom:76px!important;transform:translateX(-50%)!important;z-index:10058!important;width:max-content!important;max-width:calc(100vw - 24px)!important;margin:0!important;padding:6px!important;border:1px solid #292929!important;border-radius:13px!important;background:rgba(3,3,3,.92)!important}
+#zoomInlineComment{position:fixed!important;left:50%!important;bottom:126px!important;transform:translateX(-50%)!important;z-index:10059!important}
+/* Acciones estables sobre miniaturas. Las rutinas antiguas quedan ocultas. */
+.v109-gallery-print{display:none!important}
+.v109-thumb-print16{position:absolute;left:8px;bottom:8px;z-index:31;display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 9px;border:1px solid #424242;border-radius:999px;background:rgba(5,5,5,.9);color:#fff;font:800 9px Arial;cursor:pointer;transition:.16s ease}
+.v109-thumb-print16:hover,.v109-thumb-print16.active{border-color:#e91f2c;background:rgba(36,2,6,.94);box-shadow:0 0 12px rgba(230,20,35,.2)}
+.v109-thumb-tools16{position:absolute;right:8px;bottom:8px;z-index:32;display:flex;gap:4px}
+.v109-thumb-tool16{width:29px;height:29px;padding:0;border:1px solid #424242;border-radius:9px;background:rgba(5,5,5,.91);color:#fff;font-size:12px;cursor:pointer;transition:.16s ease}
+.v109-thumb-tool16:hover,.v109-thumb-tool16.active{border-color:#e91f2c;background:rgba(42,2,7,.95);box-shadow:0 0 11px rgba(230,20,35,.2)}
+#v109ThumbNote16{position:fixed;inset:0;z-index:100300;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.84)}
+#v109ThumbNote16.open{display:flex}
+#v109ThumbNote16 .box{width:min(460px,94vw);padding:16px;border:1px solid #3b3b3b;border-radius:16px;background:#080808;box-shadow:0 22px 70px #000}
+#v109ThumbNote16 textarea{width:100%;box-sizing:border-box;min-height:105px;margin:10px 0;padding:12px;border:1px solid #333;border-radius:11px;background:#030303;color:#fff;resize:vertical}
+#v109ThumbNote16 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:700px){
+  #lightbox{padding-bottom:118px!important}
+  #lightbox>div[style*="position:relative"]{max-height:calc(100dvh - 225px)!important}
+  #lightbox #zoomImg{max-height:calc(100dvh - 235px)!important}
+  #lightbox .v107-light-actions{bottom:8px!important;width:calc(100vw - 16px)!important;grid-template-columns:1fr 1fr!important;gap:6px!important;padding:7px!important}
+  #lightbox .v107-light-actions .btn-order{height:42px!important;min-height:42px!important;font-size:9px!important}
+  #lightbox .v107-light-actions #zoomConfirmBtn{grid-column:auto!important}
+  #zoomSelectionTools{bottom:108px!important}
+  #zoomInlineComment{bottom:157px!important;width:calc(100vw - 24px)!important}
+  .v109-thumb-tool16{width:32px;height:32px}
+}
+@media(prefers-reduced-motion:reduce){#lightbox #zoomImg,#lightbox .btn-order,.v109-thumb-tool16,.v109-thumb-print16{transition:none!important}}
+</style>
+<div id="v109ThumbNote16"><div class="box"><b>📝 NOTA DE ESTA FOTO</b><textarea id="v109ThumbNoteText16" placeholder="Escribí una indicación para esta fotografía"></textarea><div class="actions"><button type="button" class="btn-order" id="v109ThumbNoteCancel16">CANCELAR</button><button type="button" class="btn-order" id="v109ThumbNoteSave16">GUARDAR</button></div></div></div>
+<script id="tomauno-v109-fix16-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}}
+function selected(){try{return window.selectedPhotos||selectedPhotos||[]}catch(e){return []}}
+function product(){try{return window.getSelectedProduct?window.getSelectedProduct():(window.selectedMainProduct||selectedMainProduct)}catch(e){return window.selectedMainProduct||null}}
+function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function selectionMode(){var p=product();return !!(p&&(p.selectionOnly||/seleccion|fotolibro|edicion/.test(norm(p.label))))}
+function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
+function printProducts(){var a=album();return ((a&&a.products)||[]).filter(function(p){return norm(p.type)==='impresion'&&Number(p.price||0)>0})}
+function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
+function printQty(id){var n=0,ps=meta(id).prints;Object.keys(ps).forEach(function(k){n+=Math.max(0,Number(ps[k]||0))});return n}
+function ensureSelected(id){if(selected().some(function(p){return String(p.id)===String(id)}))return;try{if(typeof window.togglePhoto==='function')window.togglePhoto(id);else if(typeof togglePhoto==='function')togglePhoto(id)}catch(e){}}
+function photo(id){return photos().find(function(p){return String(p.id)===String(id)})||null}
+
+function decorateThumbs16(){
+  var selecting=selectionMode(),canPrint=!selecting&&printProducts().length>0;
+  photos().forEach(function(p){var card=E('p-'+p.id);if(!card)return;
+    var pb=card.querySelector('.v109-thumb-print16');
+    if(canPrint){if(!pb){pb=document.createElement('button');pb.type='button';pb.className='v109-thumb-print16';pb.onclick=function(e){e.preventDefault();e.stopPropagation();if(window.v109OpenPrint10)window.v109OpenPrint10(p.id)};card.appendChild(pb)}var q=printQty(p.id);pb.textContent=q?'🖨 '+q+' IMP.':'🖨 IMPRIMIR';pb.classList.toggle('active',q>0);pb.style.display='inline-flex'}else if(pb)pb.style.display='none';
+    var tools=card.querySelector('.v109-thumb-tools16');
+    if(selecting){if(!tools){tools=document.createElement('div');tools.className='v109-thumb-tools16';tools.innerHTML='<button type="button" class="v109-thumb-tool16" data-a="cover" title="Portada">📕</button><button type="button" class="v109-thumb-tool16" data-a="priority" title="Importante">⭐</button><button type="button" class="v109-thumb-tool16" data-a="note" title="Nota">📝</button>';tools.onclick=function(e){var b=e.target.closest('[data-a]');if(!b)return;e.preventDefault();e.stopPropagation();var a=b.dataset.a,m=meta(p.id);ensureSelected(p.id);if(a==='cover')m.cover=!m.cover;if(a==='priority'){m.priority=!m.priority;m.important=m.priority}if(a==='note')openNote16(p.id);decorateThumbs16();try{if(window.renderOrderSummary)window.renderOrderSummary()}catch(_e){}};card.appendChild(tools)}var m=meta(p.id);tools.style.display='flex';tools.querySelector('[data-a="cover"]').classList.toggle('active',!!m.cover);tools.querySelector('[data-a="priority"]').classList.toggle('active',!!m.priority);tools.querySelector('[data-a="note"]').classList.toggle('active',!!String(m.comment||m.note||'').trim())}else if(tools)tools.style.display='none';
+  })
+}
+
+var noteId16='',noteBefore16='';function openNote16(id){noteId16=String(id);noteBefore16=String(meta(id).comment||meta(id).note||'');E('v109ThumbNoteText16').value=noteBefore16;E('v109ThumbNote16').classList.add('open');setTimeout(function(){E('v109ThumbNoteText16').focus()},30)}
+function closeNote16(save){if(save&&noteId16){var value=E('v109ThumbNoteText16').value,m=meta(noteId16);m.comment=value;m.note=value}E('v109ThumbNote16').classList.remove('open');noteId16='';decorateThumbs16();try{if(window.renderOrderSummary)window.renderOrderSummary()}catch(e){}}
+E('v109ThumbNoteCancel16').onclick=function(){closeNote16(false)};E('v109ThumbNoteSave16').onclick=function(){closeNote16(true)};
+
+function stabilizeBar16(){var s=E('zoomSelectBtn'),row=s&&s.parentElement;if(!row)return;row.classList.add('v107-light-actions');var back=Array.from(row.querySelectorAll('button')).find(function(b){return b!==s&&b!==E('v109ZoomPrint10')&&b!==E('zoomConfirmBtn')&&/galeria|volver/i.test(b.textContent||'')});if(back){back.id='v109BackGallery16';back.textContent='← VOLVER';back.onclick=function(e){e.preventDefault();if(typeof window.closeZoom==='function')window.closeZoom();else if(typeof closeZoom==='function')closeZoom()}}var print=E('v109ZoomPrint10');if(print&&!print.classList.contains('active'))print.style.background='#0a0a0a'}
+function syncLightbox16(){var lb=E('lightbox'),open=!!(lb&&getComputedStyle(lb).display!=='none');document.body.classList.toggle('v109-lightbox-open',open);if(open)stabilizeBar16()}
+var lb=E('lightbox');if(lb)new MutationObserver(syncLightbox16).observe(lb,{attributes:true,attributeFilter:['style','class']});
+var list=E('photoList');if(list)new MutationObserver(function(){setTimeout(decorateThumbs16,0)}).observe(list,{childList:true,subtree:false});
+
+var openZoom16=window.openZoom;if(typeof openZoom16==='function'&&!openZoom16.__fix16){var oz16=function(){var img=E('zoomImg');if(img)img.classList.add('v109-changing16');var r=openZoom16.apply(this,arguments);img=E('zoomImg');if(img){var done=function(){img.classList.remove('v109-changing16');img.removeEventListener('load',done)};img.addEventListener('load',done);setTimeout(done,180)}setTimeout(function(){stabilizeBar16();syncLightbox16()},0);return r};oz16.__fix16=true;window.openZoom=oz16}
+
+function fixConfirm16(){var body=E('confirmBody'),yes=E('confirmYesBtn');if(!body||!yes)return;var t=norm(body.textContent);var simple=/esta opcion no compra|solo sirve para enviar una seleccion|seleccionar fotografias/.test(t);var wanted=simple?'SÍ':((/eliminar|borrar|definitiv/.test(t)||/eliminar/i.test((E('confirmTitle')||{}).textContent||''))?'SÍ, ELIMINAR':'SÍ');if(yes.textContent!==wanted)yes.textContent=wanted}
+var cm=E('modalConfirm');if(cm)new MutationObserver(function(){setTimeout(fixConfirm16,0)}).observe(cm,{attributes:true,childList:true,subtree:true,characterData:true});
+document.addEventListener('click',function(){setTimeout(function(){decorateThumbs16();stabilizeBar16();fixConfirm16()},30)},true);
+window.addEventListener('resize',function(){stabilizeBar16();syncLightbox16()});
+window.addEventListener('load',function(){decorateThumbs16();stabilizeBar16();fixConfirm16()});
+})();
+</script>
+<!-- /TOMAUNO V109 FIX16 -->
+<!-- TOMAUNO V109 FIX17: portada, impresión directa y pulido visual -->
+<style id="tomauno-v109-fix17-css">
+/* La identidad visual vive en la portada de álbumes, no sobre la galería. */
+#view-gallery::before{display:none!important}
+#lightbox{background-color:#020202!important;background-image:none!important}
+#view-events{position:relative!important;isolation:isolate;overflow:hidden;min-height:calc(100vh - 92px);padding-bottom:42px!important}
+#view-events::before{content:'';position:absolute;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(circle at 66% 24%,rgba(224,0,25,.20),transparent 31%),radial-gradient(circle at 20% 52%,rgba(115,0,12,.14),transparent 35%),linear-gradient(rgba(255,255,255,.027) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.027) 1px,transparent 1px),#020202;background-size:auto,auto,54px 54px,54px 54px;animation:v109CoverGlow17 9s ease-in-out infinite alternate}
+#view-events::after{content:'';position:absolute;z-index:-1;pointer-events:none;width:42vw;height:42vw;min-width:330px;min-height:330px;right:-15vw;top:20px;border-radius:50%;background:rgba(208,0,24,.09);filter:blur(70px);animation:v109CoverDrift17 11s ease-in-out infinite alternate}
+@keyframes v109CoverGlow17{from{background-position:center,center,0 0,0 0}to{background-position:center,center,18px 12px,18px 12px}}
+@keyframes v109CoverDrift17{to{transform:translate(-8vw,7vh) scale(1.14)}}
+.v109-album-hero17{width:min(880px,calc(100% - 24px));box-sizing:border-box;margin:20px auto 28px;padding:34px 22px 30px;text-align:center;border:1px solid rgba(237,28,40,.38);border-radius:24px;background:linear-gradient(135deg,rgba(16,3,5,.92),rgba(3,3,3,.78));box-shadow:0 24px 80px rgba(0,0,0,.46),inset 0 0 55px rgba(190,0,18,.045)}
+.v109-hero-kicker17{display:inline-flex;padding:7px 13px;border:1px solid rgba(239,27,40,.42);border-radius:999px;color:#f12a36;font:800 10px Arial;letter-spacing:2.4px}
+.v109-album-hero17 h1{margin:17px 0 8px;color:#fff;font:900 clamp(31px,5.2vw,62px)/.98 Arial;letter-spacing:-2px;text-transform:uppercase}
+.v109-album-hero17 h1::first-line{ text-shadow:0 0 28px rgba(225,0,25,.18)}
+.v109-album-hero17 p{margin:0 auto;max-width:600px;color:#bbb;font:500 clamp(13px,1.8vw,16px)/1.55 Arial}
+.v109-hero-pills17{display:flex;align-items:center;justify-content:center;gap:11px;margin-top:20px;color:#777;font:800 9px Arial;letter-spacing:1.7px}
+.v109-hero-pills17 i{width:4px;height:4px;border-radius:50%;background:#ed1b2a;box-shadow:0 0 9px #ed1b2a}
+#view-events>h2{position:relative!important;color:#fff!important}
+/* Una sola cámara, blanca y amplia, con protección suave. */
+body.v109-neutral-final .photo-watermark::before{font-size:clamp(92px,12vw,175px)!important;color:rgba(255,255,255,.58)!important;opacity:.56!important;filter:none!important;transform:none!important;text-shadow:0 3px 15px rgba(0,0,0,.5)!important}
+body.v109-neutral-final #lightbox .zoom-watermark::before{font-size:clamp(245px,38vw,520px)!important;color:rgba(255,255,255,.58)!important;opacity:.56!important;filter:none!important;transform:none!important;text-shadow:0 5px 22px rgba(0,0,0,.5)!important}
+/* Contornos más definidos sin encerrar la imagen en un marco negro. */
+.photo-box{border:1px solid rgba(255,255,255,.24)!important;box-shadow:0 7px 22px rgba(0,0,0,.42)!important}
+.photo-box.selected{border-color:#ef2733!important;box-shadow:0 0 0 1px rgba(239,39,51,.35),0 8px 24px rgba(0,0,0,.52)!important}
+#lightbox #zoomImg,#lightbox.selected-zoom #zoomImg{box-sizing:border-box!important;border:1px solid rgba(255,255,255,.34)!important;outline:1px solid rgba(227,25,38,.22)!important;outline-offset:2px!important;box-shadow:0 16px 48px rgba(0,0,0,.66)!important}
+/* El contenido de todos los botones queda centrado sobre el mismo eje. */
+#lightbox .v107-light-actions .btn-order{display:flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;text-align:center!important;vertical-align:middle!important}
+#lightbox .v107-light-actions #zoomSelectBtn{font-size:10px!important}
+@media(max-width:700px){
+  .v109-album-hero17{margin-top:10px;padding:27px 15px 24px;border-radius:19px}
+  .v109-album-hero17 h1{letter-spacing:-1px}
+  .v109-hero-pills17{gap:7px;font-size:8px;letter-spacing:1px}
+  body.v109-neutral-final .photo-watermark::before{font-size:clamp(78px,28vw,135px)!important}
+  body.v109-neutral-final #lightbox .zoom-watermark::before{font-size:clamp(190px,64vw,340px)!important}
+}
+@media(prefers-reduced-motion:reduce){#view-events::before,#view-events::after{animation:none!important}}
+</style>
+<!-- /TOMAUNO V109 FIX17 -->
+<!-- TOMAUNO V109 FIX18: presentación durante la carga, portada libre y hover reforzado -->
+<style id="tomauno-v109-fix18-css">
+/* El bloque de presentación deja de ocupar lugar entre la navegación y los álbumes. */
+#view-events>.v109-album-hero17{display:none!important}
+/* El fondo de la portada cubre el ancho real de la ventana, incluidos los laterales. */
+#view-events::before{left:50%!important;right:auto!important;width:100vw!important;transform:translateX(-50%)!important}
+#view-events::after{position:fixed!important}
+/* Presentación inicial integrada al cargador existente. */
+#loading.v109-intro18{padding:20px;background-color:#020202!important;background-image:radial-gradient(circle at 62% 38%,rgba(225,0,25,.25),transparent 34%),radial-gradient(circle at 24% 66%,rgba(120,0,15,.17),transparent 38%),linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px)!important;background-size:auto,auto,54px 54px,54px 54px!important;overflow:hidden}
+#loading.v109-intro18::before{content:'';position:absolute;width:min(76vw,780px);height:min(76vw,780px);border-radius:50%;background:rgba(205,0,24,.11);filter:blur(75px);animation:v109IntroGlow18 2.8s ease-in-out infinite alternate;pointer-events:none}
+#loading.v109-intro18>i{position:relative;z-index:2;margin-bottom:-45px;font-size:48px!important;color:#f01828!important;filter:drop-shadow(0 0 15px rgba(240,15,35,.5))}
+#loading.v109-intro18>#loadingTxt{position:relative;z-index:3;order:4;margin-top:13px!important;color:#aaa;font-weight:800;letter-spacing:2.2px}
+#loading.v109-intro18>.v109-album-hero17{position:relative;z-index:1;display:block!important;order:3;width:min(680px,calc(100vw - 30px));margin:0!important;padding:70px 20px 25px!important;border-color:rgba(239,28,42,.42)!important;background:linear-gradient(145deg,rgba(18,2,5,.87),rgba(3,3,3,.74))!important;box-shadow:0 24px 85px rgba(0,0,0,.65),0 0 38px rgba(220,0,25,.10)!important}
+#loading.v109-intro18>.v109-album-hero17 h1{font-size:clamp(29px,6vw,52px)!important;margin-top:15px!important}
+@keyframes v109IntroGlow18{to{transform:scale(1.2);opacity:.62}}
+/* Más respuesta visual al recorrer los álbumes con el mouse. */
+#eventList .event-card{transition:transform .24s ease,border-color .24s ease,box-shadow .24s ease,filter .24s ease,background .24s ease!important}
+#eventList .event-card:hover{transform:translateY(-8px) scale(1.018)!important;filter:brightness(1.14) saturate(1.25)!important;border-color:#ff2838!important;background:linear-gradient(145deg,#1c1013,#050505)!important;box-shadow:0 22px 48px rgba(0,0,0,.82),0 0 0 1px rgba(255,35,50,.36),0 0 30px rgba(235,15,35,.32)!important}
+#eventList .event-card:hover i{color:#ff3140!important;filter:drop-shadow(0 0 12px rgba(255,25,45,.7));transform:scale(1.08)}
+#eventList .event-card i{transition:color .24s ease,filter .24s ease,transform .24s ease!important}
+@media(max-width:700px){#loading.v109-intro18>.v109-album-hero17{padding:62px 14px 22px!important}#eventList .event-card:hover{transform:translateY(-4px) scale(1.008)!important}}
+@media(prefers-reduced-motion:reduce){#loading.v109-intro18::before{animation:none!important}#eventList .event-card,#eventList .event-card i{transition:none!important}}
+</style>
+<script id="tomauno-v109-fix18-js">
+(function(){
+'use strict';
+function installIntro18(){
+  var loading=document.getElementById('loading'),hero=document.querySelector('#view-events>.v109-album-hero17');
+  if(!loading||!hero||typeof window.toggleL!=='function')return;
+  loading.classList.add('v109-intro18');loading.appendChild(hero);
+  var original=window.toggleL,first=true,started=0,timer=0;
+  function finish(){first=false;loading.classList.remove('v109-intro18');if(hero.parentNode)hero.remove()}
+  window.toggleL=function(show,text){
+    if(show&&first){started=Date.now();return original.call(this,show,text)}
+    if(!show&&first){var wait=Math.max(0,1400-(Date.now()-started));if(wait){clearTimeout(timer);timer=setTimeout(function(){original.call(window,false,text);finish()},wait);return}var r=original.call(this,false,text);finish();return r}
+    return original.apply(this,arguments)
+  };
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installIntro18);else installIntro18();
+})();
+</script>
+<!-- /TOMAUNO V109 FIX18 -->
+<!-- TOMAUNO V109 FIX19: fondo limpio y copiar configuración en lote -->
+<style id="tomauno-v109-fix19-css">
+/* Tras la presentación inicial, el listado vuelve al negro uniforme. */
+#view-events{background:#000!important}
+#view-events::before,#view-events::after{display:none!important;content:none!important;animation:none!important}
+/* La barra administrativa admite las nuevas acciones sin salir del contenedor. */
+#v91GroupBar{width:min(1080px,calc(100vw - 18px))!important;flex-wrap:wrap!important}
+#v91CopyConfig19,#v91PasteConfig19{border-color:#66541d!important;color:#f1cb56!important;background:#171409!important}
+#v91PasteConfig19:not(:disabled){border-color:#b91620!important;color:#fff!important;background:#2a0508!important;box-shadow:0 0 13px rgba(235,20,35,.13)!important}
+#v91CopyConfig19:not(:disabled):hover,#v91PasteConfig19:not(:disabled):hover{border-color:#ff2634!important;box-shadow:0 0 17px rgba(235,20,35,.25)!important}
+@media(max-width:700px){#v91CopyConfig19,#v91PasteConfig19{flex:1 1 calc(50% - 5px)}}
+</style>
+<script id="tomauno-v109-fix19-js">
+(function(){
+'use strict';
+var copied19=null,busy19=false;
+function E(id){return document.getElementById(id)}
+function model(){return window.__v91Model||null}
+function clone(v){return JSON.parse(JSON.stringify(v==null?null:v))}
+function extras(a){return ((a&&a.products)||[]).filter(function(p){return p&&p.extraProduct}).map(function(p){return{label:String(p.label||''),price:Number(p.price||0),mode:String(p.mode||'cant'),type:String(p.type||'producto')}})}
+function payloadFrom(a){return{
+  gestion:a.gestion||'TOMAUNO',whatsappVentas:a.whatsappVentas||'',pagoModo:a.pagoModo||'TOMAUNO',aliasPago:a.aliasPago||'',cbuPago:a.cbuPago||'',
+  logoModo:a.logoModo||'TOMAUNO',logoUrl:a.logoUrl||'',fotografo:a.fotografo||'',instagram:a.instagram||'',telefonoPublico:a.telefonoPublico||'',
+  pDigital:Number(a.pDigital||0),pPrint:Number(a.pPrint||0),pFull:Number(a.pFull||0),productosJson:JSON.stringify(extras(a)),
+  modeloComercial:a.modeloComercial||'NINGUNO',tarifaMensual:Number(a.tarifaMensual||0),comisionPct:Number(a.comisionPct||0),comisionBase:a.comisionBase||'TOTAL',
+  fechaInicio:a.fechaInicio||'',fechaVencimiento:a.fechaVencimiento||'',avisosExternos:a.avisosExternos!==false,mensajeVacio:a.mensajeVacio||'Muy pronto las fotografías',descargaCompleta:!!a.descargaCompleta
+}}
+function install19(){
+  var bar=E('v91GroupBar');if(!bar||E('v91CopyConfig19'))return;
+  var copy=document.createElement('button');copy.id='v91CopyConfig19';copy.type='button';copy.textContent='⧉ COPIAR CONFIG.';copy.title='Copiar la configuración del álbum seleccionado';
+  var paste=document.createElement('button');paste.id='v91PasteConfig19';paste.type='button';paste.textContent='▣ PEGAR CONFIG.';paste.title='Aplicar la configuración copiada a los álbumes seleccionados';
+  var clear=E('v91ClearBtn');bar.insertBefore(copy,clear);bar.insertBefore(paste,clear);
+  copy.onclick=copyConfig19;paste.onclick=pasteConfig19;sync19()
+}
+function sync19(){var m=model(),n=m?m.selected.size:0,c=E('v91CopyConfig19'),p=E('v91PasteConfig19');if(c)c.disabled=busy19||n!==1;if(p){p.disabled=busy19||!copied19||n<1;p.textContent=copied19?'▣ PEGAR CONFIG. ('+n+')':'▣ PEGAR CONFIG.'}}
+function copyConfig19(){
+  var m=model();if(!m||m.selected.size!==1)return;
+  var id=Array.from(m.selected)[0],a=(m.all||[]).find(function(x){return String(x.bridgeId||'')===String(id)});if(!a)return;
+  copied19={sourceId:String(id),sourceName:String(a.displayName||'Álbum'),payload:payloadFrom(a),products:clone(a.products||[])};
+  m.selected.clear();if(window.v91Render)window.v91Render();sync19();
+  if(window.miniToast)miniToast('Configuración copiada de '+copied19.sourceName)
+}
+async function pasteConfig19(){
+  var m=model();if(!m||!copied19||!m.selected.size||busy19)return;
+  var ids=Array.from(m.selected).filter(function(id){return String(id)!==copied19.sourceId});
+  if(!ids.length){if(window.luxAlert)luxAlert('SIN DESTINOS','Seleccioná uno o más álbumes distintos del original.');return}
+  var question='Se copiará la configuración de “'+copied19.sourceName+'” en '+ids.length+' álbum'+(ids.length===1?'':'es')+'.\n\nSe conservarán nombres, descripciones, claves, carpetas, fotos y pedidos. ¿Continuar?';
+  var ok=typeof window.luxConfirmAsync==='function'?await luxConfirmAsync('PEGAR CONFIGURACIÓN',question):confirm(question);if(!ok)return;
+  busy19=true;sync19();var done=0,errors=[];
+  try{
+    for(var i=0;i<ids.length;i++){
+      var id=ids[i],button=E('v91PasteConfig19');if(button)button.textContent='APLICANDO '+(i+1)+'/'+ids.length+'…';
+      try{
+        var data=Object.assign({action:'updateAlbumConfig',pin:'3233',bridgeId:id},clone(copied19.payload));
+        var r=await apiPost(data);if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
+        var a=(m.all||[]).find(function(x){return String(x.bridgeId||'')===String(id)});if(a){Object.assign(a,clone(copied19.payload));a.products=clone(copied19.products)}done++
+      }catch(e){errors.push(id+': '+(e.message||e))}
+    }
+    m.selected.clear();if(window.eventsData)window.eventsData=m.all.map(function(x){return Object.assign({},x)});if(window.v91Render)window.v91Render();
+    if(errors.length&&window.luxAlert)luxAlert('PROCESO INCOMPLETO','Configuración aplicada a '+done+' de '+ids.length+' álbumes.\n\n'+errors.join('\n'));
+    else if(window.miniToast)miniToast('Configuración aplicada a '+done+' álbum'+(done===1?'':'es'))
+  }finally{busy19=false;sync19()}
+}
+document.addEventListener('click',function(){setTimeout(function(){install19();sync19()},20)},true);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install19);else install19();
+})();
+</script>
+<!-- /TOMAUNO V109 FIX19 -->
+<!-- TOMAUNO V109 FIX20: barra horizontal y protección reforzada -->
+<style id="tomauno-v109-fix20-css">
+/* En escritorio todas las acciones visibles comparten una única fila. */
+#lightbox .v107-light-actions{width:min(980px,calc(100vw - 24px))!important;grid-template-columns:repeat(auto-fit,minmax(135px,1fr))!important}
+#lightbox .v107-light-actions #v109BackGallery16{order:1!important}
+#lightbox .v107-light-actions #zoomSelectBtn{order:2!important}
+#lightbox .v107-light-actions #v109ZoomPrint10{order:3!important}
+#lightbox .v107-light-actions #v101CoreoBtn{order:4!important}
+#lightbox .v107-light-actions #zoomConfirmBtn{order:5!important;grid-column:auto!important}
+/* El logo central ocupa una porción mayor para desalentar capturas utilizables. */
+#lightbox .v109-clean-wordmark{font-size:min(22vw,43cqw,285px)!important;opacity:.60!important;text-shadow:0 2px 5px rgba(0,0,0,.42)!important}
+body.v109-tomauno-final .photo-watermark{background-size:98% auto!important;opacity:.45!important}
+/* Marco más ancho e intenso, manteniendo el rojo oscuro de la interfaz. */
+#lightbox #zoomImg,#lightbox.selected-zoom #zoomImg{border:3px solid rgba(150,22,31,.88)!important;outline:1px solid rgba(255,255,255,.38)!important;outline-offset:1px!important;box-shadow:0 0 0 1px rgba(255,35,48,.24),0 18px 55px rgba(0,0,0,.75),0 0 24px rgba(215,15,30,.16)!important}
+.photo-box{border-width:2px!important;border-color:rgba(255,255,255,.30)!important}
+.photo-box.selected{border-color:#f02432!important}
+@media(max-width:700px){
+  #lightbox .v107-light-actions{width:calc(100vw - 16px)!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #lightbox .v107-light-actions #zoomConfirmBtn{grid-column:auto!important}
+  #lightbox .v109-clean-wordmark{font-size:min(29vw,46cqw,190px)!important;opacity:.60!important}
+}
+</style>
+<!-- /TOMAUNO V109 FIX20 -->
 </body>
 </html>
