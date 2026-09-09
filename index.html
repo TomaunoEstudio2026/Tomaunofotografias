@@ -1540,6 +1540,11 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
       <span class="label">Álbumes</span>
     </button>
 
+    <button type="button" id="v116TalentAdminBtn" class="v70-tool" data-tip="Ver perfiles y contactos recibidos" onclick="if(window.tomaunoOpenTalents)window.tomaunoOpenTalents()">
+      <span aria-hidden="true" style="font-size:18px">✨</span>
+      <span class="label">Talentos / contactos</span>
+    </button>
+
     <button type="button" class="v70-tool" data-tip="Seleccionar o deseleccionar todos los pedidos visibles"
       onclick="toggleSelectVisibleOrders64();setTimeout(function(){if(window.updateCount70)window.updateCount70()},20)">
       <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 3 3 5-6"/></svg>
@@ -1584,6 +1589,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   <button type="button" class="v72-btn" onclick="openFreeTicket()" title="Ticket libre">🎫</button>
   <button type="button" class="v72-btn" onclick="document.getElementById('modalAdminCheat').style.display='flex'" title="Machete">☷</button>
   <button type="button" class="v72-btn" onclick="enterAlbumAdminMode()" title="Administrar álbumes">▣ <span>Álbumes</span></button>
+  <button type="button" id="v116TalentAdminVisibleBtn" class="v72-btn" onclick="if(window.tomaunoOpenTalents)window.tomaunoOpenTalents();else if(window.miniToast)miniToast('Actualizá Código.gs para consultar los talentos.');" title="Ver talentos y contactos registrados">✨ <span>Talentos</span></button>
   <button type="button" class="v72-btn" onclick="toggleSelectVisibleOrders64();setTimeout(function(){if(window.updateCount70)window.updateCount70()},20)" title="Seleccionar visibles">☑ <span>Seleccionar</span></button>
   <button type="button" class="v72-btn danger" onclick="deleteSelectedOrders64()" title="Eliminar marcados">⌫ <span>Eliminar marcados</span></button>
   <button type="button" class="v72-btn danger" onclick="deleteSelectedEventOrders()" title="Vaciar evento">🗑 <span>Vaciar evento</span></button>
@@ -4846,7 +4852,9 @@ function attr(s) {
     btn.onclick=function(){window.open(toDriveUrl(target),'_blank');};
     var title=qs('currentEventTitle'); if(title&&title.parentNode) title.parentNode.insertBefore(btn,title);
   }
-  setInterval(function(){try{ensureFullDownloadButton(); if(qs('view-events')&&qs('view-events').style.display!=='none') hideCart();}catch(e){}},1200);
+  var oldLoadPhotos11=window.loadPhotos;
+  if(typeof oldLoadPhotos11==='function'&&!oldLoadPhotos11.__v11download){var wrappedLoad11=async function(){var r=await oldLoadPhotos11.apply(this,arguments);ensureFullDownloadButton();return r};wrappedLoad11.__v11download=true;window.loadPhotos=wrappedLoad11;}
+  window.addEventListener('load',ensureFullDownloadButton);
 })();
 </script>
 <!-- /TOMAUNO V11 -->
@@ -5646,11 +5654,11 @@ function attr(s) {
 
   function whatsappFallback(order,total,paymentId,reason){
     var phone='5493764354522';
-    var text='📸 *TOMAUNO - AYUDA CON MI COMPRA*\\n\\n'
-      +'🧾 *Pedido:* '+order+'\\n'
-      +'💰 *Total esperado:* $'+Number(total||0).toLocaleString('es-AR')+'\\n'
-      +(paymentId?'💳 *ID de pago:* '+paymentId+'\\n':'')
-      +'⚠️ *Situación:* '+reason+'\\n\\n'
+    var text='📸 *TOMAUNO - AYUDA CON MI COMPRA*\n\n'
+      +'🧾 *Pedido:* '+order+'\n'
+      +'💰 *Total esperado:* $'+Number(total||0).toLocaleString('es-AR')+'\n'
+      +(paymentId?'💳 *ID de pago:* '+paymentId+'\n':'')
+      +'⚠️ *Situación:* '+reason+'\n\n'
       +'Necesito ayuda para acceder a mis fotografías.';
     return 'https://wa.me/'+phone+'?text='+encodeURIComponent(text);
   }
@@ -12498,8 +12506,9 @@ function syncExternalButtons108(){var a=currentAlbum108(),ext=a&&String(a.gestio
 
 /* 8) Identidad del álbum: Tomauno / neutra / logo URL */
 function syncBrand108(){var a=currentAlbum108(),logo=document.querySelector('header .logo-txt');if(!logo||!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();if(mode==='NEUTRO'){logo.innerHTML='<span class="v108-neutral-brand">FOTOGRAFÍAS DEL EVENTO</span>';logo.onclick=window.v108GoHome}else if(mode==='PERSONALIZADO'&&a.logoUrl){logo.innerHTML='<img class="v108-album-logo" style="display:block" src="'+String(a.logoUrl).replace(/"/g,'&quot;')+'" alt="Logo del fotógrafo">';logo.onclick=window.v108GoHome}else{logo.innerHTML='Estudio Toma<span>uno</span>';logo.onclick=window.v108GoHome}}
-setInterval(function(){hardenSecrets108(document);addGears108();bindMultiDrag108();syncExternalButtons108()},900);
-document.addEventListener('DOMContentLoaded',function(){hardenSecrets108(document);setTimeout(function(){addGears108();bindMultiDrag108()},300)});
+document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('#eventList .event-card,#zoomConfirmBtn,#btnConfirm,#modalAdmin button,#v109Manager button'):null;if(t)setTimeout(function(){hardenSecrets108(document);addGears108();bindMultiDrag108();syncExternalButtons108()},30)},true);
+document.addEventListener('tomauno-view-change',function(){hardenSecrets108(document);syncExternalButtons108()});
+document.addEventListener('DOMContentLoaded',function(){hardenSecrets108(document);setTimeout(function(){addGears108();bindMultiDrag108();syncExternalButtons108()},300)});
 })();
 </script>
 <!-- /TOMAUNO V108 -->
@@ -12628,7 +12637,7 @@ body.v109-custom-watermark .photo-watermark,body.v109-custom-watermark .zoom-wat
   /* Limpia opciones técnicas/duplicadas del selector inicial después de cada render heredado. */
   function cleanMode(){var box=E('modeOptions');if(!box)return;var seen={};Array.from(box.children).forEach(function(c){var t=(c.textContent||'').toLowerCase();if(/sinlogo|libre_libre|condescarga/.test(t)){c.remove();return}var k=/impres/.test(t)?'p':/digital|descarga/.test(t)?'d':/seleccion/.test(t)?'s':/servicios|packs/.test(t)?'x':'';if(k&&seen[k])c.remove();else if(k)seen[k]=1})}
   document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('.event-card'))setTimeout(cleanMode,30)},true);
-  setInterval(cleanMode,1200);
+  var modeBox3=E('modeOptions');if(modeBox3)new MutationObserver(cleanMode).observe(modeBox3,{childList:true});
   conditional();
 })();
 </script>
@@ -12851,7 +12860,7 @@ body.v109-custom-watermark .photo-watermark,body.v109-custom-watermark .zoom-wat
   var g=document.getElementById('v109Gestion');if(g)g.addEventListener('change',tuneForm);
   /* Marca: Tomauno histórica; neutra/personal se aplican también al visor */
   function wm(){return;/* FIX8: reemplazado por marca única */var a=curAlbum(),b=document.body;b.classList.remove('v109-tomauno-watermark','v109-neutral-watermark','v109-custom-watermark');document.documentElement.style.removeProperty('--v109-watermark-url');if(!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();if(mode==='NEUTRO')b.classList.add('v109-neutral-watermark');else if(mode==='PERSONALIZADO'&&a.logoUrl){b.classList.add('v109-custom-watermark');document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/["\n\r]/g,'')+'")')}else b.classList.add('v109-tomauno-watermark')}
-  window.addEventListener('load',function(){wm();decoratePrint();tuneForm()});setInterval(function(){decoratePrint()},1200);
+  window.addEventListener('load',function(){wm();decoratePrint();tuneForm()});document.addEventListener('tomauno-state-change',decoratePrint);
 })();
 </script>
 <!-- /TOMAUNO V109 FIX7 -->
@@ -13031,7 +13040,7 @@ function configuredModes(){var list=allProducts(),out=[],seen={};function add(p,
 function offeredPrices(){var a=currentAlbum(),parts=[],pd=Number(a&&a.pDigital||0),prints=printProducts().map(function(p){return Number(p.price||0)}).filter(function(n){return n>0});if(pd>0)parts.push('Digital $'+pd.toLocaleString('es-AR'));if(prints.length)parts.push('Impresiones desde $'+Math.min.apply(Math,prints).toLocaleString('es-AR'));return parts.join(' · ')}
 window.openModeModal=function(){var ps=configuredModes(),box=E('modeOptions');window.__v109Modes10=ps;if(box)box.innerHTML=ps.map(function(p,i){var l=norm(p.label),isSelection=!!(p.selectionOnly||/seleccion|fotolibro|edicion/.test(l)),label=p.isFullAlbum?'PACK ÁLBUM COMPLETO':(isSelection?'SELECCIONAR FOTOGRAFÍAS':(/digital|descarga/.test(l)?'COMPRAR FOTOGRAFÍAS':String(p.label||'')));var icon=p.isFullAlbum?'📦':(isSelection?'📋':'📷');var price=Number(p.price||0),detail=isSelection?'Solo lista e indicaciones':(p.isFullAlbum?(price>0?'$'+price.toLocaleString('es-AR'):'GRATIS'):(offeredPrices()||'Elegí las fotografías que querés comprar'));return '<div class="mode-card" onclick="chooseOrderMode('+i+')"><span class="ico">'+icon+'</span><b>'+esc(label)+'</b><span>'+esc(detail)+'</span></div>'}).join('')||'<p style="color:#888">Este álbum todavía no tiene opciones configuradas.</p>';if(E('modalMode'))E('modalMode').style.display='flex'}
 window.chooseOrderMode=async function(idx){var p=(window.__v109Modes10||configuredModes())[Number(idx)];if(!p)return;var isSelection=!!(p.selectionOnly||/seleccion|fotolibro|edicion/.test(norm(p.label)));if(isSelection){var ok=typeof luxConfirmAsync==='function'?await luxConfirmAsync('ATENCIÓN','Esta opción no compra impresiones ni archivos digitales. Sólo sirve para enviar una selección e indicaciones al fotógrafo.\n\n¿Querés continuar?'):confirm('Esta opción sólo sirve para enviar una selección e indicaciones. ¿Querés continuar?');if(!ok)return}selectedMainProduct=p;window.selectedMainProduct=p;extraQuantities={};selectedPhotos=[];window.__tomaunoPhotoMeta={};if(E('modalMode'))E('modalMode').style.display='none';if(p.isFullAlbum){isFullAlbumMode=true;updateFooter();openCheckout();return}isFullAlbumMode=false;loadPhotos(currentAlbum().id,currentAlbum().displayName);setTimeout(function(){try{updateFooter()}catch(e){}decorateGallery()},100)}
-function usableLogoUrl(value){var u=String(value||'').trim(),m=u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([-\w]{20,})/i);return m?'https://drive.google.com/uc?export=view&id='+m[1]:u}
+function usableLogoUrl(value){var u=String(value||'').trim(),m=u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([-\w]{20,})/i);return m?'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w1600':u}
 function centerLogo(){var a=currentAlbum();if(!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase(),logo=usableLogoUrl(a.logoUrl);document.body.classList.remove('v109-no-watermark','v109-tomauno-final','v109-neutral-final','v109-custom-final');document.documentElement.style.removeProperty('--v109-watermark-url');if(mode==='NINGUNO'||mode==='SIN_PROTECCION'||mode==='SIN PROTECCION'){document.body.classList.add('v109-no-watermark')}else if(mode==='PERSONALIZADO'&&logo){document.body.classList.add('v109-custom-final');document.documentElement.style.setProperty('--v109-watermark-url','url("'+logo.replace(/["\n\r]/g,'')+'")')}else if(mode==='NEUTRO'){document.body.classList.add('v109-neutral-final')}else{document.body.classList.add('v109-tomauno-final')}}
 function albumModel(){return window.__v91||window.__V91||window.__v91Model||null}
 function decorateCovers(){var m=albumModel();if(!m)return;document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){var id=card.getAttribute('data-v91album'),a=(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)});if(!a)return;var old=card.querySelector('.v109-public-meta');if(old)old.remove();if(!(a.fotografo||a.instagram||a.telefonoPublico))return;var row=document.createElement('div');row.className='v109-public-meta';var ig=String(a.instagram||'').replace(/^@/,'').trim(),wa=String(a.telefonoPublico||'').replace(/\D/g,''),igUrl=ig?'https://instagram.com/'+ig:'',waUrl=wa?'https://wa.me/'+wa+'?text='+encodeURIComponent('Hola, vengo del álbum '+String(a.displayName||'')+' publicado en Tomauno Fotografías.'):'';if(a.fotografo){var name=document.createElement('a');name.className='v109-photographer';name.href=igUrl||waUrl||'#';name.target=(igUrl||waUrl)?'_blank':'';name.textContent='📷 '+a.fotografo;name.onclick=function(e){e.stopPropagation();if(!(igUrl||waUrl))e.preventDefault()};row.appendChild(name)}if(igUrl){var ia=document.createElement('a');ia.href=igUrl;ia.target='_blank';ia.textContent='📸 @'+ig;ia.onclick=function(e){e.stopPropagation()};row.appendChild(ia)}if(waUrl){var w=document.createElement('a');w.href=waUrl;w.target='_blank';w.textContent='💬 WhatsApp';w.onclick=function(e){e.stopPropagation()};row.appendChild(w)}card.appendChild(row)})}
@@ -13087,7 +13096,15 @@ window.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.t
 
 /* F4 abre directamente Administración de álbumes. */
 window.addEventListener('keydown',function(e){if(e.key!=='F4')return;e.preventDefault();e.stopImmediatePropagation();var m=window.__v91||window.__V91||window.__v91Model;if((m&&m.admin)||document.body.classList.contains('v91-album-admin'))return;var ok=false;try{ok=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(_e){}if(ok&&typeof window.enterAlbumAdminMode==='function')window.enterAlbumAdminMode();else if(typeof window.openAdminPin==='function'){window.__v109OpenAlbumsAfterPin=true;window.openAdminPin()}},true);
-var pinTimer11=setInterval(function(){if(!window.__v109OpenAlbumsAfterPin)return;var ok=false;try{ok=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(e){}if(ok){window.__v109OpenAlbumsAfterPin=false;if(typeof window.enterAlbumAdminMode==='function')window.enterAlbumAdminMode()}},250);
+var checkAdminPin11=window.checkAdminPin;
+if(typeof checkAdminPin11==='function'&&!checkAdminPin11.__opensAlbums11){
+  window.checkAdminPin=function(){
+    var result=checkAdminPin11.apply(this,arguments);
+    setTimeout(function(){var ok=false;try{ok=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(e){}if(window.__v109OpenAlbumsAfterPin&&ok){window.__v109OpenAlbumsAfterPin=false;if(typeof window.enterAlbumAdminMode==='function')window.enterAlbumAdminMode()}},0);
+    return result;
+  };
+  window.checkAdminPin.__opensAlbums11=true;
+}
 
 /* Datos de pago externo visibles en el checkout. */
 function externalData11(){var a=currentAlbum11(),modal=E('modalCheckout');if(!modal)return;var old=modal.querySelector('.v109-external-payment-data');if(old)old.remove();if(!a||String(a.pagoModo||'').toUpperCase()!=='EXTERNO')return;var alias=String(a.aliasPago||'').trim(),cbu=String(a.cbuPago||'').replace(/\D/g,'');if(!alias&&!cbu)return;var n=document.createElement('div');n.className='v109-external-payment-data';n.innerHTML='<b>Datos para pagar al fotógrafo</b>'+(alias?'<br>Alias: '+alias:'')+(cbu?'<br>CBU: '+cbu:'');var actions=modal.querySelector('.t50-actions');if(actions)actions.parentNode.insertBefore(n,actions)}
@@ -13277,7 +13294,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 #lightbox .v107-light-actions #zoomConfirmBtn{order:4!important;border-color:#b91620!important;box-shadow:inset 0 0 0 1px rgba(255,25,35,.08)!important}
 #lightbox.selected-zoom .v107-light-actions #zoomSelectBtn,
 #lightbox .v107-light-actions #v109ZoomPrint10.active{border-color:#f12632!important;background:linear-gradient(135deg,#170104,#340309)!important;box-shadow:0 0 14px rgba(235,20,35,.2)!important}
-body.v109-lightbox-open #floatingCart{display:none!important}
+/* La visibilidad del carrito queda a cargo de un único controlador de estado. */
 #zoomCounter{position:fixed!important;top:10px!important;bottom:auto!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;margin:0!important;z-index:10055!important}
 #zoomSelectionTools{position:fixed!important;left:50%!important;bottom:76px!important;transform:translateX(-50%)!important;z-index:10058!important;width:max-content!important;max-width:calc(100vw - 24px)!important;margin:0!important;padding:6px!important;border:1px solid #292929!important;border-radius:13px!important;background:rgba(3,3,3,.92)!important}
 #zoomInlineComment{position:fixed!important;left:50%!important;bottom:126px!important;transform:translateX(-50%)!important;z-index:10059!important}
@@ -13457,7 +13474,7 @@ function payloadFrom(a){return{
   logoModo:a.logoModo||'TOMAUNO',logoUrl:a.logoUrl||'',fotografo:a.fotografo||'',instagram:a.instagram||'',telefonoPublico:a.telefonoPublico||'',
   pDigital:Number(a.pDigital||0),pPrint:Number(a.pPrint||0),pFull:Number(a.pFull||0),productosJson:JSON.stringify(extras(a)),
   modeloComercial:a.modeloComercial||'NINGUNO',tarifaMensual:Number(a.tarifaMensual||0),comisionPct:Number(a.comisionPct||0),comisionBase:a.comisionBase||'TOTAL',
-  fechaInicio:a.fechaInicio||'',fechaVencimiento:a.fechaVencimiento||'',avisosExternos:a.avisosExternos!==false,mensajeVacio:a.mensajeVacio||'Muy pronto las fotografías',descargaCompleta:!!a.descargaCompleta
+  fechaInicio:a.fechaInicio||'',fechaVencimiento:a.fechaVencimiento||'',avisosExternos:a.avisosExternos!==false,mensajeVacio:a.mensajeVacio||'Muy pronto las fotografías',descargaCompleta:!!a.descargaCompleta,talentosEnabled:!!a.talentosEnabled,reaccionesEnabled:!!a.reaccionesEnabled
 }}
 function install19(){
   var bar=E('v91GroupBar');if(!bar||E('v91CopyConfig19'))return;
@@ -13523,5 +13540,473 @@ body.v109-tomauno-final .photo-watermark{background-size:98% auto!important;opac
 }
 </style>
 <!-- /TOMAUNO V109 FIX20 -->
+<!-- TOMAUNO V109 FIX21: estados visuales, carrito y administración móvil -->
+<style id="tomauno-v109-fix21-css">
+/* La selección se reconoce sobre la foto, aun sin mirar el texto del botón. */
+.photo-box.selected{
+  border:5px solid #ff0018!important;
+  box-shadow:0 0 0 2px rgba(255,255,255,.88),0 0 27px rgba(255,0,24,.78),0 10px 28px rgba(0,0,0,.72)!important;
+}
+.photo-box.selected .check-mark{
+  background:#ff0018!important;border-color:#fff!important;color:#fff!important;
+  box-shadow:0 0 0 2px rgba(255,0,24,.42),0 0 18px rgba(255,0,24,.9)!important;
+  transform:scale(1.1)!important;
+}
+#lightbox.selected-zoom #zoomImg{
+  border:5px solid #ff0018!important;
+  outline:2px solid rgba(255,255,255,.72)!important;
+  box-shadow:0 0 0 2px rgba(255,0,24,.36),0 0 32px rgba(255,0,24,.62),0 18px 55px rgba(0,0,0,.78)!important;
+}
+.v109-zoom-selected21{display:none;position:absolute;right:12px;top:12px;z-index:65;width:42px;height:42px;border-radius:50%;align-items:center;justify-content:center;background:#ff0018;color:#fff;border:3px solid #fff;box-shadow:0 0 20px rgba(255,0,24,.9);font:900 23px/1 Arial;pointer-events:none}
+#lightbox.selected-zoom .v109-zoom-selected21{display:flex!important}
+.v109-print-corner21{display:none;position:absolute;right:9px;bottom:9px;z-index:62;min-width:31px;height:31px;padding:0 8px;border-radius:999px;align-items:center;justify-content:center;gap:4px;background:#080808;color:#fff;border:2px solid #ff1d2f;box-shadow:0 0 15px rgba(255,0,24,.58);font:900 11px Arial;pointer-events:none}
+.v109-print-corner21.on{display:flex!important}
+.v109-zoom-print21{right:12px;bottom:12px;z-index:66;height:35px;min-width:35px}
+/* Confirmar es el último paso: queda centrado en su propia línea. */
+#lightbox{padding-bottom:132px!important}
+#lightbox #zoomImg{max-height:calc(100vh - 205px)!important}
+#lightbox .v107-light-actions{grid-template-columns:repeat(4,minmax(125px,1fr))!important;width:min(900px,calc(100vw - 24px))!important}
+#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:2/4!important;order:10!important}
+/* En el visor, el carrito permanece visible arriba y no se cruza con las acciones. */
+body.v109-lightbox-open #floatingCart.v109-viewer-cart21{
+  display:flex!important;position:fixed!important;top:68px!important;right:12px!important;bottom:auto!important;left:auto!important;
+  z-index:10080!important;min-width:118px!important;height:45px!important;background:#0a0a0a!important;border:1px solid #ed1b2a!important;
+}
+/* Se eliminan etiquetas internas de versión que parecían botones del checkout. */
+#v91Version,#v92Version,#v93Version,#v94Version,#v95Version,#v96Version,#v97Version,#v98Version,#v99Version,#v100Version,#v101Version,#v102Version,#v103Version,#v104Version,#v105Version,#v106Version,#v107Version,#v108Version{display:none!important}
+@media(max-width:700px){
+  /* La pantalla completa del ADM desplaza; los pedidos dejan de quedar atrapados en una ventanita. */
+  #modalAdmin{display:none;align-items:flex-start!important;overflow-y:auto!important;overflow-x:hidden!important;padding:0!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
+  #modalAdmin[style*="display: flex"],#modalAdmin[style*="display:flex"]{display:flex!important}
+  #modalAdmin .modal-box{display:block!important;width:100%!important;max-width:none!important;height:auto!important;min-height:100dvh!important;max-height:none!important;margin:0!important;padding:10px 8px 100px!important;border-radius:0!important;overflow:visible!important;box-sizing:border-box!important}
+  #modalAdmin #adminOrders{display:block!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:0 2px!important}
+  #modalAdmin .admin-tools{position:static!important;top:auto!important}
+  #modalAdmin .order-actions{position:static!important}
+  #v91GroupBar{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;transform:none!important;margin:10px auto!important}
+  #lightbox{padding-bottom:154px!important}
+  #lightbox #zoomImg{max-height:calc(100dvh - 225px)!important}
+  #lightbox .v107-light-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:calc(100vw - 16px)!important}
+  #lightbox .v107-light-actions #zoomConfirmBtn{grid-column:1/-1!important}
+  body.v109-lightbox-open #floatingCart.v109-viewer-cart21{top:8px!important;right:8px!important;height:39px!important;min-width:102px!important;padding:0 10px!important}
+  .v109-zoom-selected21{width:36px;height:36px;font-size:20px}
+}
+</style>
+<script id="tomauno-v109-fix21-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}}
+function selected(){try{return window.selectedPhotos||selectedPhotos||[]}catch(e){return []}}
+function qty(id){var ps=(((window.__tomaunoPhotoMeta||{})[String(id)]||{}).prints)||{},n=0;Object.keys(ps).forEach(function(k){n+=Math.max(0,Number(ps[k]||0))});return n}
+function current(){var list=photos(),idx;try{idx=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){idx=-1}if(list[idx])return list[idx];var src=(E('zoomImg')||{}).src||'';return list.find(function(p){return src===p.urlWeb||src.indexOf(String(p.id))>=0})||null}
+function ensureZoomMarks21(){var img=E('zoomImg'),host=img&&img.parentElement;if(!host)return;host.style.position='relative';if(!E('v109ZoomSelected21')){var s=document.createElement('span');s.id='v109ZoomSelected21';s.className='v109-zoom-selected21';s.textContent='✓';host.appendChild(s)}if(!E('v109ZoomPrintBadge21')){var b=document.createElement('span');b.id='v109ZoomPrintBadge21';b.className='v109-print-corner21 v109-zoom-print21';host.appendChild(b)}}
+function decorate21(){
+  photos().forEach(function(p){var card=E('p-'+p.id);if(!card)return;var isSel=selected().some(function(x){return String(x.id)===String(p.id)});card.classList.toggle('selected',isSel);var b=card.querySelector('.v109-print-corner21');if(!b){b=document.createElement('span');b.className='v109-print-corner21';card.appendChild(b)}var q=qty(p.id);b.classList.toggle('on',q>0);b.innerHTML=q>0?'🖨 <b>'+q+'</b>':''});
+  ensureZoomMarks21();var p=current(),lb=E('lightbox'),q=p?qty(p.id):0,zb=E('v109ZoomPrintBadge21');if(zb){zb.classList.toggle('on',q>0);zb.innerHTML=q>0?'🖨 <b>'+q+'</b>':''}if(lb&&p){var isSel=selected().some(function(x){return String(x.id)===String(p.id)});lb.classList.toggle('selected-zoom',isSel)}
+  var cart=E('floatingCart'),open=!!(lb&&getComputedStyle(lb).display!=='none'),hasOrder=selected().length>0||Object.keys(window.__tomaunoPhotoMeta||{}).some(function(id){return qty(id)>0});if(cart)cart.classList.toggle('v109-viewer-cart21',open&&hasOrder&&!window.__orderCompleted)
+}
+/* Sanea cualquier enlace de WhatsApp heredado que todavía traiga /n o \\n literales. */
+function cleanWhatsApp21(){document.querySelectorAll('a[href*="wa.me"],a[href*="api.whatsapp.com"]').forEach(function(a){var h=a.getAttribute('href')||'',m=h.match(/([?&]text=)([^&]*)/);if(!m)return;try{var t=decodeURIComponent(m[2].replace(/\+/g,' ')).replace(/(?:\\n|\/n)/gi,'\n');a.setAttribute('href',h.replace(m[0],m[1]+encodeURIComponent(t)))}catch(e){}})}
+var lb=E('lightbox');if(lb)new MutationObserver(function(){setTimeout(decorate21,0)}).observe(lb,{attributes:true,attributeFilter:['style','class']});
+var list=E('photoList');if(list)new MutationObserver(function(){setTimeout(decorate21,0)}).observe(list,{childList:true,subtree:true});
+document.addEventListener('tomauno-state-change',decorate21);
+window.addEventListener('load',function(){decorate21();cleanWhatsApp21()});
+})();
+</script>
+<!-- /TOMAUNO V109 FIX21 -->
+<!-- TOMAUNO V109 FIX22: impresión rápida, coreografía y checkout -->
+<style id="tomauno-v109-fix22-css">
+/* Protección Tomauno un poco más amplia. */
+#lightbox .v109-clean-wordmark{font-size:min(25vw,48cqw,330px)!important;opacity:.62!important}
+body.v109-tomauno-final .photo-watermark{background-size:108% auto!important;opacity:.47!important}
+body.v109-tomauno-final #lightbox .zoom-watermark img{width:106%!important;height:106%!important;opacity:.38!important}
+/* Imprimir conserva la misma identidad neutra de los otros botones. */
+#lightbox .v107-light-actions #v109ZoomPrint10,
+#lightbox .v107-light-actions #v109ZoomPrint10.active{
+  background:#0a0a0a!important;color:#fff!important;border-color:#343434!important;box-shadow:none!important;
+}
+#lightbox .v107-light-actions #v109ZoomPrint10:hover{border-color:#f12632!important;box-shadow:0 0 14px rgba(235,20,35,.22)!important}
+/* El indicador pequeño abre las opciones detalladas. */
+.v109-print-corner21{pointer-events:auto!important;cursor:pointer!important}
+.v109-print-corner21:hover{background:#251014!important;transform:scale(1.06)}
+/* Una referencia de coreografía usa bailarina en lugar de la tilde común. */
+.photo-box.v109-coreo-ref22 .check-mark i{display:none!important}
+.photo-box.v109-coreo-ref22 .check-mark::before{content:'💃';font-size:20px;line-height:1}
+.photo-box.v109-coreo-ref22 .check-mark{background:#651018!important;border-color:#fff!important;box-shadow:0 0 17px rgba(255,0,28,.72)!important}
+.v103-coreo-chip{left:8px!important;right:auto!important;bottom:8px!important;padding:6px 9px!important;background:rgba(5,5,5,.9)!important;border:2px solid #ff1730!important;color:#fff!important;font-size:10px!important}
+#v103CoreoCount{display:none!important}
+.v109-zoom-coreo22{display:none;position:absolute;left:12px;bottom:12px;z-index:67;min-width:40px;height:36px;padding:0 10px;border-radius:999px;align-items:center;justify-content:center;gap:4px;background:rgba(5,5,5,.92);border:2px solid #ff1730;color:#fff;box-shadow:0 0 17px rgba(255,0,28,.58);font:900 12px Arial;pointer-events:none}
+.v109-zoom-coreo22.on{display:flex!important}
+/* Barra roja/negra en el listado de miniaturas del pedido. */
+#modalCheckout .t50-photo-list{scrollbar-width:thin!important;scrollbar-color:#d90018 #090909!important}
+#modalCheckout .t50-photo-list::-webkit-scrollbar{width:10px!important}
+#modalCheckout .t50-photo-list::-webkit-scrollbar-track{background:#090909!important;border-radius:10px!important}
+#modalCheckout .t50-photo-list::-webkit-scrollbar-thumb{background:linear-gradient(#ff1830,#79000d)!important;border:2px solid #090909!important;border-radius:10px!important}
+@media(max-width:700px){
+  #lightbox .v109-clean-wordmark{font-size:min(33vw,52cqw,220px)!important}
+  /* Primero datos personales; luego servicios, importes y fotos. */
+  #modalCheckout .t50-body{display:flex!important;flex-direction:column!important;overflow-y:auto!important}
+  #modalCheckout .t50-right{order:1!important}
+  #modalCheckout .t50-left{order:2!important}
+}
+</style>
+<script id="tomauno-v109-fix22-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
+function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}}
+function current(){var idx;try{idx=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){idx=-1}return photos()[idx]||null}
+function idFromCard(card){return card&&String(card.id||'').replace(/^p-/,'')}
+function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
+function printProducts(){return (((album()||{}).products)||[]).filter(function(p){return norm(p.type)==='impresion'&&Number(p.price||0)>0})}
+function defaultPrint(){var ps=printProducts();return ps.find(function(p){return /15\s*[x×]\s*21/.test(norm(p.label))})||ps[0]||null}
+function printQty(id){var n=0,ps=meta(id).prints;Object.keys(ps).forEach(function(k){n+=Math.max(0,Number(ps[k]||0))});return n}
+function quickPrint22(id){var p=defaultPrint();if(!p||!id)return;if(typeof window.v109PrintQty10==='function')window.v109PrintQty10(String(id),String(p.label),1);else{meta(id).prints[p.label]=Number(meta(id).prints[p.label]||0)+1}setTimeout(decorate22,20);if(window.miniToast)miniToast('🖨 '+p.label+': '+Number(meta(id).prints[p.label]||0)+' copia'+(Number(meta(id).prints[p.label]||0)===1?'':'s'))}
+function refs(){var out=[];photos().forEach(function(p){var id=String(p.id||p.fileId||p.name||'');if(id&&meta(id).coreoRef)out.push({id:id,p:p})});return out}
+function ensureZoomCoreo22(){var img=E('zoomImg'),host=img&&img.parentElement;if(!host)return null;var b=E('v109ZoomCoreo22');if(!b){b=document.createElement('span');b.id='v109ZoomCoreo22';b.className='v109-zoom-coreo22';host.appendChild(b)}return b}
+function orderCheckout22(){var right=document.querySelector('#modalCheckout .t50-right'),extras=E('extrasBox'),name=E('userName'),phone=E('userPhone'),notes=E('userNotes'),flow=E('selectionWorkflowBox');if(!right||!extras||!name||!phone||right.dataset.v109Order22==='1')return;right.insertBefore(name,right.firstChild);right.insertBefore(phone,name.nextSibling);if(notes)right.insertBefore(notes,phone.nextSibling);if(flow)right.insertBefore(flow,notes?notes.nextSibling:phone.nextSibling);right.appendChild(extras);right.dataset.v109Order22='1'}
+function decorate22(){
+  var rr=refs(),numbers={};rr.forEach(function(r,i){numbers[r.id]=i+1});
+  photos().forEach(function(p){var id=String(p.id||p.fileId||p.name||''),card=E('p-'+id);if(!card)return;var n=numbers[id]||0;card.classList.toggle('v109-coreo-ref22',!!n);var chip=card.querySelector('.v103-coreo-chip');if(n){if(!chip){chip=document.createElement('span');chip.className='v103-coreo-chip';card.appendChild(chip)}chip.innerHTML='💃 <b>'+n+'</b>'}else if(chip)chip.remove();var pb=card.querySelector('.v109-print-corner21');if(pb){pb.title='Cambiar tamaño o cantidad';pb.onclick=function(e){e.preventDefault();e.stopPropagation();if(window.v109OpenPrint10)window.v109OpenPrint10(id)}}});
+  var cp=current(),zb=ensureZoomCoreo22(),n=cp?numbers[String(cp.id||cp.fileId||cp.name||'')]:0;if(zb){zb.classList.toggle('on',!!n);zb.innerHTML=n?'💃 <b>'+n+'</b>':''}
+  var zpb=E('v109ZoomPrintBadge21');if(zpb&&cp){zpb.title='Cambiar tamaño o cantidad';zpb.onclick=function(e){e.preventDefault();e.stopPropagation();if(window.v109OpenPrint10)window.v109OpenPrint10(String(cp.id||cp.fileId||cp.name||''))}}
+  orderCheckout22();
+}
+/* Botón grande: una pulsación suma una copia 15x21 (o el primer tamaño disponible). */
+document.addEventListener('click',function(e){var b=e.target.closest('#v109ZoomPrint10,.v109-thumb-print16,.v109-gallery-print');if(!b)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var card=b.closest('.photo-box'),p=card?null:current(),id=card?idFromCard(card):String((p&&(p.id||p.fileId||p.name))||'');quickPrint22(id)},true);
+document.addEventListener('click',function(){setTimeout(decorate22,35)},true);
+var lb=E('lightbox');if(lb)new MutationObserver(function(){setTimeout(decorate22,0)}).observe(lb,{attributes:true,attributeFilter:['style','class']});
+var checkout=E('modalCheckout');if(checkout)new MutationObserver(function(){setTimeout(orderCheckout22,0)}).observe(checkout,{childList:true,subtree:true,attributes:true,attributeFilter:['style']});
+window.addEventListener('load',decorate22);
+})();
+</script>
+<!-- /TOMAUNO V109 FIX22 -->
+<!-- TOMAUNO V109 FIX23: alta dentro del padre, Drive y enlaces públicos -->
+<style id="tomauno-v109-fix23-css">
+/* Instagram y WhatsApp se reconocen inmediatamente como acciones. */
+#eventList .v109-public-meta a[href*="instagram.com"]{color:#65c8ff!important;border-color:rgba(101,200,255,.55)!important;background:rgba(15,72,105,.22)!important}
+#eventList .v109-public-meta a[href*="wa.me"]{color:#62e99a!important;border-color:rgba(75,220,134,.55)!important;background:rgba(12,88,48,.22)!important}
+#eventList .v109-public-meta a[href*="instagram.com"]:hover{color:#fff!important;border-color:#48bfff!important;box-shadow:0 0 14px rgba(72,191,255,.35)!important;transform:translateY(-1px)}
+#eventList .v109-public-meta a[href*="wa.me"]:hover{color:#fff!important;border-color:#42df84!important;box-shadow:0 0 14px rgba(66,223,132,.35)!important;transform:translateY(-1px)}
+#eventList .v109-public-meta a{transition:color .2s ease,border-color .2s ease,box-shadow .2s ease,transform .2s ease!important}
+</style>
+<script id="tomauno-v109-fix23-js">
+(function(){
+'use strict';
+function model(){return window.__v91Model||window.__v91||window.__V91||null}
+function parent(){var m=model();return m?String(m.parent||'').trim():''}
+function parseProducts(v){try{var p=JSON.parse(String(v||'[]'));return Array.isArray(p)?p:[]}catch(e){return []}}
+/* Todo alta iniciada dentro de un padre hereda ese padre en la misma operación. */
+var api23=window.apiPost;
+if(typeof api23==='function'&&!api23.__v109fix23){
+  var wrap23=function(data){
+    var creating=!!(data&&data.action==='createAlbumV109'),g=creating?parent():'';
+    if(creating&&g&&!String(data.group||'').trim())data.group=g;
+    var result=api23.apply(this,arguments);
+    if(!creating)return result;
+    return Promise.resolve(result).then(function(r){
+      if(!r||r.success===false)return r;
+      var m=model(),id=String(r.bridgeId||''),exists=m&&(m.all||[]).some(function(a){return String(a.bridgeId||'')===id});
+      if(m&&id&&!exists){
+        m.all.push({bridgeId:id,id:r.sourceFolderId||id,sourceFolderId:r.sourceFolderId||id,displayName:String(data.title||'Nuevo álbum'),description:String(data.description||''),pass:String(data.pass||''),visible:data.visible!==false,gestion:data.gestion||'TOMAUNO',origenFotos:data.origenFotos||'ROOT',fotografo:data.fotografo||'',instagram:data.instagram||'',telefonoPublico:data.telefonoPublico||'',pDigital:Number(data.pDigital||0),pPrint:Number(data.pPrint||0),pFull:Number(data.pFull||0),logoModo:data.logoModo||'TOMAUNO',logoUrl:data.logoUrl||'',talentosEnabled:!!data.talentosEnabled,reaccionesEnabled:!!data.reaccionesEnabled,products:parseProducts(data.productosJson),group:String(data.group||r.group||g||''),configurado:true});
+        if(typeof window.v91Render==='function')window.v91Render();
+      }
+      return r;
+    });
+  };
+  wrap23.__v109fix23=true;window.apiPost=wrap23;
+}
+})();
+</script>
+<!-- /TOMAUNO V109 FIX23 -->
+<!-- TOMAUNO V111: bienvenida separada, contactos finos y contadores en vivo -->
+<style id="tomauno-v110-css">
+#view-events{isolation:isolate!important;overflow:visible!important;background:transparent!important;min-height:calc(100vh - 82px)!important}
+#view-events::before{display:block!important;content:''!important;position:absolute!important;z-index:-2!important;top:0!important;bottom:0!important;left:50%!important;right:auto!important;width:100vw!important;height:auto!important;transform:translateX(-50%)!important;pointer-events:none!important;background:radial-gradient(circle at 64% 12%,rgba(218,0,27,.24),transparent 28%),radial-gradient(circle at 18% 58%,rgba(112,0,15,.16),transparent 34%),linear-gradient(rgba(255,255,255,.026) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.026) 1px,transparent 1px),linear-gradient(145deg,#090000 0%,#020202 42%,#090003 100%)!important;background-size:auto,auto,54px 54px,54px 54px,auto!important}
+#view-events::after{display:block!important;content:''!important;position:absolute!important;z-index:-1!important;inset:0!important;pointer-events:none!important;background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.08) 55%,rgba(0,0,0,.24) 100%)!important;filter:none!important;animation:none!important}
+.v110-welcome{width:min(900px,calc(100% - 18px));box-sizing:border-box;margin:0 auto;padding:30px 22px 26px;text-align:center;border:1px solid rgba(255,18,35,.58);border-radius:22px;background:linear-gradient(145deg,rgba(28,2,6,.92),rgba(3,3,3,.82));box-shadow:0 24px 70px rgba(0,0,0,.42),0 0 38px rgba(255,0,25,.15)}
+#loading.v109-intro18>.v109-album-hero17{display:none!important}
+#loading.v109-intro18>.v110-welcome{position:relative;z-index:3;order:3;width:min(760px,calc(100vw - 28px))}
+.v110-kicker{display:inline-flex;padding:6px 12px;border:1px solid rgba(240,25,42,.46);border-radius:999px;color:#ff2938;font:900 9px Arial;letter-spacing:2px}
+.v110-welcome h1{margin:14px 0 7px;color:#fff;font:900 clamp(28px,4.8vw,52px)/1 Arial;letter-spacing:-1.4px;text-transform:uppercase}.v110-welcome h1 span{color:#f01828}
+.v110-lead{max-width:680px;margin:0 auto;color:#d2d2d2;font:500 clamp(13px,1.7vw,16px)/1.5 Arial}.v110-lead b{color:#fff}
+.v110-trust{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;margin-top:17px}.v110-trust span,.v110-more{display:inline-flex;align-items:center;justify-content:center;min-height:31px;padding:0 12px;border:1px solid #343434;border-radius:999px;background:#090909;color:#aaa;font:800 9px Arial;letter-spacing:.35px}.v110-trust strong{color:#ff2335;font-size:13px;margin-right:5px}
+.v110-more{color:#fff!important;border-color:#85101c!important;text-decoration:none!important;transition:.2s ease}.v110-more:hover{border-color:#ff2033!important;background:#260308!important;box-shadow:0 0 18px rgba(240,20,38,.25);transform:translateY(-1px)}
+.v110-album-bar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:-8px auto 17px;color:#8d8d8d;font:800 9px Arial;letter-spacing:.35px}.v110-album-bar strong{color:#ff1b31;font-size:12px}.v110-album-bar a{color:#ddd;text-decoration:none;border-bottom:1px solid #e3172b;padding-bottom:2px}.v110-album-bar a:hover{color:#fff;text-shadow:0 0 12px rgba(255,20,42,.55)}
+.v110-album-visits{display:block;margin-top:7px;color:#8f8f8f;font:700 8px Arial;letter-spacing:.25px;background:none!important;border:0!important;padding:0!important;border-radius:0!important}
+#v110Version{position:fixed;right:8px;bottom:5px;z-index:9999;color:#666;font:800 8px Arial;letter-spacing:.75px;pointer-events:none;text-shadow:0 1px 2px #000}
+#eventList .v109-public-meta a{background:transparent!important;border:0!important;border-radius:0!important;padding:1px 3px!important;box-shadow:none!important}
+#eventList .v109-public-meta a[href*="instagram.com"]{color:#f25591!important}
+#eventList .v109-public-meta a[href*="wa.me"]{color:#36d978!important}
+#eventList .v109-public-meta a:hover{color:#fff!important;background:transparent!important;box-shadow:none!important;text-shadow:0 0 11px currentColor!important;transform:translateY(-1px)}
+@media(max-width:700px){.v110-welcome{margin-top:10px;padding:23px 13px 20px;border-radius:18px}.v110-welcome h1{letter-spacing:-.7px}.v110-trust{gap:6px}.v110-trust span,.v110-more{padding:0 9px;font-size:8px}#v110Version{font-size:7px;right:5px;bottom:3px}}
+</style>
+<div id="v110Version">TOMAUNO FOTOS · V111</div>
+<script id="tomauno-v110-js">
+(function(){
+'use strict';
+var stats110={siteTotal:0,albums:{}},introDone110=false;
+function E(id){return document.getElementById(id)}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function model(){return window.__v91Model||window.__v91||window.__V91||null}
+function digits(v){return String(v||'').replace(/\D/g,'')}
+function installWelcome110(){var loading=E('loading');if(introDone110||!loading||E('v110Welcome'))return;var h=document.createElement('section');h.id='v110Welcome';h.className='v110-welcome';h.innerHTML='<span class="v110-kicker">TOMAUNO ESTÁ CON VOS</span><h1>Reviví tus momentos. <span>Para toda la vida.</span></h1><p class="v110-lead">Cada imagen guarda una historia. Encontrá la tuya con la <b>calidad, seguridad y experiencia</b> que hacen de Tomauno una elección de confianza.</p><div class="v110-trust"><span id="v110IntroVisits">👁 Visitas al sitio</span><span>✦ FOTOGRAFÍA CON EXPERIENCIA</span></div>';loading.appendChild(h)}
+function installAlbumBar110(){var view=E('view-events'),title=view&&view.querySelector('h2');if(!title)return;var bar=E('v110AlbumBar');if(!bar){bar=document.createElement('div');bar.id='v110AlbumBar';bar.className='v110-album-bar';bar.innerHTML='<span id="v110SiteVisits">👁 <strong>0</strong> visitas al sitio</span><span>•</span><a href="https://cursostomauno.vercel.app/" target="_blank" rel="noopener">CONOCÉ TOMAUNO →</a>';title.insertAdjacentElement('afterend',bar)}}
+function contact110(a){var parts=[],ig=String(a.instagram||'').replace(/^@/,'').trim(),wa=digits(a.telefonoPublico);if(ig)parts.push('<a href="https://instagram.com/'+encodeURIComponent(ig)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">📸 @'+esc(ig)+'</a>');if(wa)parts.push('<a href="https://wa.me/'+wa+'?text='+encodeURIComponent('Hola, vengo del álbum '+String(a.displayName||'')+' publicado en Tomauno Fotografías.')+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">💬 WhatsApp</a>');return parts.join('')}
+function decorate110(){installWelcome110();installAlbumBar110();var m=model(),map={};if(m)(m.all||[]).forEach(function(a){map[String(a.bridgeId||'')]=a});document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){var id=String(card.getAttribute('data-v91album')||''),a=map[id]||{},row=card.querySelector('.v109-public-meta');if(!row&&(a.instagram||a.telefonoPublico)){row=document.createElement('div');row.className='v109-public-meta';card.appendChild(row)}if(row){var tmp=document.createElement('div');tmp.innerHTML=contact110(a);tmp.querySelectorAll('a').forEach(function(link){var href=link.getAttribute('href')||'',selector=href.indexOf('instagram.com')>-1?'a[href*="instagram.com"]':'a[href*="wa.me"]';if(!row.querySelector(selector))row.appendChild(link)})}var badge=card.querySelector('.v110-album-visits');if(!badge){badge=document.createElement('span');badge.className='v110-album-visits';card.appendChild(badge)}var visitText='👁 '+Number(stats110.albums[id]||0).toLocaleString('es-AR')+' visitas';if(badge.textContent!==visitText)badge.textContent=visitText});var total=Number(stats110.siteTotal||0).toLocaleString('es-AR'),s=E('v110SiteVisits'),intro=E('v110IntroVisits');if(s)s.innerHTML='👁 <strong>'+total+'</strong> visitas al sitio';if(intro)intro.innerHTML='<strong>'+total+'</strong> visitas al sitio'}
+function refreshStats110(){if(typeof window.apiGet!=='function')return Promise.resolve();return apiGet({action:'visitStats',t:Date.now()}).then(function(r){if(r&&r.success!==false){stats110.siteTotal=Number(r.siteTotal||0);stats110.albums=r.albums||{};decorate110()}}).catch(function(){})}
+function trackSite110(){if(typeof window.apiPost!=='function')return;apiPost({action:'trackVisit',visitType:'SITE'}).then(function(r){if(r&&r.success!==false){stats110.siteTotal=Number(r.total||stats110.siteTotal);decorate110()}refreshStats110()}).catch(function(){refreshStats110()})}
+function trackAlbum110(){var a;try{a=window.activeEvent||activeEvent}catch(e){a=window.activeEvent}if(!a||typeof window.apiPost!=='function')return;var id=String(a.bridgeId||a.id||'');if(!id)return;apiPost({action:'trackVisit',visitType:'ALBUM',bridgeId:id,albumName:String(a.displayName||'')}).then(function(r){if(r&&r.success!==false){stats110.albums[id]=Number(r.total||0);decorate110()}}).catch(function(){})}
+var mode110=window.openModeModal;if(typeof mode110==='function'&&!mode110.__v110){var wm=function(){var r=mode110.apply(this,arguments);trackAlbum110();return r};wm.__v110=true;window.openModeModal=wm}
+var render110=window.v91Render;if(typeof render110==='function'&&!render110.__v110){var wr=function(){var r=render110.apply(this,arguments);setTimeout(decorate110,25);return r};wr.__v110=true;window.v91Render=wr}
+var list110=E('eventList');if(list110)new MutationObserver(function(){setTimeout(decorate110,0)}).observe(list110,{childList:true,subtree:true});
+var loading110=E('loading');if(loading110)new MutationObserver(function(){if(!loading110.classList.contains('v109-intro18')&&list110&&list110.children.length){introDone110=true;var w=E('v110Welcome');if(w)w.remove()}}).observe(loading110,{attributes:true,attributeFilter:['class']});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installWelcome110();installAlbumBar110();trackSite110()});else{installWelcome110();installAlbumBar110();trackSite110()}
+window.addEventListener('load',function(){[120,500,1400].forEach(function(ms){setTimeout(function(){decorate110();refreshStats110()},ms)});setInterval(refreshStats110,20000)});
+})();
+</script>
+<!-- /TOMAUNO V111 -->
+<!-- TOMAUNO V112: visor jerarquizado y bienvenida inicial única -->
+<style id="tomauno-v112-css">
+:root{--tomauno-red:#ff0018!important}
+/* La bienvenida sólo pertenece al primer ingreso. */
+body.v112-intro-finished #v110Welcome{display:none!important}
+#loading.v109-intro18>i{order:2!important;margin:0 0 13px!important;font-size:54px!important;color:#ff0018!important;filter:drop-shadow(0 0 18px rgba(255,0,24,.66))!important}
+#loading.v109-intro18>.v110-welcome{order:3!important}
+.v110-welcome .v110-kicker,.v110-welcome .v110-trust{display:none!important}
+.v110-welcome h1{margin:0 0 14px!important;text-transform:none!important;font-size:clamp(31px,5vw,58px)!important;line-height:1.02!important;letter-spacing:-1.7px!important}
+.v110-welcome .v110-lead{font-size:clamp(14px,1.8vw,18px)!important}.v110-welcome .v112-brand{color:#ff0018!important;font-weight:950!important;text-shadow:0 0 18px rgba(255,0,24,.34)}
+.v110-welcome{animation:v113WelcomeBreath 3.8s ease-in-out infinite!important}
+.v112-story,.v112-with{margin:0!important;text-align:center!important}.v112-story{color:#fff!important;font:800 clamp(15px,2vw,20px)/1.4 Arial!important}.v112-with{margin-top:7px!important;color:#ff0018!important;font:950 clamp(17px,2.2vw,23px)/1.3 Arial!important;text-shadow:0 0 17px rgba(255,0,24,.38)!important}
+@keyframes v113WelcomeBreath{0%,100%{box-shadow:0 22px 65px rgba(0,0,0,.48),0 0 22px rgba(255,0,24,.10)}50%{box-shadow:0 27px 82px rgba(0,0,0,.62),0 0 52px rgba(255,0,24,.31)}}
+@media(prefers-reduced-motion:reduce){.v110-welcome{animation:none!important}}
+/* Nombre del archivo fuera de la imagen, centrado y discreto. */
+#lightbox #zoomFileName{position:absolute!important;left:50%!important;right:auto!important;bottom:-27px!important;transform:translateX(-50%)!important;max-width:min(82vw,620px)!important;width:max-content!important;padding:3px 9px!important;border:0!important;border-radius:0!important;background:transparent!important;color:#888!important;text-align:center!important;font-size:9px!important;line-height:1.2!important;box-shadow:none!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+/* Neutra más suave y proporcionada. */
+body.v109-neutral-final .photo-watermark::before{font-size:clamp(58px,10vw,108px)!important;color:rgba(255,255,255,.43)!important;opacity:.38!important;text-shadow:0 2px 10px rgba(0,0,0,.48)!important}
+body.v109-neutral-final #lightbox .zoom-watermark::before{font-size:clamp(125px,22vw,270px)!important;color:rgba(255,255,255,.43)!important;opacity:.38!important;text-shadow:0 3px 15px rgba(0,0,0,.52)!important}
+/* Estado de guardado visible dentro del formulario oscuro. */
+#v109Status.on{padding:13px 18px!important;background:linear-gradient(145deg,#310007,#100002)!important;border:2px solid #ff0018!important;color:#fff!important;box-shadow:0 18px 70px #000,0 0 26px rgba(255,0,24,.38)!important;border-radius:12px!important}
+/* El botón oculto de coreografía no puede ocupar una celda vacía. */
+#lightbox .v107-light-actions #v101CoreoBtn[style*="display: none"],#lightbox .v107-light-actions #v101CoreoBtn:empty{display:none!important}
+/* Seleccionar es la acción primaria; confirmar cierra el recorrido a la derecha. */
+#lightbox{padding-bottom:145px!important}
+#lightbox .v107-light-actions{grid-template-columns:repeat(4,minmax(120px,1fr))!important;width:min(920px,calc(100vw - 24px))!important}
+#lightbox .v107-light-actions #zoomSelectBtn{grid-column:2/4!important;order:1!important;background:#0b0b0b!important;border:2px solid #ff0018!important;box-shadow:0 0 17px rgba(255,0,24,.20)!important;font-size:11px!important}
+#lightbox.selected-zoom .v107-light-actions #zoomSelectBtn{background:#ff0018!important;color:#fff!important;box-shadow:0 0 21px rgba(255,0,24,.42)!important}
+#lightbox .v107-light-actions #v109BackGallery16{grid-column:auto!important;order:2!important}
+#lightbox .v107-light-actions #v101CoreoBtn{grid-column:auto!important;order:3!important}
+#lightbox .v107-light-actions #v109ZoomPrint10{grid-column:auto!important;order:4!important}
+#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:4!important;order:5!important;border-color:#ff0018!important}
+/* Carrito siempre localizable dentro del visor. */
+body.v109-lightbox-open #floatingCart{display:flex!important;position:fixed!important;top:68px!important;right:12px!important;bottom:auto!important;left:auto!important;z-index:10080!important;min-width:112px!important}
+/* Herramientas exclusivas del proceso de selección. */
+#zoomSelectionTools.v112-tools{display:flex;gap:7px!important;align-items:center;justify-content:center;flex-wrap:wrap;position:fixed!important;left:50%!important;bottom:112px!important;transform:translateX(-50%)!important;z-index:10070!important;width:max-content!important;max-width:calc(100vw - 20px)!important;padding:6px!important;border:1px solid #343434!important;border-radius:13px!important;background:rgba(3,3,3,.94)!important}
+#zoomSelectionTools.v112-tools .selection-mini-btn{border:1px solid #3b3b3b!important;background:#090909!important;color:#fff!important}
+#zoomSelectionTools.v112-tools .selection-mini-btn.active{border-color:#ff0018!important;background:#3a0007!important;box-shadow:0 0 12px rgba(255,0,24,.3)!important}
+#zoomInlineComment.v112-note{position:fixed!important;left:50%!important;bottom:160px!important;transform:translateX(-50%)!important;z-index:10072!important}
+@media(max-width:700px){
+  #lightbox{padding-bottom:204px!important}
+  #lightbox #zoomImg{max-height:calc(100dvh - 285px)!important}
+  #lightbox .v107-light-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #lightbox .v107-light-actions #zoomSelectBtn{grid-column:1/-1!important}
+  #lightbox .v107-light-actions #zoomConfirmBtn{grid-column:2!important}
+  #zoomSelectionTools.v112-tools{bottom:162px!important}
+  #zoomInlineComment.v112-note{bottom:211px!important;width:calc(100vw - 24px)!important}
+  body.v109-lightbox-open #floatingCart{top:8px!important;right:8px!important;min-width:98px!important}
+}
+</style>
+<script id="tomauno-v112-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function product(){try{return window.getSelectedProduct?window.getSelectedProduct():(window.selectedMainProduct||selectedMainProduct)}catch(e){return window.selectedMainProduct||null}}
+function selectionMode(){var p=product();return !!(p&&(p.selectionOnly||/seleccion|fotolibro|edicion/.test(norm(p.label))))}
+function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}}
+function selected(){try{return window.selectedPhotos||selectedPhotos||[]}catch(e){return []}}
+function current(){var i;try{i=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){i=-1}return photos()[Number(i)]||null}
+function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};return window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={})}
+function ensureSelected(id){if(selected().some(function(p){return String(p.id)===String(id)}))return;try{if(typeof window.togglePhoto==='function')window.togglePhoto(id);else if(typeof togglePhoto==='function')togglePhoto(id)}catch(e){}}
+function simplifyIntro(){var w=E('v110Welcome');if(!w)return;w.innerHTML='<h1>Reviví tus momentos para toda la vida.</h1><p class="v112-story">Cada imagen guarda una historia.</p><p class="v112-with">Tomauno Está con Vos!</p>'}
+function finishIntro(){document.body.classList.add('v112-intro-finished');var w=E('v110Welcome');if(w)w.remove()}
+function decorateSelectionTools(){var lb=E('lightbox'),show=selectionMode()&&lb&&getComputedStyle(lb).display!=='none',tools=E('zoomSelectionTools'),ta=E('zoomInlineComment');if(!show){if(tools)tools.style.setProperty('display','none','important');if(ta)ta.style.setProperty('display','none','important');return}if(!tools){tools=document.createElement('div');tools.id='zoomSelectionTools';lb.appendChild(tools)}tools.className='v112-tools';tools.innerHTML='<button type="button" class="selection-mini-btn" data-v112-action="cover">📕 PORTADA</button><button type="button" class="selection-mini-btn" data-v112-action="priority">⭐ IMPORTANTE</button><button type="button" class="selection-mini-btn" data-v112-action="comment">📝 NOTA</button>';tools.style.removeProperty('display');if(!ta){ta=document.createElement('textarea');ta.id='zoomInlineComment';ta.placeholder='Comentario opcional para esta foto';lb.appendChild(ta)}ta.classList.add('v112-note');var p=current();if(!p)return;var m=meta(p.id),pid=String(p.id),previous=ta.getAttribute('data-photo-id');if(previous!==pid)ta.classList.remove('is-open');ta.setAttribute('data-photo-id',pid);if(document.activeElement!==ta)ta.value=String(m.comment||m.note||'');if(!ta.classList.contains('is-open'))ta.style.setProperty('display','none','important');else ta.style.removeProperty('display');tools.querySelector('[data-v112-action="cover"]').classList.toggle('active',!!m.cover);tools.querySelector('[data-v112-action="priority"]').classList.toggle('active',!!(m.priority||m.important));tools.querySelector('[data-v112-action="comment"]').classList.toggle('active',!!String(m.comment||m.note||'').trim())}
+function syncViewer(){var lb=E('lightbox'),open=!!(lb&&getComputedStyle(lb).display!=='none');document.body.classList.toggle('v109-lightbox-open',open);decorateSelectionTools();document.dispatchEvent(new CustomEvent('tomauno-view-change'))}
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('#eventList .event-card'))finishIntro();var b=e.target.closest&&e.target.closest('[data-v112-action]');if(!b)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var p=current();if(!p)return;ensureSelected(p.id);var m=meta(p.id),a=b.getAttribute('data-v112-action'),ta=E('zoomInlineComment');if(a==='cover')m.cover=!m.cover;if(a==='priority'){m.priority=!m.priority;m.important=m.priority}if(a==='comment'&&ta){ta.classList.toggle('is-open');if(ta.classList.contains('is-open')){ta.style.removeProperty('display');setTimeout(function(){ta.focus()},20)}else ta.style.setProperty('display','none','important')}decorateSelectionTools();try{if(window.renderOrderSummary)window.renderOrderSummary()}catch(_e){}},true);
+document.addEventListener('input',function(e){if(e.target.id!=='zoomInlineComment')return;var p=current();if(!p)return;meta(p.id).comment=e.target.value;meta(p.id).note=e.target.value},true);
+var loading=E('loading');if(loading)new MutationObserver(function(){simplifyIntro();if(E('eventList')&&E('eventList').children.length&&getComputedStyle(loading).display==='none')finishIntro()}).observe(loading,{attributes:true,attributeFilter:['style','class'],childList:true});
+var lb=E('lightbox');if(lb)new MutationObserver(function(){setTimeout(syncViewer,0)}).observe(lb,{attributes:true,attributeFilter:['style','class']});
+var zi=E('zoomImg');if(zi)new MutationObserver(function(){setTimeout(syncViewer,0)}).observe(zi,{attributes:true,attributeFilter:['src']});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',simplifyIntro);else simplifyIntro();
+window.addEventListener('load',function(){simplifyIntro();setTimeout(function(){if(E('eventList')&&E('eventList').children.length)finishIntro()},2200);syncViewer()});
+})();
+</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V113';</script>
+<!-- /TOMAUNO V112 -->
+<!-- TOMAUNO V114: talentos por álbum y correcciones finales del visor -->
+<style id="tomauno-v114-css">
+/* La tilde queda libre: Portada, Importante y Nota se agrupan abajo a la izquierda. */
+.v109-thumb-tools16{left:8px!important;right:auto!important}
+/* La visibilidad del carrito se resuelve en un único controlador de estado. */
+/* Cinco posiciones claras en escritorio. */
+#lightbox .v107-light-actions{grid-template-columns:repeat(5,minmax(105px,1fr))!important}
+#lightbox .v107-light-actions #zoomSelectBtn{grid-column:2/5!important;grid-row:1!important}
+#lightbox .v107-light-actions #v109BackGallery16{grid-column:1!important;grid-row:2!important}
+#lightbox .v107-light-actions #v101CoreoBtn{grid-column:2!important;grid-row:2!important}
+#lightbox .v107-light-actions #v109ZoomPrint10{grid-column:3!important;grid-row:2!important}
+#lightbox .v107-light-actions #v114TalentBtn{grid-column:4!important;grid-row:2!important}
+#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:5!important;grid-row:2!important}
+#v114TalentBtn{font-size:8px!important;border-color:#681321!important;color:#fff!important;background:#100307!important}
+#v114TalentBtn:hover{border-color:#ff0018!important;background:#330009!important}
+.v114-talent-legend{width:min(760px,calc(100% - 24px));margin:9px auto 17px;padding:10px 14px;box-sizing:border-box;text-align:center;border-top:1px solid rgba(255,0,24,.42);border-bottom:1px solid rgba(255,0,24,.20);color:#bdbdbd;font:600 11px/1.45 Arial}.v114-talent-legend b{color:#ff0018}.v114-talent-legend button{margin-left:8px;border:0;background:none;color:#fff;text-decoration:underline;text-decoration-color:#ff0018;text-underline-offset:3px;cursor:pointer;font-weight:850}
+#v114TalentModal{position:fixed;inset:0;z-index:100500;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.9)}#v114TalentModal.open{display:flex}.v114-talent-box{width:min(560px,96vw);max-height:92dvh;overflow:auto;box-sizing:border-box;padding:20px;border:1px solid #ff0018;border-radius:18px;background:linear-gradient(150deg,#100104,#040404 55%);box-shadow:0 24px 80px #000,0 0 34px rgba(255,0,24,.2)}.v114-talent-box h3{margin:0;color:#fff;font-size:20px}.v114-talent-box h3 span{color:#ff0018}.v114-talent-box>p{color:#aaa;font-size:11px;line-height:1.5}.v114-talent-grid{display:grid;grid-template-columns:1fr 90px;gap:8px}.v114-talent-grid .wide{grid-column:1/-1}.v114-talent-grid input,.v114-talent-grid select{width:100%;box-sizing:border-box;padding:11px;border:1px solid #333;border-radius:9px;background:#050505;color:#fff}.v114-consent{display:flex;gap:8px;align-items:flex-start;margin:12px 0;color:#bbb;font-size:10px;line-height:1.4}.v114-talent-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v114-talent-actions button{min-height:41px;border:1px solid #383838;border-radius:10px;background:#111;color:#fff;font-weight:850;cursor:pointer}.v114-talent-actions .send{border-color:#ff0018;background:#d90018}.v114-talent-status{min-height:18px;margin-top:8px;color:#ff6572;font-size:10px;text-align:center}
+#v109TalentWrap select{border-color:rgba(255,0,24,.5)!important;color:#ff7180!important}
+@media(max-width:700px){#lightbox{padding-bottom:250px!important}#lightbox #zoomImg{max-height:calc(100dvh - 330px)!important}#lightbox .v107-light-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}#lightbox .v107-light-actions #zoomSelectBtn{grid-column:1/-1!important;grid-row:1!important}#lightbox .v107-light-actions #v109BackGallery16,#lightbox .v107-light-actions #v101CoreoBtn,#lightbox .v107-light-actions #v109ZoomPrint10,#lightbox .v107-light-actions #v114TalentBtn,#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:auto!important;grid-row:auto!important}#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:2!important}.v114-talent-grid{grid-template-columns:1fr 76px}.v114-talent-box{padding:15px}.v114-talent-legend button{display:block;margin:5px auto 0}}
+</style>
+<div id="v114TalentModal"><div class="v114-talent-box"><h3>✨ QUIERO QUE <span>TOMAUNO</span><br>DESCUBRA MI TALENTO</h3><p>Tu solicitud queda vinculada a esta fotografía y sólo será visible para Tomauno.</p><div class="v114-talent-grid"><input id="v114TalentName" placeholder="Nombre y apellido"><input id="v114TalentAge" type="number" min="12" max="99" placeholder="Edad"><input id="v114TalentInstagram" class="wide" placeholder="Instagram (sin @)"><input id="v114TalentWhatsapp" class="wide" inputmode="numeric" placeholder="WhatsApp"><select id="v114TalentProfile" class="wide"><option value="">¿Cuál es tu perfil?</option><option>Reina / candidata</option><option>Bailarina / bailarín</option><option>Directora / director de cuerpo de baile</option><option>Música / músico</option><option>Modelo</option><option>Otro talento</option></select><input id="v114TalentResponsible" class="wide" placeholder="Si sos menor: contacto de madre, padre o responsable"></div><label class="v114-consent"><input id="v114TalentConsent" type="checkbox"> Autorizo a Tomauno a guardar estos datos y contactarme por una posible sesión o producción fotográfica.</label><div class="v114-talent-actions"><button type="button" onclick="v114CloseTalent()">CANCELAR</button><button type="button" class="send" id="v114TalentSend" onclick="v114SendTalent()">ENVIAR PERFIL</button></div><div id="v114TalentStatus" class="v114-talent-status"></div></div></div>
+<script id="tomauno-v114-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function model(){return window.__v91Model||window.__v91||window.__V91||null}
+function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
+function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}}
+function current(){var i;try{i=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){i=-1}return photos()[Number(i)]||null}
+/* Se ejecuta antes que los controladores antiguos: escribir espacios nunca selecciona la foto. */
+window.addEventListener('keydown',function(e){var t=e.target,tag=String(t&&t.tagName||'').toLowerCase();if((e.code==='Space'||e.key===' ')&&(tag==='textarea'||tag==='input'||(t&&t.isContentEditable)))e.stopImmediatePropagation()},true);
+function installAdmin(){var grid=document.querySelector('#v109Manager .v109-grid');if(!grid||E('v109TalentWrap'))return;var f=document.createElement('div');f.id='v109TalentWrap';f.className='v109-field';f.innerHTML='<label>DESCUBRIR TALENTOS</label><select id="v109TalentEnabled"><option value="NO">DESACTIVADO</option><option value="SI">ACTIVADO EN ESTE ÁLBUM</option></select>';var empty=E('v109Empty')&&E('v109Empty').closest('.v109-field');grid.insertBefore(f,empty||null);E('v109TalentEnabled').addEventListener('change',function(){var s=E('v109SaveBtn9')||document.querySelector('#v109Manager .v109-actions .red');if(s)s.disabled=false})}
+var post114=window.apiPost;if(typeof post114==='function'&&!post114.__v114){var wp=function(data){if(data&&(data.action==='updateAlbumConfig'||data.action==='createAlbumV109')&&E('v109TalentEnabled'))data.talentosEnabled=E('v109TalentEnabled').value==='SI';var out=post114.apply(this,arguments);return Promise.resolve(out).then(function(r){if(r&&r.success!==false&&data&&data.bridgeId&&data.hasOwnProperty('talentosEnabled')){var m=model(),a=m&&(m.all||[]).find(function(x){return String(x.bridgeId)===String(data.bridgeId)});if(a)a.talentosEnabled=!!data.talentosEnabled}return r})};wp.__v114=true;window.apiPost=wp}
+var open114=window.v109Open;if(typeof open114==='function'&&!open114.__v114){var wo=function(id){installAdmin();var r=open114.apply(this,arguments);setTimeout(function(){var m=model(),a=id&&m?(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null;if(E('v109TalentEnabled'))E('v109TalentEnabled').value=a&&a.talentosEnabled?'SI':'NO'},50);return r};wo.__v114=true;window.v109Open=wo}
+function ensureTalentButton(){var row=E('zoomSelectBtn')&&E('zoomSelectBtn').parentElement;if(!row)return;var b=E('v114TalentBtn');if(!b){b=document.createElement('button');b.id='v114TalentBtn';b.type='button';b.className='btn-order';b.textContent='✨ QUIERO QUE TOMAUNO ME DESCUBRA';b.onclick=function(e){e.preventDefault();e.stopPropagation();window.v114OpenTalent()};row.insertBefore(b,E('zoomConfirmBtn')||null)}var a=album(),lb=E('lightbox'),show=!!(a&&a.talentosEnabled&&lb&&getComputedStyle(lb).display!=='none');b.style.setProperty('display',show?'flex':'none','important')}
+function ensureLegend(){var old=E('v114TalentLegend'),a=album(),view=E('view-gallery');if(!a||!a.talentosEnabled||!view){if(old)old.remove();return}if(!old){old=document.createElement('div');old.id='v114TalentLegend';old.className='v114-talent-legend';old.innerHTML='<b>¿QUERÉS QUE TOMAUNO DESCUBRA TU TALENTO?</b> Abrí una foto donde aparezcas y dejanos tu contacto.<button type="button">MÁS INFORMACIÓN</button>';old.querySelector('button').onclick=function(){if(window.luxAlert)luxAlert('TOMAUNO BUSCA TALENTOS','Reviví tus momentos, elegí tus fotografías y dejá que tu talento sea descubierto. Desde el visor de una foto podés enviarnos tu perfil de manera privada.')};var status=E('galleryStatus');if(status&&status.parentNode)status.parentNode.insertBefore(old,status.nextSibling);else view.insertBefore(old,view.firstChild)}}
+window.v114OpenTalent=function(){var a=album(),p=current();if(!a||!a.talentosEnabled)return;if(!p){if(window.luxAlert)luxAlert('ABRÍ UNA FOTO','Elegí primero una fotografía donde aparezcas.');return}E('v114TalentStatus').textContent='';E('v114TalentModal').classList.add('open');setTimeout(function(){E('v114TalentName').focus()},30)};
+window.v114CloseTalent=function(){E('v114TalentModal').classList.remove('open')};
+window.v114SendTalent=async function(){var a=album(),p=current(),btn=E('v114TalentSend'),status=E('v114TalentStatus');if(!a||!p)return;var data={action:'submitTalent',bridgeId:String(a.bridgeId||''),albumName:String(a.displayName||''),photoId:String(p.id||p.fileId||''),photoName:String(p.name||''),name:E('v114TalentName').value.trim(),age:Number(E('v114TalentAge').value||0),instagram:E('v114TalentInstagram').value.trim(),whatsapp:E('v114TalentWhatsapp').value.trim(),profile:E('v114TalentProfile').value,responsible:E('v114TalentResponsible').value.trim(),consent:E('v114TalentConsent').checked};try{btn.disabled=true;btn.textContent='ENVIANDO…';status.textContent='';var r=await apiPost(data);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo enviar');status.style.color='#55e58e';status.textContent='✓ Perfil enviado. Tomauno podrá contactarte.';setTimeout(window.v114CloseTalent,1500)}catch(e){status.style.color='#ff6572';status.textContent=e.message}finally{btn.disabled=false;btn.textContent='ENVIAR PERFIL'}};
+function sync(){ensureTalentButton();ensureLegend();var lb=E('lightbox'),open=!!(lb&&getComputedStyle(lb).display!=='none');document.body.classList.toggle('v109-lightbox-open',open)}
+var lb=E('lightbox');if(lb)new MutationObserver(function(){setTimeout(function(){sync();document.dispatchEvent(new CustomEvent('tomauno-view-change'))},0)}).observe(lb,{attributes:true,attributeFilter:['style']});var img=E('zoomImg');if(img)new MutationObserver(function(){setTimeout(sync,0)}).observe(img,{attributes:true,attributeFilter:['src']});window.addEventListener('load',function(){installAdmin();sync()});
+})();
+</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V114';</script>
+<!-- /TOMAUNO V114 -->
+<!-- TOMAUNO V115: acciones únicas, firmas y bandeja privada de talentos -->
+<style id="tomauno-v115-css">
+#zoomMetaBadges{top:64px!important;justify-content:flex-start!important;right:auto!important;max-width:calc(100% - 85px)!important}
+#zoomMetaBadges .left,#zoomMetaBadges .right{justify-content:flex-start!important}
+#v114TalentBtn{font-size:10px!important;letter-spacing:.25px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+#lightbox .v107-light-actions{grid-template-columns:repeat(6,minmax(96px,1fr))!important}
+#lightbox .v107-light-actions #zoomSelectBtn{grid-column:2/6!important}
+#lightbox .v107-light-actions #v109BackGallery16{grid-column:1!important}
+#lightbox .v107-light-actions #v116PlayBtn{grid-column:2!important}
+#lightbox .v107-light-actions #v101CoreoBtn{grid-column:3!important}
+#lightbox .v107-light-actions #v109ZoomPrint10{grid-column:4!important}
+#lightbox .v107-light-actions #v114TalentBtn{grid-column:5!important}
+#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:6!important}
+#floatingCart{background:#080808!important;border:1px solid #ff0018!important;color:#fff!important;box-shadow:0 0 20px rgba(255,0,24,.28)!important}
+body.v109-lightbox-open #floatingCart{position:fixed!important;top:66px!important;right:12px!important;bottom:auto!important;left:auto!important;z-index:10090!important}
+.v114-talent-box h3{text-align:center!important;line-height:1.12!important}.v114-talent-box h3 span{display:block!important;margin-top:3px!important}
+.v114-talent-grid textarea{grid-column:1/-1;width:100%;min-height:76px;box-sizing:border-box;padding:11px;border:1px solid #333;border-radius:9px;background:#050505;color:#fff;resize:vertical}
+.v115-guardian{display:none!important}.v115-guardian.show{display:block!important}
+.v114-consent{align-items:center!important;font-size:11px!important}.v114-consent input{width:15px!important;height:15px!important;min-width:15px!important;margin:0!important;accent-color:#ff0018!important}
+.v114-talent-legend a{color:#e1306c!important;text-decoration:none!important;font-weight:900!important;margin-left:4px}.v114-talent-legend a:hover{text-decoration:underline!important}
+#v115TalentAdmin{position:fixed;inset:0;z-index:100600;display:none;align-items:flex-start;justify-content:center;padding:18px;background:rgba(0,0,0,.94);overflow:auto}#v115TalentAdmin.open{display:flex}.v115-admin-box{width:min(980px,98vw);padding:18px;box-sizing:border-box;border:1px solid #ff0018;border-radius:16px;background:#080808;color:#fff}.v115-admin-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.v115-admin-head h3{margin:0;color:#ff1a30}.v115-talent-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.v115-talent-card{display:grid;grid-template-columns:105px 1fr;gap:11px;padding:10px;border:1px solid #292929;border-radius:12px;background:#030303}.v115-talent-card img{width:105px;height:120px;object-fit:cover;border-radius:8px;background:#111}.v115-talent-card h4{margin:0 0 5px;color:#fff}.v115-talent-card p{margin:3px 0;color:#bbb;font-size:11px;overflow-wrap:anywhere}.v115-talent-card a{color:#ff4b83}.v115-talent-card select{width:100%;margin-top:7px;padding:7px;background:#111;color:#fff;border:1px solid #444;border-radius:7px}
+#v115TalentToast{display:none;position:fixed;right:18px;top:18px;z-index:100700;max-width:320px;padding:14px 17px;border:1px solid #ff0018;border-radius:12px;background:#090909;color:#fff;box-shadow:0 0 28px rgba(255,0,24,.48);font:800 12px/1.4 Arial}#v115TalentToast.show{display:block;animation:v115in .25s ease}@keyframes v115in{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
+.v117-talent-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}.v117-talent-toolbar button{padding:7px 11px;border:1px solid #333;border-radius:999px;background:#0d0d0d;color:#bbb;cursor:pointer}.v117-talent-toolbar button.active{border-color:#ff0018;color:#fff;background:#350007}.v117-photo{display:block;cursor:zoom-in}.v117-no-photo{width:105px;height:120px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed #444;border-radius:8px;color:#777;font-size:10px}.v117-photo-name{color:#aaa!important}.v117-statuses{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}.v117-statuses label{display:flex;gap:4px;align-items:center;padding:5px 6px;border:1px solid #333;border-radius:7px;color:#bbb;font-size:9px;cursor:pointer}.v117-statuses input{accent-color:#ff0018}.v117-delete{margin-left:auto;border:1px solid #64242b;background:#180407;color:#ff6572;border-radius:8px;padding:6px 9px;cursor:pointer}
+@media(max-width:700px){.v115-talent-list{grid-template-columns:1fr}.v115-talent-card{grid-template-columns:78px 1fr}.v115-talent-card img{width:78px;height:96px}#lightbox .v107-light-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}#lightbox .v107-light-actions #zoomSelectBtn{grid-column:1/-1!important}#lightbox .v107-light-actions #v109BackGallery16,#lightbox .v107-light-actions #v116PlayBtn,#lightbox .v107-light-actions #v101CoreoBtn,#lightbox .v107-light-actions #v109ZoomPrint10,#lightbox .v107-light-actions #v114TalentBtn,#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:auto!important;grid-row:auto!important}#lightbox .v107-light-actions #v114TalentBtn{font-size:9px!important}.v114-talent-grid{grid-template-columns:1fr 72px!important}body.v109-lightbox-open #floatingCart{top:7px!important;right:7px!important}}
+</style>
+<div id="v115TalentToast"></div>
+<div id="v115TalentAdmin"><div class="v115-admin-box"><div class="v115-admin-head"><h3>✨ TALENTOS</h3><button type="button" class="mini-btn" id="v115TalentClose">CERRAR</button></div><div id="v117TalentFilters" class="v117-talent-toolbar"><button type="button" data-filter="TODOS" class="active">TODOS</button><button type="button" data-filter="NUEVO">NUEVOS</button><button type="button" data-filter="VISTO">VISTOS</button><button type="button" data-filter="CONTACTADO">CONTACTADOS</button><button type="button" data-filter="DESCARTADO">DESCARTADOS</button></div><div id="v115TalentList" class="v115-talent-list"></div></div></div>
+<script id="tomauno-v115-js">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
+function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}}
+function selected(){try{return window.selectedPhotos||selectedPhotos||[]}catch(e){return []}}
+function current(){var i;try{i=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){i=-1}return photos()[Number(i)]||null}
+function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
+function selectedHas(id){return selected().some(function(p){return String(p.id||p.fileId||p.name)===String(id)})}
+function ensureSelected(id){if(selectedHas(id))return;var p=photos().find(function(x){return String(x.id||x.fileId||x.name)===String(id)});if(p)selected().push(p);try{if(typeof updateFooter==='function')updateFooter()}catch(e){}try{if(window.updateFooter)window.updateFooter()}catch(e){}}
+function repaint(){try{if(window.tomaunoRefreshBadges)window.tomaunoRefreshBadges()}catch(e){}try{if(window.renderOrderSummary)window.renderOrderSummary()}catch(e){}var p=current(),lb=E('lightbox');if(lb&&p)lb.classList.toggle('selected-zoom',selectedHas(p.id||p.fileId||p.name));document.dispatchEvent(new CustomEvent('tomauno-state-change'))}
+function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function defaultPrint(){var ps=(((album()||{}).products)||[]).filter(function(p){return norm(p.type)==='impresion'&&Number(p.price||0)>0});return ps.find(function(p){return /15\s*[x×]\s*21/.test(norm(p.label))})||ps[0]||null}
+function quickPrint(id){var p=defaultPrint();if(!p||!id){if(window.miniToast)miniToast('Este álbum no tiene impresiones configuradas');return}if(window.v109PrintQty10)window.v109PrintQty10(String(id),String(p.label),1);else meta(id).prints[p.label]=Number(meta(id).prints[p.label]||0)+1;setTimeout(repaint,20)}
+/* Un solo clic gobierna los iconos pequeños de impresión y las marcas editoriales. */
+window.addEventListener('click',function(e){
+  var pb=e.target.closest&&e.target.closest('.v109-print-corner21');
+  if(pb){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var card=pb.closest('.photo-box'),p=card?null:current(),id=card?String(card.id||'').replace(/^p-/,''):String((p&&(p.id||p.fileId||p.name))||'');quickPrint(id);return}
+  var b=e.target.closest&&e.target.closest('[data-v112-action],.v109-thumb-tool16[data-a]');if(!b)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var card=b.closest('.photo-box'),p=card?photos().find(function(x){return String(x.id||x.fileId||x.name)===String(card.id||'').replace(/^p-/,'')}):current();if(!p)return;var id=String(p.id||p.fileId||p.name),a=b.getAttribute('data-v112-action')||b.getAttribute('data-a'),m=meta(id);ensureSelected(id);
+  if(a==='cover'){m.cover=!m.cover;b.classList.toggle('active',!!m.cover)}
+  if(a==='priority'){m.priority=!m.priority;m.important=m.priority;b.classList.toggle('active',!!m.priority)}
+  if(a==='comment'||a==='note'){var ta=E('zoomInlineComment');if(ta&&!card){ta.classList.toggle('is-open');ta.style.setProperty('display',ta.classList.contains('is-open')?'block':'none','important');if(ta.classList.contains('is-open'))setTimeout(function(){ta.focus()},20)}else if(card){var old=String(m.comment||m.note||''),v=prompt('Nota para esta fotografía:',old);if(v!==null){m.comment=v;m.note=v;b.classList.toggle('active',!!v.trim())}}}
+  repaint();
+},true);
+/* Firmas: sincronización directa aun cuando el formulario fue reconstruido. */
+window.addEventListener('change',function(e){if(e.target.id!=='selectionSignatureCheck')return;var h=E('selectionSignaturePages'),l=E('selectionSignatureToggle');if(h)h.value=e.target.checked?'Sí':'';if(l)l.classList.toggle('on',e.target.checked);try{if(window.renderOrderSummary)window.renderOrderSummary()}catch(x){}},true);
+window.addEventListener('click',function(e){var l=e.target.closest&&e.target.closest('#selectionSignatureToggle');if(!l||e.target.id==='selectionSignatureCheck')return;var c=E('selectionSignatureCheck');if(!c)return;e.preventDefault();e.stopImmediatePropagation();c.checked=!c.checked;c.dispatchEvent(new Event('change',{bubbles:true}))},true);
+/* Formulario de talentos renovado. */
+function rebuildTalent(){var box=E('v114TalentModal')&&E('v114TalentModal').querySelector('.v114-talent-box');if(!box||box.dataset.v115==='1')return;box.dataset.v115='1';box.innerHTML='<h3>QUIERO QUE TOMAUNO<span>DESCUBRA MI TALENTO</span></h3><p>Tu perfil queda vinculado a esta fotografía y sólo será visible para Tomauno.</p><div class="v114-talent-grid"><input id="v114TalentName" placeholder="Nombre y apellido"><input id="v114TalentAge" type="text" inputmode="numeric" maxlength="2" placeholder="Edad"><input id="v114TalentInstagram" class="wide" placeholder="Instagram (sin @)"><input id="v114TalentWhatsapp" class="wide" inputmode="numeric" placeholder="WhatsApp"><select id="v114TalentProfile" class="wide"><option value="">¿Cuál es tu perfil?</option><option>Reina / candidata</option><option>Bailarina / bailarín</option><option>Directora / director de cuerpo de baile</option><option>Música / músico</option><option>Modelo</option><option>Otro talento</option></select><textarea id="v114TalentDescription" placeholder="Breve descripción tuya"></textarea><input id="v114TalentTutorName" class="wide v115-guardian" placeholder="Nombre del tutor"><input id="v114TalentTutorPhone" class="wide v115-guardian" inputmode="numeric" placeholder="Celular del tutor"></div><label class="v114-consent"><input id="v114TalentConsent" type="checkbox"><span>Autorizo a Tomauno a guardar estos datos para conocer mi perfil y brindarme más info.</span></label><div class="v114-talent-actions"><button type="button" onclick="v114CloseTalent()">CANCELAR</button><button type="button" class="send" id="v114TalentSend">ENVIAR PERFIL</button></div><div id="v114TalentStatus" class="v114-talent-status"></div>';
+  var age=E('v114TalentAge');function guardian(){var minor=Number(age.value)>0&&Number(age.value)<18;[E('v114TalentTutorName'),E('v114TalentTutorPhone')].forEach(function(x){if(x)x.classList.toggle('show',minor)})}age.addEventListener('input',function(){age.value=age.value.replace(/\D/g,'').slice(0,2);guardian()});E('v114TalentSend').onclick=sendTalent;
+}
+async function sendTalent(){var a=album(),p=current(),btn=E('v114TalentSend'),s=E('v114TalentStatus'),age=Number(E('v114TalentAge').value||0),minor=age>0&&age<18,tutorName=E('v114TalentTutorName').value.trim(),tutorPhone=E('v114TalentTutorPhone').value.trim();s.textContent='';if(!(age>=12&&age<=99)){s.textContent='Ingresá una edad válida.';return}if(minor&&(!tutorName||!tutorPhone)){s.textContent='Completá el nombre y el celular del tutor.';return}var data={action:'submitTalent',bridgeId:String(a&&a.bridgeId||''),albumName:String(a&&a.displayName||''),photoId:String(p&&(p.id||p.fileId)||''),photoName:String(p&&p.name||''),photoUrl:String(p&&(p.urlWeb||p.url)||''),name:E('v114TalentName').value.trim(),age:age,instagram:E('v114TalentInstagram').value.trim(),whatsapp:E('v114TalentWhatsapp').value.trim(),profile:E('v114TalentProfile').value,description:E('v114TalentDescription').value.trim(),tutorName:minor?tutorName:'',tutorPhone:minor?tutorPhone:'',responsible:minor?(tutorName+' · '+tutorPhone):'',consent:E('v114TalentConsent').checked};try{btn.disabled=true;btn.textContent='ENVIANDO…';var r=await apiPost(data);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo enviar');s.style.color='#55e58e';s.textContent='✓ Perfil enviado. Tomauno podrá contactarte.';setTimeout(window.v114CloseTalent,1500)}catch(err){s.style.color='#ff6572';s.textContent=err.message}finally{btn.disabled=false;btn.textContent='ENVIAR PERFIL'}}
+var oldOpen=window.v114OpenTalent;window.v114OpenTalent=function(){rebuildTalent();return oldOpen&&oldOpen.apply(this,arguments)};
+function polishTalent(){var b=E('v114TalentBtn');if(b){b.textContent='✨ CONTACTARME';b.title='Quiero que Tomauno conozca mi perfil y pueda contactarme'}var l=E('v114TalentLegend');if(l&&!l.querySelector('.v115-models')){var a=document.createElement('a');a.className='v115-models';a.href='https://instagram.com/tomaunomodels';a.target='_blank';a.rel='noopener';a.textContent='@tomaunomodels';l.appendChild(a)}}
+/* Un solo controlador decide el carrito para grilla, visor y checkout. */
+function printCount(){var n=0;Object.keys(window.__tomaunoPhotoMeta||{}).forEach(function(id){var ps=((window.__tomaunoPhotoMeta[id]||{}).prints)||{};Object.keys(ps).forEach(function(k){n+=Math.max(0,Number(ps[k]||0))})});return n}
+function syncCart(){var c=E('floatingCart'),count=E('floatingCartCount'),gallery=E('view-gallery'),light=E('lightbox'),checkout=E('modalCheckout'),inGallery=!!(gallery&&getComputedStyle(gallery).display!=='none'),inLight=!!(light&&getComputedStyle(light).display!=='none'),inCheckout=!!(checkout&&getComputedStyle(checkout).display!=='none'),qty=selected().length,prints=printCount(),show=!window.__orderCompleted&&!inCheckout&&(inGallery||inLight)&&(qty>0||prints>0);document.body.classList.toggle('v109-lightbox-open',inLight);if(!c)return;if(count){var totalText=String(count.textContent||'').split('·')[1];count.textContent=qty+(totalText?' ·'+totalText:'')}c.style.setProperty('display',show?'flex':'none','important');c.style.setProperty('visibility',show?'visible':'hidden','important');c.style.setProperty('opacity',show?'1':'0','important');c.classList.remove('order-done');c.onclick=function(){if(window.startReview)window.startReview()}}
+/* Bandeja administrativa y aviso sonoro. */
+var talentLast=0,talentLoaded=false,talentAll=[],talentFilter='TODOS';
+function esc(v){return String(v==null?'':v).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]})}
+function notifyTalent(t){var x=E('v115TalentToast');x.textContent='✨ Nuevo talento: '+(t.name||'Perfil recibido');x.classList.add('show');setTimeout(function(){x.classList.remove('show')},6000);try{var A=window.AudioContext||window.webkitAudioContext,ac=new A();[0,180,360].forEach(function(ms,i){setTimeout(function(){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=[660,880,1040][i];g.gain.value=.05;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.13)},ms)})}catch(e){}}
+function renderTalents(){var box=E('v115TalentList');if(!box)return;var list=talentAll.filter(function(t){return talentFilter==='TODOS'||String(t.estado||'NUEVO')===talentFilter});box.innerHTML=list.length?'':'<p>No hay perfiles en este filtro.</p>';list.forEach(function(t){var card=document.createElement('article');card.className='v115-talent-card';var ig=t.instagram?'<a target="_blank" rel="noopener" href="https://instagram.com/'+encodeURIComponent(String(t.instagram).replace(/^@/,''))+'">@'+esc(String(t.instagram).replace(/^@/,''))+'</a>':'';var wa=t.whatsapp?'<a target="_blank" rel="noopener" href="https://wa.me/'+encodeURIComponent(t.whatsapp)+'">WhatsApp</a>':'';var tutorWa=t.tutorPhone?'<a target="_blank" rel="noopener" href="https://wa.me/'+encodeURIComponent(String(t.tutorPhone).replace(/\D/g,''))+'">'+esc(t.tutorPhone)+'</a>':'';var href=esc(t.photoFullUrl||t.photoUrl||'#'),photo=t.photoUrl?'<a class="v117-photo" target="_blank" rel="noopener" href="'+href+'"><img src="'+esc(t.photoUrl)+'" alt="Abrir fotografía"></a>':'<div class="v117-no-photo">FOTO NO DISPONIBLE<br>Registro anterior</div>';var checks=['VISTO','CONTACTADO','DESCARTADO'].map(function(s){return '<label><input type="checkbox" data-state="'+s+'" '+(t.estado===s?'checked':'')+'> '+s+'</label>'}).join('');card.innerHTML=photo+'<div><h4>'+esc(t.name)+' · '+esc(t.age)+' años</h4><p><b>'+esc(t.profile||'Perfil sin categoría')+'</b> · '+esc(t.album)+'</p><p>'+ig+(ig&&wa?' · ':'')+wa+'</p><p>'+esc(t.description||'')+'</p>'+(t.tutorName?'<p>Tutor: '+esc(t.tutorName)+' · '+tutorWa+'</p>':'')+'<p><a class="v117-photo-name" target="_blank" rel="noopener" href="'+href+'">Foto: '+esc(t.photoName||'Abrir')+'</a></p><div class="v117-statuses">'+checks+'<button type="button" class="v117-delete" title="Eliminar definitivamente">🗑</button></div></div>';card.querySelectorAll('[data-state]').forEach(function(ch){ch.onchange=async function(){var status=ch.checked?ch.dataset.state:'NUEVO';card.querySelectorAll('[data-state]').forEach(function(x){if(x!==ch)x.checked=false});var r=await apiPost({action:'updateTalentStatus',pin:'3233',row:t.row,status:status});if(!r||r.success===false){alert((r&&r.msg)||'No se pudo actualizar');return}t.estado=status;renderTalents()}});card.querySelector('.v117-delete').onclick=async function(){if(!confirm('¿Eliminar este talento de la vista y de la planilla?'))return;var r=await apiPost({action:'deleteTalent',pin:'3233',row:t.row});if(!r||r.success===false){alert((r&&r.msg)||'No se pudo eliminar');return}await loadTalents(false)};box.appendChild(card)})}
+async function loadTalents(open){if(open){E('v115TalentAdmin').classList.add('open');E('v115TalentList').innerHTML='<p>Cargando perfiles…</p>'}if(sessionStorage.getItem('TOMAUNO_ADMIN_OK')!=='1'){if(open)E('v115TalentList').innerHTML='<p>Ingresá primero como administrador.</p>';return}try{var r=await apiGet({action:'talentsAdmin',pin:'3233'});if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudieron leer los perfiles');var list=r.talents||[],max=list.reduce(function(v,t){return Math.max(v,Number(t.row||0))},0);if(talentLoaded&&max>talentLast){var newest=list.find(function(t){return Number(t.row)===max});if(newest)notifyTalent(newest)}talentLast=Math.max(talentLast,max);talentLoaded=true;talentAll=list;renderTalents()}catch(e){if(open)E('v115TalentList').innerHTML='<p style="color:#ff6675">'+esc(e.message)+'. Verificá que Código.gs V117 esté desplegado.</p>'}}
+E('v115TalentClose').onclick=function(){E('v115TalentAdmin').classList.remove('open')};
+E('v117TalentFilters').onclick=function(e){var b=e.target.closest&&e.target.closest('[data-filter]');if(!b)return;talentFilter=b.dataset.filter;E('v117TalentFilters').querySelectorAll('button').forEach(function(x){x.classList.toggle('active',x===b)});renderTalents()};
+window.tomaunoOpenTalents=function(){loadTalents(true)};
+/* Presentación automática: sólo existe un temporizador mientras PLAY está activo. */
+var playTimer=0;
+function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=0}var b=E('v116PlayBtn');if(b){b.textContent='▶ PLAY';b.classList.remove('active')}}
+function advancePlay(){var list=photos();if(!list.length)return;var i;try{i=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){i=0}var next=(Number(i)+1)%list.length,img=E('zoomImg');if(img)img.classList.add('v109-changing16');setTimeout(function(){try{if(window.openZoom)window.openZoom(next);else openZoom(next)}catch(e){}if(img)img.classList.remove('v109-changing16')},150)}
+function togglePlay(){if(playTimer){stopPlay();return}var b=E('v116PlayBtn');if(b){b.textContent='⏸ PAUSA';b.classList.add('active')}var lb=E('lightbox');if(lb&&lb.requestFullscreen&&!document.fullscreenElement)lb.requestFullscreen().catch(function(){});playTimer=setInterval(advancePlay,3500)}
+function installPlay(){var row=E('zoomSelectBtn')&&E('zoomSelectBtn').parentElement;if(!row)return;var b=E('v116PlayBtn');if(!b){b=document.createElement('button');b.id='v116PlayBtn';b.type='button';b.className='btn-order';b.textContent='▶ PLAY';b.title='Ver las fotografías automáticamente en pantalla completa';b.onclick=function(e){e.preventDefault();e.stopPropagation();togglePlay()};row.insertBefore(b,E('v109ZoomPrint10')||E('zoomConfirmBtn'))}}
+document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement)stopPlay()});
+/* Evita reconstruir la misma portada pública al volver del visor. */
+var render=window.v91Render,initialModel=window.__v91Model||window.__v91||window.__V91||{},lastSig=E('eventList')&&E('eventList').children.length?(String(initialModel.parent||'')+'|'+(initialModel.all||[]).map(function(a){return a.bridgeId}).join(',')):'';if(typeof render==='function'&&!render.__v115){var w=function(){var m=window.__v91Model||window.__v91||window.__V91||{},admin=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'&&E('modalAdmin')&&getComputedStyle(E('modalAdmin')).display!=='none',sig=String(m.parent||'')+'|'+(m.all||[]).map(function(a){return a.bridgeId}).join(',');if(!admin&&sig===lastSig&&E('eventList')&&E('eventList').children.length)return;var r=render.apply(this,arguments);lastSig=sig;return r};w.__v115=true;window.v91Render=w}
+function sync(){rebuildTalent();polishTalent();syncCart();installPlay()}
+['updateFooter','openZoom','closeZoom','openCheckout','closeCheckout','forceConfirmSelection','togglePhoto'].forEach(function(name){var old=window[name];if(typeof old==='function'&&!old.__v116state){var w=function(){var r=old.apply(this,arguments);setTimeout(syncCart,0);return r};w.__v116state=true;window[name]=w}});
+var watched=[E('view-gallery'),E('lightbox'),E('modalCheckout')].filter(Boolean);watched.forEach(function(node){new MutationObserver(function(){syncCart();if(node===E('lightbox')&&getComputedStyle(node).display==='none')stopPlay()}).observe(node,{attributes:true,attributeFilter:['style']})});
+document.addEventListener('tomauno-state-change',syncCart);document.addEventListener('tomauno-view-change',syncCart);
+document.addEventListener('click',function(e){var target=e.target.closest&&e.target.closest('.check-mark,#zoomSelectBtn,#v109ZoomPrint10,.v109-thumb-print16,.v109-print-corner21,[data-v109-delta],[data-extra],[data-extra-toggle],#zoomConfirmBtn,#btnConfirm');if(!target)return;if(target.matches('#zoomConfirmBtn,#btnConfirm')){var c=E('floatingCart');if(c)c.style.setProperty('display','none','important')}setTimeout(syncCart,0)},true);
+window.addEventListener('load',function(){sync();setTimeout(function(){loadTalents(false)},2500)});setInterval(function(){if(sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1')loadTalents(false)},20000);
+})();
+</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V118';</script>
+<!-- /TOMAUNO V116 -->
+<!-- TOMAUNO V117: gestión de talentos y reacciones públicas -->
+<style id="tomauno-v117-css">
+#v109TalentEnabled{border-color:#167a47!important;color:#74eca8!important;background:#06180f!important}#v109TalentEnabled:focus{border-color:#29d878!important;box-shadow:0 0 0 2px rgba(41,216,120,.15)!important}
+#v117Reactions{display:none;position:absolute;right:9px;bottom:30px;z-index:80;gap:4px;margin:0}#v117Reactions button{min-width:44px;padding:5px 7px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(0,0,0,.72);color:#fff;cursor:pointer;font-size:11px;font-weight:850;backdrop-filter:blur(5px)}#v117Reactions button:hover{border-color:#ff0018;box-shadow:0 0 11px rgba(255,0,24,.25)}#v117Reactions button.done{border-color:#ff3043;background:rgba(80,0,10,.82)}.v117-thumb-reactions{position:absolute;right:5px;bottom:5px;z-index:35;display:flex;gap:3px}.v117-thumb-reactions button{padding:3px 5px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font-size:9px;cursor:pointer}.v117-thumb-reactions button.done{border-color:#ff3043;background:rgba(80,0,10,.82)}
+body.v109-tomauno-final #lightbox .zoom-watermark{background-size:52% auto!important;opacity:.32!important}
+@media(max-width:700px){#v117Reactions{right:6px;bottom:26px}#v117Reactions button{min-width:39px;padding:4px 6px;font-size:10px}.v117-thumb-reactions button{padding:3px 4px;font-size:8px}body.v109-tomauno-final #lightbox .zoom-watermark{background-size:58% auto!important}}
+</style>
+<script id="tomauno-v117-js">
+(function(){'use strict';var reactionCache={},reactionLoading={};
+function E(i){return document.getElementById(i)}function album(){try{return window.activeEvent||activeEvent||null}catch(e){return null}}function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}}function current(){var i;try{i=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){i=-1}return photos()[Number(i)]||null}
+function installAdmin117(){var grid=document.querySelector('#v109Manager .v109-grid');if(!grid||E('v109ReactionsEnabled'))return;var f=document.createElement('div');f.className='v109-field';f.innerHTML='<label>REACCIONES EN LAS FOTOS</label><select id="v109ReactionsEnabled"><option value="NO">DESACTIVADAS</option><option value="SI">ACTIVADAS EN ESTE ÁLBUM</option></select>';var talent=E('v109TalentWrap');grid.insertBefore(f,talent?talent.nextSibling:null)}
+var post=window.apiPost;if(typeof post==='function'&&!post.__v117){var wp=function(data){if(data&&(data.action==='updateAlbumConfig'||data.action==='createAlbumV109')&&E('v109ReactionsEnabled'))data.reaccionesEnabled=E('v109ReactionsEnabled').value==='SI';return Promise.resolve(post.apply(this,arguments)).then(function(r){if(r&&r.success!==false&&data&&data.bridgeId&&data.hasOwnProperty('reaccionesEnabled')){var m=window.__v91Model,a=m&&(m.all||[]).find(function(x){return String(x.bridgeId)===String(data.bridgeId)});if(a)a.reaccionesEnabled=!!data.reaccionesEnabled}return r})};wp.__v117=true;window.apiPost=wp}
+var open=window.v109Open;if(typeof open==='function'&&!open.__v117){window.v109Open=function(id){installAdmin117();var r=open.apply(this,arguments);setTimeout(function(){var m=window.__v91Model,a=id&&m?(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null;if(E('v109ReactionsEnabled'))E('v109ReactionsEnabled').value=a&&a.reaccionesEnabled?'SI':'NO'},60);return r};window.v109Open.__v117=true}
+function buttons(){return '<button data-r="heart">❤️ <span>0</span></button><button data-r="fire">🔥 <span>0</span></button><button data-r="clap">👏 <span>0</span></button>'}function installBar(){var img=E('zoomImg');if(!img||E('v117Reactions'))return;var b=document.createElement('div');b.id='v117Reactions';b.innerHTML=buttons();img.parentNode.appendChild(b);b.onclick=react}
+function key(a,p,r){return 'TOMAUNO_REACTION_'+String(a.bridgeId)+'_'+String(p.id||p.fileId)+'_'+r}
+function counts(a,p){var id=String(p&&(p.id||p.fileId)||'');return (reactionCache[String(a&&a.bridgeId||'')]||{})[id]||{heart:0,fire:0,clap:0}}function paintBox(box,c,a,p){if(!box)return;['heart','fire','clap'].forEach(function(r){var b=box.querySelector('[data-r="'+r+'"]');if(!b)return;b.querySelector('span').textContent=Number((c||{})[r]||0);try{b.classList.toggle('done',localStorage.getItem(key(a,p,r))==='1')}catch(e){}})}
+function decorateThumbs(){var a=album();if(!a||!a.reaccionesEnabled)return;photos().forEach(function(p){var card=E('p-'+p.id);if(!card)return;var bar=card.querySelector('.v117-thumb-reactions');if(!bar){bar=document.createElement('div');bar.className='v117-thumb-reactions';bar.innerHTML=buttons();bar.onclick=react;card.appendChild(bar)}bar.dataset.photoId=p.id;paintBox(bar,counts(a,p),a,p)})}
+function ensureAlbumCache(a){var id=String(a&&a.bridgeId||'');if(!id||reactionCache[id]||reactionLoading[id])return;reactionLoading[id]=true;apiGet({action:'reactionCounts',bridgeId:id}).then(function(r){if(r&&r.success!==false){reactionCache[id]=r.photos||{};sync()}}).catch(function(){}).finally(function(){delete reactionLoading[id]})}
+function sync(){installBar();var bar=E('v117Reactions'),a=album(),p=current(),lb=E('lightbox'),show=!!(bar&&a&&a.reaccionesEnabled&&p&&lb&&getComputedStyle(lb).display!=='none');if(!bar)return;if(a&&a.reaccionesEnabled)ensureAlbumCache(a);bar.style.display=show?'flex':'none';if(show)paintBox(bar,counts(a,p),a,p);decorateThumbs()}
+function react(e){var b=e.target.closest&&e.target.closest('[data-r]'),a=album(),photoId=(b&&b.closest('.v117-thumb-reactions')||{}).dataset&&b.closest('.v117-thumb-reactions').dataset.photoId,p=photoId?photos().find(function(x){return String(x.id)===String(photoId)}):current();if(!b||!a||!p)return;e.preventDefault();e.stopPropagation();var k=key(a,p,b.dataset.r);try{if(localStorage.getItem(k)==='1'){if(window.miniToast)miniToast('Ya dejaste esta reacción');return}}catch(x){}var aid=String(a.bridgeId),pid=String(p.id||p.fileId),c=reactionCache[aid]||(reactionCache[aid]={}),pc=c[pid]||(c[pid]={heart:0,fire:0,clap:0}),type=b.dataset.r;pc[type]=Number(pc[type]||0)+1;try{localStorage.setItem(k,'1')}catch(x){}sync();apiPost({action:'addReaction',bridgeId:aid,photoId:pid,reaction:type}).then(function(r){if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo guardar');if(Number(r.count)>=0)pc[type]=Number(r.count);sync()}).catch(function(err){pc[type]=Math.max(0,Number(pc[type]||0)-1);try{localStorage.removeItem(k)}catch(x){}sync();if(window.miniToast)miniToast(err.message)})}
+document.addEventListener('tomauno-view-change',sync);document.addEventListener('DOMContentLoaded',function(){installAdmin117();installBar();setTimeout(sync,500)});document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('#v109Manager,#photoList,#lightbox'))setTimeout(sync,50)},true);
+})();
+</script>
+<!-- /TOMAUNO V117 -->
 </body>
 </html>
