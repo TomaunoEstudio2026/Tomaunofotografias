@@ -1398,10 +1398,10 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 <div class="container" id="view-gallery" style="display:none">
   <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center">
     <button onclick="v108GoHome()" style="background:#222; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer">VOLVER</button>
-    <button onclick="openDownloadCodeModal()" style="background:#111; color:var(--oro); border:1px solid #333; padding:8px 15px; border-radius:8px; cursor:pointer">🔒 DESCARGAR</button>
     <span id="currentEventTitle" style="color:var(--rojo); font-weight:bold; font-size:12px"></span>
   </div>
   <div class="small-status" id="galleryStatus"></div>
+  <button id="albumDriveDownload" data-tomauno-full-download="1" type="button" class="btn-order" hidden>⬇ DESCARGAR TODO EL ÁLBUM</button>
   <div class="gallery" id="photoList"></div>
   <div class="gallery-actions"><button id="btnLoadMore" class="btn-order" style="display:none;background:#222;border:1px solid #444" onclick="loadMorePhotos()">CARGAR MÁS FOTOGRAFÍAS</button></div>
 </div>
@@ -3419,13 +3419,18 @@ function attr(s) {
   async function v51LoadMorePhotos(firstLoad, autoMode){
     if(window.isLoadingMore || isLoadingMore) return;
     if(!firstLoad && !(window.hasMorePhotos || hasMorePhotos)) return;
+    var requestToken=window.__autoLoadToken;
+    var requestAlbumId=activeEvent&&activeEvent.id?String(activeEvent.id):'';
+    if(!requestAlbumId)return;
     window.isLoadingMore = isLoadingMore = true;
+    window.__photoLoadActiveToken=requestToken;
     setLoadMoreVisible(false);
     var before=(window.allPhotos || allPhotos || []).length;
     status('<span class="progress-spin">⏳</span>'+(firstLoad?'Cargando primeras 100 fotografías...':'Cargando más fotografías...')+(before?' <span class="progress-strong">Ya podés mirar '+before+'.</span>':''));
     try{
       var limit = window.PHOTO_BATCH || PHOTO_BATCH || 100;
-      var res = await apiGet({action:'photos', folderId: activeEvent.id, offset: window.nextPhotoOffset || nextPhotoOffset || 0, limit: limit, paged:'1', t:Date.now()});
+      var res = await apiGet({action:'photos', folderId:requestAlbumId, offset: window.nextPhotoOffset || nextPhotoOffset || 0, limit: limit, paged:'1', t:Date.now()});
+      if(requestToken!==window.__autoLoadToken||!activeEvent||String(activeEvent.id)!==requestAlbumId)return;
       var photos = Array.isArray(res) ? res : (res.photos || []);
       var more = Array.isArray(res) ? false : !!res.hasMore;
       var next = Array.isArray(res) ? ((window.nextPhotoOffset||nextPhotoOffset||0)+photos.length) : Number(res.nextOffset || ((window.nextPhotoOffset||nextPhotoOffset||0)+photos.length));
@@ -3453,7 +3458,7 @@ function attr(s) {
       setLoadMoreVisible(true);
       if(!autoMode && typeof luxAlert==='function') luxAlert('ERROR','No se pudieron cargar más fotos: '+(err && err.message ? err.message : err));
     }finally{
-      window.isLoadingMore = isLoadingMore = false;
+      if(window.__photoLoadActiveToken===requestToken)window.isLoadingMore = isLoadingMore = false;
     }
   }
 
@@ -3461,6 +3466,8 @@ function attr(s) {
 
   window.loadPhotos = async function(id, name){
     window.__autoLoadToken++;
+    window.__photoLoadActiveToken=window.__autoLoadToken;
+    window.isLoadingMore=isLoadingMore=false;
     if(typeof toggleL==='function') toggleL(true,'CARGANDO PRIMERAS FOTOS...');
     try{
       selectedPhotos=[]; window.selectedPhotos=selectedPhotos;
@@ -3484,7 +3491,7 @@ function attr(s) {
         if(qs('currentEventTitle')) qs('currentEventTitle').innerText=(name||cached.title||'')+' · '+allPhotos.length+' fotos cargadas'+(hasMorePhotos?' +':'');
         status('Mostrando <span class="progress-strong">'+allPhotos.length+'</span> fotos ya cargadas. '+(hasMorePhotos?'Seguimos cargando el resto...':'Álbum completo.'));
         if(typeof toggleL==='function') toggleL(false);
-        if(hasMorePhotos) setTimeout(function(){ v51LoadMorePhotos(false,true); }, 500);
+        if(hasMorePhotos){var cachedToken=window.__autoLoadToken;setTimeout(function(){if(cachedToken===window.__autoLoadToken)v51LoadMorePhotos(false,true)},500)}
         return;
       }
       allPhotos=window.allPhotos=[];
@@ -4721,7 +4728,6 @@ function attr(s) {
   #modalAdmin .admin-tools button{min-height:42px!important;}
   #modalAdmin .admin-tools .admin-actions-row{display:flex!important;gap:8px!important;flex-wrap:wrap!important;grid-column:1/-1!important;justify-content:center!important;}
   #modalAdmin .admin-tools .admin-actions-row button{flex:0 1 auto!important;}
-  #btnFullDownloadEvent{background:#0b2b16!important;border:1px solid #25d366!important;color:#d8ffe3!important;font-weight:800!important;}
   body.at-events #floatingCart, body.order-completed #floatingCart{display:none!important;}
   @media(max-width:900px){#modalAdmin .admin-grid{grid-template-columns:repeat(2,minmax(130px,1fr))!important;}#modalAdmin .admin-tools{grid-template-columns:1fr!important;}}
 </style>
@@ -4733,7 +4739,6 @@ function attr(s) {
   function attr(s){return encodeURIComponent(String(s==null?'':s));}
   function money(n){try{return '$'+Number(n||0).toLocaleString('es-AR');}catch(e){return '$0';}}
   function fmt(d){try{return typeof formatDate==='function'?formatDate(d):String(d||'');}catch(e){return String(d||'');}}
-  function rawAlbum(){try{return String((window.activeEvent && (activeEvent.rawName || activeEvent.folderName || activeEvent.displayName)) || '');}catch(e){return '';}}
   function isTextField(){var a=document.activeElement,t=(a&&a.tagName||'').toLowerCase();return !!(a&&(t==='input'||t==='textarea'||t==='select'||a.isContentEditable));}
   function galleryVisible(){var g=qs('view-gallery');return !!(g&&g.style.display!=='none');}
   function anyModalVisible(){return Array.prototype.slice.call(document.querySelectorAll('.modal')).some(function(m){return m.style.display==='flex'||m.style.display==='block';});}
@@ -4760,7 +4765,7 @@ function attr(s) {
   var oldSuccess=window.showOrderSuccessToWhatsapp;
   if(typeof oldSuccess==='function') window.showOrderSuccessToWhatsapp=function(){var r=oldSuccess.apply(this,arguments);document.body.classList.add('order-completed');hideCart();return r;};
   var oldLoadPhotos=window.loadPhotos;
-  if(typeof oldLoadPhotos==='function') window.loadPhotos=function(){var r=oldLoadPhotos.apply(this,arguments);setTimeout(function(){showGalleryCartIfNeeded();ensureFullDownloadButton();},200);return r;};
+  if(typeof oldLoadPhotos==='function') window.loadPhotos=function(){var r=oldLoadPhotos.apply(this,arguments);setTimeout(showGalleryCartIfNeeded,200);return r;};
 
   // Escape consistente: cierra modal/visor; si estás en galería vuelve al menú de álbumes.
   document.addEventListener('keydown',function(e){
@@ -4827,34 +4832,6 @@ function attr(s) {
     w.document.close();w.focus();setTimeout(function(){w.print();},400);
   };
 
-  // Botón opcional de entrega/descarga externa desde nombre de carpeta: _CONDESCARGA:URL_O_ID al final.
-  function extractFullTarget(){
-    var r=rawAlbum(); if(!r) return '';
-    var up=r.toUpperCase();
-    var idx=up.lastIndexOf('_CONDESCARGA:'); var sepLen=13;
-    if(idx<0){ idx=up.lastIndexOf('_CONDESCARGA#'); sepLen=13; }
-    if(idx<0){ idx=up.lastIndexOf('_FULL:'); sepLen=6; }
-    if(idx<0){ idx=up.lastIndexOf('_FULL#'); sepLen=6; }
-    if(idx<0) return '';
-    return r.slice(idx+sepLen).trim();
-  }
-  function toDriveUrl(v){
-    v=String(v||'').trim(); if(!v) return '';
-    if(/^https?:\/\//i.test(v)) return v;
-    return 'https://drive.google.com/drive/folders/'+encodeURIComponent(v);
-  }
-  function ensureFullDownloadButton(){
-    var bar=qs('view-gallery')&&qs('view-gallery').querySelector('div'); if(!bar) return;
-    var old=qs('btnFullDownloadEvent'); if(old) old.remove();
-    var target=extractFullTarget(); if(!target) return;
-    var btn=document.createElement('button'); btn.id='btnFullDownloadEvent'; btn.textContent='⬇️ DESCARGAR TODO';
-    btn.style.cssText='color:#d8ffe3;border:1px solid #25d366;background:#0b2b16;padding:8px 15px;border-radius:8px;cursor:pointer';
-    btn.onclick=function(){window.open(toDriveUrl(target),'_blank');};
-    var title=qs('currentEventTitle'); if(title&&title.parentNode) title.parentNode.insertBefore(btn,title);
-  }
-  var oldLoadPhotos11=window.loadPhotos;
-  if(typeof oldLoadPhotos11==='function'&&!oldLoadPhotos11.__v11download){var wrappedLoad11=async function(){var r=await oldLoadPhotos11.apply(this,arguments);ensureFullDownloadButton();return r};wrappedLoad11.__v11download=true;window.loadPhotos=wrappedLoad11;}
-  window.addEventListener('load',ensureFullDownloadButton);
 })();
 </script>
 <!-- /TOMAUNO V11 -->
@@ -4893,23 +4870,6 @@ function attr(s) {
     transform:translateX(-50%) !important;
   }
   #currentEventTitle{margin-left:auto !important;}
-  #fullDownloadPanel{
-    display:none;
-    width:100%;
-    text-align:center;
-    margin:8px 0 14px;
-  }
-  #fullDownloadPanel button{
-    background:#0b2b16 !important;
-    border:1px solid #25d366 !important;
-    color:#d8ffe3 !important;
-    font-weight:800 !important;
-    border-radius:999px !important;
-    padding:10px 24px !important;
-    cursor:pointer !important;
-    box-shadow:0 0 16px rgba(37,211,102,.16);
-  }
-  #btnFullDownloadEvent{display:none!important;}
 
   #modalAdmin .modal-box{max-width:min(1180px,97vw)!important;width:min(1180px,97vw)!important;}
   #modalAdmin .admin-tools{
@@ -4945,46 +4905,6 @@ function attr(s) {
 (function(){
   if(window.__TOMAUNO_V12__) return; window.__TOMAUNO_V12__=true;
   function qs(id){return document.getElementById(id);} 
-  function currentRawAlbum(){try{return String((window.activeEvent && (activeEvent.rawName || activeEvent.folderName || activeEvent.displayName)) || '');}catch(e){return '';}}
-  function toDriveUrl(v){
-    v=String(v||'').trim();
-    if(!v) return '';
-    if(/^https?:\/\//i.test(v)) return v;
-    return 'https://drive.google.com/drive/folders/'+encodeURIComponent(v);
-  }
-  function extractFullTarget(){
-    var r=currentRawAlbum();
-    if(!r) return '';
-    var up=r.toUpperCase();
-    var idx=up.lastIndexOf('_CONDESCARGA:');
-    var sepLen=13;
-    if(idx<0){ idx=up.lastIndexOf('_CONDESCARGA#'); sepLen=13; }
-    if(idx<0){ idx=up.lastIndexOf('_FULL:'); sepLen=6; }
-    if(idx<0){ idx=up.lastIndexOf('_FULL#'); sepLen=6; }
-    if(idx<0) return '';
-    return r.slice(idx+sepLen).trim();
-  }
-  function ensureFullPanel(){
-    var gallery=qs('view-gallery');
-    if(!gallery || gallery.style.display==='none') return;
-    var toolbar=gallery.querySelector('div');
-    if(!toolbar) return;
-    var panel=qs('fullDownloadPanel');
-    if(!panel){
-      panel=document.createElement('div');
-      panel.id='fullDownloadPanel';
-      panel.innerHTML='<button type="button" id="btnFullDownloadCentered">⬇️ DESCARGAR TODO EL ÁLBUM</button>';
-      toolbar.insertAdjacentElement('afterend', panel);
-    }
-    var target=extractFullTarget();
-    if(target){
-      panel.style.display='block';
-      var btn=qs('btnFullDownloadCentered');
-      if(btn) btn.onclick=function(){window.open(toDriveUrl(target),'_blank');};
-    }else{
-      panel.style.display='none';
-    }
-  }
   function markHomeState(){
     var ev=qs('view-events'), gal=qs('view-gallery'), suc=qs('view-success');
     var isHome=!!(ev && ev.style.display!=='none') && (!gal || gal.style.display==='none') && (!suc || suc.style.display==='none');
@@ -5004,13 +4924,13 @@ function attr(s) {
     }
   }
   document.addEventListener('DOMContentLoaded', function(){
-    setTimeout(function(){markHomeState();ensureFullPanel();},500);
+    setTimeout(markHomeState,500);
   });
   document.addEventListener('click', function(e){
-    setTimeout(function(){markHomeState();ensureFullPanel();},120);
+    setTimeout(markHomeState,120);
   }, true);
   var oldLoad=window.loadPhotos;
-  if(typeof oldLoad==='function') window.loadPhotos=function(){var r=oldLoad.apply(this, arguments); setTimeout(function(){document.body.classList.remove('tomauno-home'); ensureFullPanel();},350); return r;};
+  if(typeof oldLoad==='function') window.loadPhotos=function(){var r=oldLoad.apply(this, arguments); setTimeout(function(){document.body.classList.remove('tomauno-home');},350); return r;};
   var oldBack=window.tomaunoBackToAlbums;
   if(typeof oldBack==='function') window.tomaunoBackToAlbums=function(){var r=oldBack.apply(this, arguments); setTimeout(markHomeState,80); return r;};
   /* V76: rutina heredada adminButtonsInline eliminada para no reordenar el Panel Admin */
@@ -5176,29 +5096,45 @@ function attr(s) {
   };
 
   function workflowText(){
-    if(!selectionMode()) return '';
     var coverText = (($('selectionCoverText')||{}).value || '').trim();
     var firmas = (($('selectionSignaturePages')||{}).value || '').trim();
-    var covers = [], prios = [], comments = [];
-    selected().forEach(function(p){ var m = meta(p); if(m.cover) covers.push(photoName(p)); if(m.priority) prios.push(photoName(p)); if((m.comment||'').trim()) comments.push(photoName(p)+': '+m.comment.trim()); });
+    var covers = [], prios = [], comments = [], coreos = [], prints = [];
+    selected().forEach(function(p){
+      var m = meta(p), name=photoName(p);
+      if(m.cover) covers.push(name);
+      if(m.priority) prios.push(name);
+      if((m.comment||'').trim()) comments.push(name+': '+m.comment.trim());
+      Object.keys(m.prints||{}).forEach(function(label){
+        var q=Math.max(0,Number(m.prints[label]||0));
+        if(q) prints.push(name+' — '+label+' x'+q);
+      });
+    });
+    /* La coreografía es una referencia editorial, no una fotografía comprada. */
+    allPhotos().forEach(function(p){var m=meta(p);if(m.coreoRef)coreos.push(photoName(p))});
     var out = [];
+    if(prints.length) out.push('Impresiones por fotografía:\n' + prints.join('\n'));
+    if(coreos.length) out.push('Referencias de coreografía:\n' + coreos.map(function(n,i){return 'Coreografía '+(i+1)+': '+n}).join('\n'));
     if(covers.length) out.push('Fotos sugeridas para portada:\n' + covers.join('\n'));
     if(prios.length) out.push('Fotos importantes:\n' + prios.join('\n'));
-    if(coverText) out.push('Texto para tapa / título:\n' + coverText);
-    if(firmas) out.push('Páginas para firmas: ' + firmas);
+    if(selectionMode() && coverText) out.push('Texto para tapa / título:\n' + coverText);
+    if(selectionMode() && firmas) out.push('Páginas para firmas: ' + firmas);
     if(comments.length) out.push('Comentarios por foto:\n' + comments.join('\n'));
     return out.join('\n\n');
   }
 
-  function orderText(){
+  function orderText(forWhatsapp){
     var p = product(), name = (($('userName')||{}).value || '').trim(), phone = (($('userPhone')||{}).value || '').trim();
     var notes = (($('userNotes')||{}).value || '').trim(), flow = workflowText(), extras = selectionMode() ? '' : extrasText('\n'), total = selectionMode() ? 0 : orderTotal(p);
-    var fotos = p.isFullAlbum ? 'Álbum completo' : selected().map(function(ph){ var m=meta(ph), tags=[]; if(m.cover) tags.push('Portada'); if(m.priority) tags.push('Importante'); if(m.comment) tags.push('Nota: '+m.comment); return photoName(ph)+(tags.length?' ['+tags.join(' | ')+']':''); }).join('\n');
-    var txt = '📸 PEDIDO TOMAUNO\n\n👤 Cliente: '+name+'\n📱 WhatsApp: '+phone+'\n🎉 Álbum: '+(window.activeEvent && activeEvent.displayName ? activeEvent.displayName : '')+'\n\n🛒 Servicio: '+serviceLabel(p)+'\n📷 Cantidad: '+orderQty(p)+'\n💰 Total: '+(total===0?'GRATIS':moneyLocal(total));
-    if(extras) txt += '\n\n➕ Productos adicionales:\n'+extras;
-    if(notes) txt += '\n\n📝 Indicaciones generales:\n'+notes;
-    if(flow) txt += '\n\n📋 Indicaciones de selección:\n'+flow;
-    txt += '\n\n📂 Fotografías:\n'+(fotos || 'Sin fotos');
+    var photoNames=p.isFullAlbum?[]:selected().map(photoName), fotos = p.isFullAlbum ? 'Álbum completo' : photoNames.join('\n');
+    var txt = '📸 *PEDIDO TOMAUNO*\n\n*DATOS DEL CLIENTE*\n👤 Cliente: '+name+'\n📱 WhatsApp: '+phone+'\n🎉 Álbum: '+(window.activeEvent && activeEvent.displayName ? activeEvent.displayName : '')+'\n\n*RESUMEN DEL PEDIDO*\n🛒 Servicio: '+serviceLabel(p)+'\n📷 Cantidad: '+orderQty(p)+'\n💰 Total: '+(total===0?'GRATIS':moneyLocal(total));
+    if(extras) txt += '\n\n*PRODUCTOS ADICIONALES*\n'+extras;
+    if(notes) txt += '\n\n*INDICACIONES GENERALES*\n'+notes;
+    if(flow) txt += '\n\n*INDICACIONES POR FOTOGRAFÍA*\n'+flow;
+    txt += '\n\n*FOTOGRAFÍAS*\n'+(fotos || 'Sin fotos');
+    if(forWhatsapp && txt.length>6500 && !p.isFullAlbum){
+      fotos=photoNames.slice(0,12).join('\n')+'\n… y '+Math.max(0,photoNames.length-12)+' foto(s) más. Listado completo guardado en el panel.';
+      txt = txt.replace(/\n\n\*FOTOGRAFÍAS\*[\s\S]*$/,'\n\n*FOTOGRAFÍAS*\n'+fotos);
+    }
     return txt;
   }
 
@@ -5231,7 +5167,7 @@ function attr(s) {
     var payload = {action:'submitOrder', name:name, phone:phone, notes:notesToSave, orderType:(extrasPlain? serviceLabel(p)+' + Extras' : serviceLabel(p)), eventName:window.activeEvent?activeEvent.displayName:'', photos:photoIds, photoNames:photoNames, total:total};
     apiPost(payload).then(function(res){
       if(typeof toggleL==='function') toggleL(false); if(typeof setBtnLoading==='function') setBtnLoading(btn,false);
-      var msg = orderText();
+      var msg = orderText(true);
       var mc=$('modalCheckout'); if(mc) mc.style.display='none'; var vg=$('view-gallery'); if(vg) vg.style.display='none'; var vs=$('view-success'); if(vs){ vs.classList.remove('download-ready'); vs.style.display='block'; }
       window.__orderCompleted=true; window.selectedPhotos=[]; try{ if(typeof updateFooter==='function') updateFooter(); }catch(e){}
       if(typeof showOrderSuccessToWhatsapp==='function') showOrderSuccessToWhatsapp('https://wa.me/'+res.whatsappNumber+'?text='+enc(msg));
@@ -8043,7 +7979,7 @@ if(adm){
   };
   try{
     activity73.muted=localStorage.getItem('TOMAUNO_NOTIFY_MUTED')==='1';
-    var saved=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'null');
+    var saved=JSON.parse(localStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'null');
     if(saved && saved.map){
       activity73.map=saved.map;
       activity73.initialized=true;
@@ -8061,7 +7997,7 @@ if(adm){
 
   function saveActivity73(){
     try{
-      sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify({
+      localStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify({
         map:activity73.map,unread:activity73.unread
       }));
     }catch(e){}
@@ -8097,10 +8033,10 @@ if(adm){
   function notification73(kind,o){
     activity73.unread++;
     try{
-      var rows=JSON.parse(sessionStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]');
+      var rows=JSON.parse(localStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]');
       var rr=Number(o&&o.row||0);
       if(rr && rows.indexOf(rr)<0) rows.push(rr);
-      sessionStorage.setItem('TOMAUNO_UNREAD_ROWS',JSON.stringify(rows));
+      localStorage.setItem('TOMAUNO_UNREAD_ROWS',JSON.stringify(rows));
     }catch(e){}
     updateDock73();
     beep73(kind);
@@ -8378,8 +8314,8 @@ if(adm){
     try{
       sessionStorage.removeItem('TOMAUNO_ADMIN_OK');
       sessionStorage.removeItem('TOMAUNO_TICKET_OK');
-      sessionStorage.removeItem('TOMAUNO_ACTIVITY_MAP');
-      sessionStorage.removeItem('TOMAUNO_UNREAD_ROWS');
+      /* Las novedades se conservan: al volver a iniciar sesión la campana muestra lo pendiente. */
+      localStorage.removeItem('TOMAUNO_UNREAD_ROWS');
     }catch(e){}
     var adm=el('modalAdmin');if(adm)adm.style.display='none';
     var dock=el('v73AdminDock');if(dock)dock.style.display='none';
@@ -8416,7 +8352,7 @@ if(adm){
      que el administrador pulse "Marcar vistos".
      ------------------------------------------------------------ */
   function unreadRows74(){
-    try{return JSON.parse(sessionStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]').map(Number)}
+    try{return JSON.parse(localStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]').map(Number)}
     catch(e){return []}
   }
 
@@ -8434,10 +8370,10 @@ if(adm){
 
   window.v74MarkSeen=function(){
     try{
-      sessionStorage.setItem('TOMAUNO_UNREAD_ROWS','[]');
-      var state=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
+      localStorage.setItem('TOMAUNO_UNREAD_ROWS','[]');
+      var state=JSON.parse(localStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
       state.unread=0;
-      sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(state));
+      localStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(state));
     }catch(e){}
     document.querySelectorAll('#adminOrders .v74-unread').forEach(function(r){r.classList.remove('v74-unread')});
     var badge=el('v73BellBadge');if(badge){badge.textContent='0';badge.style.display='none'}
@@ -8852,17 +8788,17 @@ function bindLogout77(){
 
 /* NOVEDADES: si hay contador viejo sin filas asociadas, limpiarlo. */
 function unreadRows77(){
-  try{return JSON.parse(sessionStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]').map(Number).filter(Boolean)}
+  try{return JSON.parse(localStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]').map(Number).filter(Boolean)}
   catch(e){return []}
 }
 function reconcileUnread77(){
   var rows=unreadRows77();
   if(rows.length===0){
     try{
-      var state=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
+      var state=JSON.parse(localStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
       if(Number(state.unread||0)>0){
         state.unread=0;
-        sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(state));
+        localStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(state));
       }
     }catch(e){}
     var badge=el('v73BellBadge');
@@ -9023,7 +8959,7 @@ document.addEventListener('click',async function(e){
 /* CAMPANA: el número visible sale exclusivamente de las filas NUEVO reales. */
 function rows78(){
   try{
-    var a=JSON.parse(sessionStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]');
+    var a=JSON.parse(localStorage.getItem('TOMAUNO_UNREAD_ROWS')||'[]');
     return Array.from(new Set((Array.isArray(a)?a:[]).map(Number).filter(function(n){return n>1})));
   }catch(e){return []}
 }
@@ -9038,8 +8974,8 @@ function syncBell78(){
   /* Reparar contador histórico que quedó guardado sin filas asociadas. */
   if(rows.length===0){
     try{
-      var s=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
-      if(Number(s.unread||0)!==0){s.unread=0;sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(s))}
+      var s=JSON.parse(localStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
+      if(Number(s.unread||0)!==0){s.unread=0;localStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(s))}
     }catch(e){}
   }
 }
@@ -9048,9 +8984,9 @@ window.v78SyncBell=syncBell78;
 /* Marcar vistos: limpiar filas, contador y marcas visuales en una sola operación. */
 window.v74MarkSeen=function(){
   try{
-    sessionStorage.setItem('TOMAUNO_UNREAD_ROWS','[]');
-    var s=JSON.parse(sessionStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
-    s.unread=0;sessionStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(s));
+    localStorage.setItem('TOMAUNO_UNREAD_ROWS','[]');
+    var s=JSON.parse(localStorage.getItem('TOMAUNO_ACTIVITY_MAP')||'{}');
+    s.unread=0;localStorage.setItem('TOMAUNO_ACTIVITY_MAP',JSON.stringify(s));
   }catch(e){}
   document.querySelectorAll('#adminOrders .v74-unread').forEach(function(r){r.classList.remove('v74-unread')});
   var stack=el('v73NotifyStack');if(stack)stack.innerHTML='';
@@ -9175,7 +9111,6 @@ body.v91-album-admin #v91GroupBar{display:flex}
   <input id="v91GroupName" type="text" autocomplete="off" placeholder="Nombre del evento / grupo">
   <button id="v91GroupBtn" type="button" class="primary">AGRUPAR</button>
   <button id="v91FrontBtn" type="button" disabled>ENVIAR A PORTADA</button>
-  <button id="v91ClearBtn" type="button">LIMPIAR</button>
 </div>
 
 <script>
@@ -9193,9 +9128,11 @@ var COLORS=['#4ed45a','#28d4e5','#efb91c','#aa69ff','#ff6c42','#e34c8c','#4e8cff
 
 function E(id){return document.getElementById(id)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function displayDate(v){var s=String(v==null?'':v).trim();if(!s)return '';if(!/^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s/i.test(s))return s;var d=new Date(s);if(isNaN(d.getTime()))return s;return new Intl.DateTimeFormat('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d)}
+window.v121FormatDate=displayDate;
 function color(g){var h=0;g=String(g||'');for(var i=0;i<g.length;i++)h=((h*31)+g.charCodeAt(i))>>>0;return COLORS[h%COLORS.length]}
 function isVisible(a){return a.visible!==false}
-function groupMap(){var x={};M.all.forEach(function(a){var g=String(a.group||'').trim();if(g)(x[g]||(x[g]=[])).push(a)});return x}
+function groupMap(){var x={},names={};Object.keys(M.meta||{}).forEach(function(g){names[g.toLocaleLowerCase('es')]=g});M.all.forEach(function(a){var raw=String(a.group||'').trim(),g=names[raw.toLocaleLowerCase('es')]||raw;if(g)(x[g]||(x[g]=[])).push(a)});return x}
 function work(t,ok){
   var n=E('v91Working');if(!n)return;
   n.textContent=t;n.className='v91-working'+(ok?' ok':'');n.style.display='block';
@@ -9224,9 +9161,9 @@ function parentCard(g,items,admin){
   return '<div class="v91-parent" data-v91parent="'+esc(g)+'" style="--gc:'+c+'">'+
     '<div class="cam">📷</div><div class="tag">◆ EVENTO / COLECCIÓN</div>'+
     '<h3>'+esc(g)+'</h3>'+
-    ((m.date||m.description)?'<div class="meta v91-rich">'+richText((m.date?m.date+(m.description?' · ':''):'')+(m.description||''))+'</div>':'')+
+    ((m.date||m.description)?'<div class="meta v91-rich">'+richText((m.date?displayDate(m.date)+(m.description?' · ':''):'')+(m.description||''))+'</div>':'')+
     '<div class="count">'+items.length+' álbum'+(items.length===1?'':'es')+'</div>'+
-    (admin?'<button type="button" class="editmeta" data-v91meta="'+esc(g)+'">✎ DESCRIPCIÓN / FECHA</button>':'')+
+    (admin?'<button type="button" class="editmeta" data-v91meta="'+esc(g)+'">✎ DESCRIPCIÓN / FECHA</button><button type="button" class="v128-parent-trash" data-v128deleteparent="'+esc(g)+'" title="Eliminar padre y todos sus álbumes"><span>🗑</span></button>':'')+
   '</div>'
 }
 function albumCard(a,admin){
@@ -9251,8 +9188,9 @@ function renderRoot(){
   var list=E('eventList');if(!list)return;
   M.parent='';
   var groups=groupMap(),out=[];
+  Object.keys(M.meta||{}).forEach(function(g){if(!groups[g])groups[g]=[]});
 
-  Object.keys(groups).sort().forEach(function(g){out.push(parentCard(g,groups[g],M.admin))});
+  Object.keys(groups).sort().forEach(function(g){var meta=M.meta[g]||{};if(M.admin||meta.visible!==false)out.push(parentCard(g,groups[g],M.admin))});
   M.all.filter(function(a){return !String(a.group||'').trim() && (M.admin||isVisible(a))}).forEach(function(a){out.push(albumCard(a,M.admin))});
   list.innerHTML=out.join('')||'<p>Sin álbumes disponibles.</p>';
   configureBar();
@@ -9260,13 +9198,16 @@ function renderRoot(){
 }
 function renderParent(g){
   var list=E('eventList');if(!list)return;
+  /* Si la sesión administrativa ya está autenticada, conservar los controles también dentro del padre. */
+  try{if(sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'){M.admin=true;document.body.classList.add('v91-album-admin','v64-album-admin')}}catch(_e){}
   M.parent=g;M.selected.clear();
-  var items=M.all.filter(function(a){return String(a.group||'').trim()===g && (M.admin||isVisible(a))});
+  var groupKey=String(g||'').toLocaleLowerCase('es');
+  var items=M.all.filter(function(a){return String(a.group||'').trim().toLocaleLowerCase('es')===groupKey && (M.admin||isVisible(a))});
   var meta=M.meta[g]||{},out=[];
   out.push('<button type="button" class="v91-back" id="v91Back">← TODOS LOS ÁLBUMES</button>');
   if(M.admin){
     out.push('<div class="v91-parentbar"><div><div class="title">'+esc(g)+'</div><div class="sub">'+items.length+' álbum'+(items.length===1?'':'es')+
-      ((meta.date||meta.description)?' · <span class="v91-rich">'+richText((meta.date?meta.date+' · ':'')+(meta.description||''))+'</span>':'')+
+      ((meta.date||meta.description)?' · <span class="v91-rich">'+richText((meta.date?displayDate(meta.date)+' · ':'')+(meta.description||''))+'</span>':'')+
       '</div></div><button type="button" id="v91EditParent">✎ DESCRIPCIÓN / FECHA</button></div>')
   }
   items.forEach(function(a){out.push(albumCard(a,M.admin))});
@@ -9279,12 +9220,13 @@ function renderParent(g){
 function render(){M.parent?renderParent(M.parent):renderRoot()}
 window.v91Render=render;
 function configureBar(){
-  var bar=E('v91GroupBar'),front=E('v91FrontBtn'),input=E('v91GroupName'),cnt=E('v91Count');
+  var bar=E('v91GroupBar'),front=E('v91FrontBtn'),input=E('v91GroupName'),cnt=E('v91Count'),groupBtn=E('v91GroupBtn');
   if(!bar)return;
   bar.style.display=M.admin?'flex':'none';
   if(front)front.disabled=!M.parent;
   if(input)input.placeholder=M.parent?'Mover seleccionados a otro evento / grupo':'Nombre del evento / grupo';
   if(cnt)cnt.textContent=M.selected.size+' seleccionado'+(M.selected.size===1?'':'s');
+  if(groupBtn){groupBtn.textContent=M.selected.size?'AGRUPAR':'CREAR PADRE';groupBtn.disabled=!!M.parent&&!M.selected.size;groupBtn.style.display=(M.parent&&!M.selected.size)?'none':''}
 }
 function bind(){
   document.querySelectorAll('[data-v91parent]').forEach(function(p){
@@ -9332,8 +9274,15 @@ function bind(){
   })
 }
 async function setGroup(front){
-  if(!M.selected.size){if(window.luxAlert)luxAlert('SIN SELECCIÓN','Marcá uno o más álbumes.');return}
   var g=front?'':String((E('v91GroupName')||{}).value||'').trim();
+  if(!M.selected.size){
+    if(front){if(window.luxAlert)luxAlert('SIN SELECCIÓN','Marcá uno o más álbumes.');return}
+    if(!g){if(window.luxAlert)luxAlert('NOMBRE DEL ÁLBUM PADRE','Escribí el nombre del evento o colección.');return}
+    if(M.meta[g]){M.parent='';render();if(window.miniToast)miniToast('El álbum padre ya existe');return}
+    work('CREANDO ÁLBUM PADRE…');
+    try{var created=await apiPost({action:'saveAlbumGroupMeta',pin:'3233',group:g,description:'',date:''});if(!created||created.success===false)throw new Error((created&&created.msg)||'No se pudo crear');M.meta[g]={name:g,description:'',date:'',visible:true};if(E('v91GroupName'))E('v91GroupName').value='';render();work('ÁLBUM PADRE CREADO',true)}catch(err){if(window.luxAlert)luxAlert('ERROR',err.message||String(err))}
+    return
+  }
   if(!front&&!g){if(window.luxAlert)luxAlert('NOMBRE DEL EVENTO','Escribí el nombre del evento o colección.');return}
   var ids=Array.from(M.selected);
   work(front?'ENVIANDO A PORTADA…':'AGRUPANDO ÁLBUMES…');
@@ -9355,6 +9304,7 @@ async function loadMeta(){
   }catch(e){M.meta={}}
 }
 async function loadV91(admin){
+  document.body.classList.add('v127-albums-loading');
   if(window.toggleL)toggleL(true,admin?'CARGANDO ADMINISTRACIÓN…':'CARGANDO ÁLBUMES…');
   try{
     var r=await apiGet(admin?{action:'eventsAdmin',pin:'3233',t:Date.now()}:{action:'events',t:Date.now()});
@@ -9363,7 +9313,7 @@ async function loadV91(admin){
   }catch(e){
     if(window.toggleL)toggleL(false);
     if(window.luxAlert)luxAlert('ERROR','No se pudieron cargar los álbumes: '+(e.message||e))
-  }
+  }finally{document.body.classList.remove('v127-albums-loading')}
 }
 function search(q){
   if(M.admin)return;
@@ -9396,7 +9346,6 @@ window.exitAlbumAdminMode=function(){
 };
 E('v91GroupBtn').onclick=function(){setGroup(false)};
 E('v91FrontBtn').onclick=function(){setGroup(true)};
-E('v91ClearBtn').onclick=function(){M.selected.clear();if(E('v91GroupName'))E('v91GroupName').value='';render()};
 window.addEventListener('DOMContentLoaded',bindSearch)
 })();
 </script>
@@ -9986,28 +9935,14 @@ function installChildChecks94(){
   if(c)c.textContent=m.selected.size+' seleccionado'+(m.selected.size===1?'':'s');
 }
 
-/* captura en POINTERUP, para no quedar bloqueado por los listeners viejos */
-document.addEventListener('pointerup',function(e){
-  var b=e.target&&e.target.closest?e.target.closest('.v94-child-check'):null;
-  if(!b)return;
-
-  e.preventDefault();
-  e.stopPropagation();
-  e.stopImmediatePropagation();
-
-  var m=M();if(!m)return;
-  var id=String(b.getAttribute('data-v94id')||'');
-
-  if(m.selected.has(id))m.selected.delete(id);
-  else m.selected.add(id);
-
-  installChildChecks94();
-},true);
-
 document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('.v94-child-check'):null;
   if(!b)return;
   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  var m=M();if(!m)return;
+  var id=String(b.getAttribute('data-v94id')||'');
+  if(m.selected.has(id))m.selected.delete(id);else m.selected.add(id);
+  installChildChecks94();
 },true);
 
 /* ============================================================
@@ -10156,12 +10091,7 @@ if(typeof oldRender94==='function'){
   };
 }
 
-var mo94=new MutationObserver(function(){
-  clearTimeout(window.__v94m);
-  window.__v94m=setTimeout(function(){installChildChecks94();bindLogout94()},30);
-});
 window.addEventListener('DOMContentLoaded',function(){
-  var l=E('eventList');if(l)mo94.observe(l,{childList:true,subtree:true});
   bindLogout94();
 });
 window.addEventListener('load',function(){
@@ -10233,7 +10163,7 @@ function enrichParentCards95(){
     }
 
     var secondary=[];
-    if(meta.date)secondary.push(esc(meta.date));
+    if(meta.date)secondary.push(esc(typeof window.v121FormatDate==='function'?window.v121FormatDate(meta.date):meta.date));
     if(meta.photographer)secondary.push(esc(meta.photographer));
     if(meta.instagram){
       var u=String(meta.instagram).replace(/^@/,'');
@@ -10403,7 +10333,7 @@ function enhanceMpRows95(){
   rows.forEach(function(row,i){
     var o=filtered[i];if(!o||!isMP95(o)||row.querySelector('.v95-mp-line'))return;
     var meta=row.querySelector('.order-meta');if(!meta)return;
-    var bits=[(String(o.pago||'').toUpperCase()==='PAGADO' && String(o.mpStatus||'').toLowerCase()==='approved')?'✓ MP VERIFICADO':'Mercado Pago'];
+    var bits=[(String(o.pago||'').toUpperCase()==='PAGADO' && String(o.mpStatus||'').toLowerCase()==='approved')?'✓ MP VERIFICADO':'⏳ MP INICIADO · PAGO NO ACREDITADO'];
     if(o.mpStatus)bits.push(String(o.mpStatus).toUpperCase());
     if(o.mpMetodo)bits.push(o.mpMetodo);
     if(o.mpMonto)bits.push('$'+Number(o.mpMonto||0).toLocaleString('es-AR'));
@@ -10786,7 +10716,7 @@ function enhanceMpRows97(){
     if(!isMp || row.querySelector('.v95-mp-line'))return;
 
     var meta=row.querySelector('.order-meta');if(!meta)return;
-    var bits=[(String(o.pago||'').toUpperCase()==='PAGADO' && String(o.mpStatus||'').toLowerCase()==='approved')?'✓ MP VERIFICADO':'Mercado Pago'];
+    var bits=[(String(o.pago||'').toUpperCase()==='PAGADO' && String(o.mpStatus||'').toLowerCase()==='approved')?'✓ MP VERIFICADO':'⏳ MP INICIADO · PAGO NO ACREDITADO'];
     if(o.mpStatus)bits.push(String(o.mpStatus).toUpperCase());
     if(o.mpMetodo)bits.push(String(o.mpMetodo));
     if(o.mpMonto)bits.push('$'+Number(o.mpMonto||0).toLocaleString('es-AR'));
@@ -11636,7 +11566,6 @@ function ensureCoreoButton101(){
       var p=currentPhoto101();if(!p)return;
       var m=metaFor101(photoId(p));
       m.coreoRef=!m.coreoRef;
-      if(m.coreoRef)ensureSelected101(p);
       refreshCoreo101();
       try{if(typeof window.renderOrderSummary==='function')window.renderOrderSummary()}catch(err){}
       if(window.miniToast)miniToast(m.coreoRef?'Foto marcada como referencia de coreografía.':'Referencia de coreografía quitada.');
@@ -12532,7 +12461,7 @@ document.addEventListener('DOMContentLoaded',function(){hardenSecrets108(documen
 <div class="v109-field v109-conditional" id="v109PctWrap"><label>COMISIÓN TOMAUNO %</label><input id="v109Pct" type="number" step="0.1"></div><div class="v109-field"><label>VENCIMIENTO / ESTADÍA</label><input id="v109Expiry" type="date"></div>
 <div class="v109-field"><label>AVISOS EXTERNOS</label><select id="v109Notify"><option value="SI">ON · avisar</option><option value="NO">OFF · no molestar</option></select></div><div class="v109-field"><label>CLAVE REPORTES DEL FOTÓGRAFO</label><input id="v109ReportKey" inputmode="numeric" placeholder="Automática al crear"></div>
 <div class="v109-field v109-wide"><label>MENSAJE SI TODAVÍA NO HAY FOTOS</label><input id="v109Empty" value="Muy pronto las fotografías"></div>
-</div><div id="v109Status" class="v109-status"></div><div class="v109-actions"><button class="v109-btn red" onclick="v109Save()">GUARDAR</button><button class="v109-btn" onclick="v109Qr()">▦ GENERAR QR</button><button id="v109OpenDriveBtn" class="v109-btn" onclick="v109OpenDrive()">↗ ABRIR DRIVE</button><button id="v109Delete" class="v109-btn" style="margin-left:auto;color:#f66" onclick="v109DeleteAlbum()">ELIMINAR DEFINITIVAMENTE</button></div></div></div>
+</div><div id="v109Status" class="v109-status"></div><div class="v109-actions"><button class="v109-btn red" onclick="v109Save()">GUARDAR</button><button class="v109-btn" onclick="v109Qr()">▦ GENERAR QR</button><button class="v109-btn" onclick="v109CopyLink()">🔗 COPIAR LINK</button><button id="v109OpenDriveBtn" class="v109-btn" onclick="v109OpenDrive()">↗ ABRIR DRIVE</button><button id="v109Delete" class="v109-btn" style="margin-left:auto;color:#f66" onclick="v109DeleteAlbum()">ELIMINAR DEFINITIVAMENTE</button></div></div></div>
 
 <script>
 (function(){var edit=null,products=[];function E(i){return document.getElementById(i)}function M(){return window.__v91||window.__V91||window.__v91Model||null}function digits(v){return String(v||'').replace(/\D/g,'')}function moneyBlank(v){var n=Number(v||0);return n>0?String(n):''}function ownDefaults(a){var own=!a||String(a.gestion||'TOMAUNO').toUpperCase()==='TOMAUNO';return{wa:own?'5493764354522':'',pay:own?'TOMAUNO':'EXTERNO',alias:own?'tomaunoestudio':''}}window.v109Open=function(id){var m=M(),a=id&&m?(m.all||[]).find(x=>String(x.bridgeId)===String(id)):null,d=ownDefaults(a);edit=a||null;E('v109Title').textContent=a?'CONFIGURAR ÁLBUM':'CREAR ÁLBUM';E('v109Name').value=a?a.displayName:'';E('v109Photographer').value=a?a.fotografo||'Javier Móttola':'';E('v109Description').value=a?a.description||'':'';E('v109Instagram').value=a?a.instagram||'':'';E('v109PhonePublic').value=a?a.telefonoPublico||'':'';E('v109Gestion').value=a?a.gestion:'TOMAUNO';E('v109Origin').value=a?a.origenFotos||'ROOT':'ROOT';E('v109Drive').value=a&&a.origenFotos==='EXTERNO'?(a.sourceFolderId||a.id||''):'';var wa=a?digits(a.whatsappVentas):'';if(a&&String(a.gestion||'TOMAUNO').toUpperCase()==='TOMAUNO'&&(wa.length<10||wa.length>14))wa=d.wa;E('v109Wa').value=wa||d.wa;E('v109Pass').value=a?a.pass||'':'';E('v109Pay').value=a?a.pagoModo||d.pay:d.pay;E('v109Alias').value=a?(a.aliasPago||d.alias):d.alias;E('v109Logo').value=a?a.logoModo||'TOMAUNO':'TOMAUNO';E('v109LogoUrl').value=a?a.logoUrl||'':'';E('v109PD').value=a?moneyBlank(a.pDigital):'';E('v109PI').value=a?moneyBlank(a.pPrint):'';E('v109PFull').value=a?moneyBlank(a.pFull):'';E('v109Model').value=a?(a.modeloComercial||(String(a.gestion||'TOMAUNO').toUpperCase()==='EXTERNO'?'COMISION':'NINGUNO')):'NINGUNO';E('v109Fee').value=a?moneyBlank(a.tarifaMensual):'';E('v109Pct').value=a?moneyBlank(a.comisionPct):'';E('v109Expiry').value=a&&a.fechaVencimiento?String(a.fechaVencimiento).slice(0,10):'';E('v109Notify').value=a&&a.avisosExternos===false?'NO':'SI';E('v109ReportKey').value=a?a.claveReportes||'':'';E('v109Empty').value=a?a.mensajeVacio||'Muy pronto las fotografías':'Muy pronto las fotografías';if(E('v109FullDownload'))E('v109FullDownload').value=a&&a.descargaCompleta?'SI':'NO';products=[];if(a&&a.products)products=a.products.filter(function(p){var l=String(p.label||'').trim();return l&&!/^(Descargas?\s+Digitales?|Impresi[oó]n(?:es)?\s*15x21|Selecci[oó]n|PACK\s+ÁLBUM|SINLOGO|LIBRE|CONDESCARGA)/i.test(l)}).map(p=>({label:p.label,price:p.price||0,mode:p.mode||'cant',type:p.type||(/impresi[oó]n/i.test(String(p.label||''))?'impresion':'producto')}));renderP();E('v109Delete').style.display=a?'':'none';E('v109Status').className='v109-status';E('v109Status').textContent='';E('v109Manager').classList.add('open')};window.v109Close=()=>E('v109Manager').classList.remove('open');window.v109AddProduct=()=>{products.push({label:'',price:'',mode:'cant',type:'producto'});renderP()};function renderP(){E('v109Products').innerHTML=products.map((p,i)=>'<div class="v109-product"><input data-i="'+i+'" data-k="label" value="'+String(p.label||'').replace(/"/g,'&quot;')+'" placeholder="Ej. Ampliación 30x40"><input data-i="'+i+'" data-k="price" type="number" value="'+(Number(p.price||0)>0?Number(p.price):'')+'" placeholder="0"><select data-i="'+i+'" data-k="type"><option value="producto" '+(p.type==='producto'?'selected':'')+'>Producto</option><option value="servicio" '+(p.type==='servicio'?'selected':'')+'>Servicio</option><option value="impresion" '+(p.type==='impresion'?'selected':'')+'>🖨 Impresión</option></select><select data-i="'+i+'" data-k="mode"><option value="cant">Por unidad</option><option value="fijo" '+(p.mode==='fijo'?'selected':'')+'>Fijo</option></select><button class="v109-btn" onclick="v109RemoveProduct('+i+')">×</button></div>').join('');E('v109Products').querySelectorAll('[data-i]').forEach(n=>n.oninput=()=>{products[+n.dataset.i][n.dataset.k]=n.dataset.k==='price'?(n.value===''?'':Number(n.value)):n.value})}window.v109RemoveProduct=i=>{products.splice(i,1);renderP()};E('v109Gestion').addEventListener('change',function(){var own=this.value==='TOMAUNO',d=ownDefaults(own?null:{gestion:'EXTERNO'});if(own){if(!digits(E('v109Wa').value))E('v109Wa').value=d.wa;E('v109Pay').value='TOMAUNO';if(!E('v109Alias').value.trim())E('v109Alias').value=d.alias}else{if(E('v109Wa').value==='5493764354522')E('v109Wa').value='';if(E('v109Alias').value==='tomaunoestudio')E('v109Alias').value='';if(E('v109Pay').value==='TOMAUNO')E('v109Pay').value='EXTERNO'}});function payload(){return{pin:'3233',title:E('v109Name').value.trim(),description:E('v109Description').value.trim(),fotografo:E('v109Photographer').value.trim(),instagram:E('v109Instagram').value.trim(),telefonoPublico:E('v109PhonePublic').value.trim(),gestion:E('v109Gestion').value,origenFotos:E('v109Origin').value,sourceFolderId:E('v109Drive').value.trim(),whatsappVentas:digits(E('v109Wa').value),pass:E('v109Pass').value.trim(),pagoModo:E('v109Pay').value,aliasPago:E('v109Alias').value.trim(),logoModo:E('v109Logo').value,logoUrl:E('v109LogoUrl').value.trim(),pDigital:E('v109PD').value,pPrint:E('v109PI').value,pFull:E('v109PFull').value,productosJson:JSON.stringify(products.filter(x=>x.label)),modeloComercial:E('v109Model').value,tarifaMensual:E('v109Fee').value,comisionPct:E('v109Pct').value,fechaVencimiento:E('v109Expiry').value,avisosExternos:E('v109Notify').value==='SI',claveReportes:E('v109ReportKey').value.trim(),mensajeVacio:E('v109Empty').value.trim(),descargaCompleta:E('v109FullDownload')?E('v109FullDownload').value==='SI':false}}window.v109Save=async()=>{var p=payload();p.action=edit?'updateAlbumConfig':'createAlbumV109';if(edit)p.bridgeId=edit.bridgeId;var st=E('v109Status');try{st.textContent='Actualizando datos…';st.className='v109-status on';var r=await apiPost(p);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo guardar');st.textContent='Guardado. Actualizando álbumes…';if(typeof loadEvents==='function')await loadEvents();st.textContent='Listo';setTimeout(function(){v109Close();if(typeof miniToast==='function')miniToast(edit?'Álbum actualizado':'Álbum creado')},250)}catch(e){st.textContent='Error: '+e.message;st.className='v109-status on';if(window.luxAlert)luxAlert('ERROR',e.message)}};window.v109OpenDrive=()=>{var a=edit;if(a&&(a.sourceFolderId||a.id))window.open('https://drive.google.com/drive/folders/'+(a.sourceFolderId||a.id),'_blank')};window.v109Qr=()=>{var a=edit;if(!a){if(window.luxAlert)luxAlert('GUARDÁ PRIMERO','Guardá el álbum para generar su QR.');return}var url='https://tomaunofotografias.vercel.app/?album='+encodeURIComponent(a.bridgeId),q='https://quickchart.io/qr?size=700&text='+encodeURIComponent(url);window.open(q,'_blank')};window.v109DeleteAlbum=async()=>{if(!edit)return;if(!confirm('Esto elimina configuración y pedidos de este álbum. Si la carpeta fue creada por Tomauno también irá a la papelera.'))return;try{var r=await apiPost({action:'deleteAlbumV109',pin:'3233',bridgeId:edit.bridgeId,confirm:'ELIMINAR'});if(!r||r.success===false)throw Error((r&&r.msg)||'Error');E('v109Status').textContent='Eliminando y actualizando…';E('v109Status').className='v109-status on';if(typeof loadEvents==='function')await loadEvents();v109Close()}catch(e){if(window.luxAlert)luxAlert('ERROR',e.message)}};function addInlineTools(){var bar=E('v91GroupBar');if(!bar)return;if(!E('v109CreateInline')){var b=document.createElement('button');b.id='v109CreateInline';b.type='button';b.textContent='CREAR ÁLBUM';b.onclick=function(){v109Open()};bar.insertBefore(b,bar.firstChild)}}function decorate(){var m=M();if(!m)return;var isAdmin=!!m.admin;if(isAdmin)addInlineTools();document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(c=>{var old=c.querySelector('.v108-gear');if(old)old.style.display='none';var gear=c.querySelector('.v109-gear2');if(isAdmin&&!gear){var b=document.createElement('button');b.className='v109-btn v109-gear2';b.textContent='⚙';b.title='Configurar álbum';b.onclick=e=>{e.preventDefault();e.stopPropagation();v109Open(c.getAttribute('data-v91album'))};c.appendChild(b)}else if(!isAdmin&&gear)gear.remove();var a=(m.all||[]).find(x=>String(x.bridgeId)===String(c.getAttribute('data-v91album')));if(a&&!c.querySelector('.v109-public-meta')&&(a.instagram||a.telefonoPublico)){var d=document.createElement('div');d.className='v109-public-meta';if(a.instagram){var ig=document.createElement('a');var u=String(a.instagram).replace(/^@/,'');ig.href='https://instagram.com/'+u;ig.target='_blank';ig.textContent='@'+u;ig.onclick=e=>e.stopPropagation();d.appendChild(ig)}if(a.telefonoPublico){var ph=document.createElement('a');var waTxt='Hola, vengo del álbum '+String(a.displayName||'').trim()+' publicado en Tomauno Fotografías.';ph.href='https://wa.me/'+digits(a.telefonoPublico)+'?text='+encodeURIComponent(waTxt);ph.target='_blank';ph.textContent='WhatsApp';ph.onclick=e=>e.stopPropagation();d.appendChild(ph)}c.appendChild(d)}})}function syncWatermark(){return;/* FIX8: controlador V109 anterior desactivado */var a=currentAlbum108();if(!a){document.body.classList.remove('v109-neutral-watermark','v109-custom-watermark');return}if(a.configurado!==true)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();document.body.classList.remove('no-watermark-all','v109-neutral-watermark','v109-custom-watermark');document.documentElement.style.removeProperty('--v109-watermark-url');if(mode==='NEUTRO')document.body.classList.add('v109-neutral-watermark');else if(mode==='PERSONALIZADO'&&a.logoUrl){document.body.classList.add('v109-custom-watermark');document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/"/g,'')+'")')}}var __v109RenderBase=window.v91Render;if(typeof __v109RenderBase==='function'){window.v91Render=function(){var r=__v109RenderBase.apply(this,arguments);decorate();syncWatermark();return r}}decorate();syncWatermark();setInterval(syncWatermark,1500);})();
@@ -12976,12 +12905,10 @@ function setupDirty(){var mgr=E('v109Manager');if(!mgr)return;saveBtn=Array.from
 var oldOpenCfg=window.v109Open;if(typeof oldOpenCfg==='function'){window.v109Open=function(){var r=oldOpenCfg.apply(this,arguments);setTimeout(function(){setupDirty();setDirty(false)},30);return r}}
 var oldSave=window.v109Save;if(typeof oldSave==='function'){window.v109Save=async function(){if(!dirty)return;var r=await oldSave.apply(this,arguments);setDirty(false);return r}}
 /* Quitar impresiones del listado genérico de servicios: se eligen sobre cada foto. */
-var oldExtras=window.getExtraProducts;if(typeof oldExtras==='function'){window.getExtraProducts=function(){return (oldExtras.apply(this,arguments)||[]).filter(function(p){return String(p.type||'').toLowerCase()!=='impresion'})}}
+var oldExtras=window.getExtraProducts;if(typeof oldExtras==='function'){window.getExtraProducts=function(){return (oldExtras.apply(this,arguments)||[]).filter(function(p){var t=String(p.type||'').toLowerCase(),l=String(p.label||'').toLowerCase();return t!=='impresion'||/pack|sesi[oó]n|coreograf[ií]a/.test(l)})}}
 /* Menú inicial: una sola entrada de fotografías; la impresión se decide dentro de la galería. */
 var oldMode=window.openModeModal;if(typeof oldMode==='function'){window.openModeModal=function(){var r=oldMode.apply(this,arguments);setTimeout(function(){var box=E('modeOptions');if(!box)return;Array.from(box.children).forEach(function(card){var t=(card.textContent||'').toLowerCase();if(t.indexOf('impres')>=0)card.style.display='none';if(t.indexOf('digital')>=0){var b=card.querySelector('b');if(b)b.textContent='COMPRAR FOTOGRAFÍAS';var spans=card.querySelectorAll('span');if(spans.length)spans[spans.length-1].textContent='Digitales e impresiones'}})},0);return r}}
-/* Descarga completa configurada desde ADM: conservar compatibilidad con álbumes viejos. */
-function fullDownload(){var a=album();if(!a||!a.descargaCompleta)return;var old=E('btnFullDownloadCentered')||E('btnFullDownloadEvent');if(old)return;var host=E('galleryStatus');if(!host)return;var b=document.createElement('button');b.id='v109FullDownload9';b.className='btn-order';b.style.cssText='display:block;margin:8px auto;background:#063d21;border:1px solid #16d56b';b.textContent='⬇ DESCARGAR TODO EL ÁLBUM';b.onclick=function(){window.open('https://drive.google.com/drive/folders/'+encodeURIComponent(a.id),'_blank')};host.parentNode.insertBefore(b,host)}
-var oldLoad=window.loadPhotos;if(typeof oldLoad==='function'){window.loadPhotos=function(){var r=oldLoad.apply(this,arguments);setTimeout(function(){seedTomauno();applyWM();decorateGallery();fullDownload()},0);return r}}
+var oldLoad=window.loadPhotos;if(typeof oldLoad==='function'){window.loadPhotos=function(){var r=oldLoad.apply(this,arguments);setTimeout(function(){seedTomauno();applyWM();decorateGallery()},0);return r}}
 window.addEventListener('load',function(){seedTomauno();applyWM();setupDirty()});
 })();
 </script>
@@ -13023,7 +12950,7 @@ function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\
 function currentAlbum(){try{return activeEvent||window.activeEvent||null}catch(e){return window.activeEvent||null}}
 function allProducts(){var a=currentAlbum();return a&&Array.isArray(a.products)?a.products:[]}
 function isPrint(p){var t=norm(p&&p.type),l=norm(p&&p.label);if(t)return t==='impresion';return /impresion|\b10\s*x\s*15\b|\b13\s*x\s*18\b|\b15\s*x\s*21\b|\b20\s*x\s*30\b/.test(l)}
-function printProducts(){var seen={},out=[];allProducts().slice().reverse().forEach(function(p){if(!p||!isPrint(p)||Number(p.price||0)<=0)return;var size=(norm(p.label).match(/(10|13|15|20|21|30|45)\s*x?\s*(10|13|15|18|20|21|30|45)/)||[]).slice(1).join('x'),k=size?'impresion:'+size:norm(p.label);if(seen[k])return;seen[k]=1;out.unshift(p)});return out}
+function printProducts(){var seen={},out=[];allProducts().slice().reverse().forEach(function(p){if(!p||!isPrint(p)||/pack|sesion|coreografia/.test(norm(p.label))||Number(p.price||0)<=0)return;var size=(norm(p.label).match(/(10|13|15|20|21|30|45)\s*x?\s*(10|13|15|18|20|21|30|45)/)||[]).slice(1).join('x'),k=size?'impresion:'+size:norm(p.label);if(seen[k])return;seen[k]=1;out.unshift(p)});return out}
 function photoMeta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
 function totalPrints(id){var total=0,ps=photoMeta(id).prints;Object.keys(ps).forEach(function(k){total+=Number(ps[k]||0)});return total}
 function selectedPhoto(id){try{return (allPhotos||[]).find(function(p){return String(p.id)===String(id)})}catch(e){return null}}
@@ -13044,14 +12971,15 @@ function usableLogoUrl(value){var u=String(value||'').trim(),m=u.match(/drive\.g
 function centerLogo(){var a=currentAlbum();if(!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase(),logo=usableLogoUrl(a.logoUrl);document.body.classList.remove('v109-no-watermark','v109-tomauno-final','v109-neutral-final','v109-custom-final');document.documentElement.style.removeProperty('--v109-watermark-url');if(mode==='NINGUNO'||mode==='SIN_PROTECCION'||mode==='SIN PROTECCION'){document.body.classList.add('v109-no-watermark')}else if(mode==='PERSONALIZADO'&&logo){document.body.classList.add('v109-custom-final');document.documentElement.style.setProperty('--v109-watermark-url','url("'+logo.replace(/["\n\r]/g,'')+'")')}else if(mode==='NEUTRO'){document.body.classList.add('v109-neutral-final')}else{document.body.classList.add('v109-tomauno-final')}}
 function albumModel(){return window.__v91||window.__V91||window.__v91Model||null}
 function decorateCovers(){var m=albumModel();if(!m)return;document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){var id=card.getAttribute('data-v91album'),a=(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)});if(!a)return;var old=card.querySelector('.v109-public-meta');if(old)old.remove();if(!(a.fotografo||a.instagram||a.telefonoPublico))return;var row=document.createElement('div');row.className='v109-public-meta';var ig=String(a.instagram||'').replace(/^@/,'').trim(),wa=String(a.telefonoPublico||'').replace(/\D/g,''),igUrl=ig?'https://instagram.com/'+ig:'',waUrl=wa?'https://wa.me/'+wa+'?text='+encodeURIComponent('Hola, vengo del álbum '+String(a.displayName||'')+' publicado en Tomauno Fotografías.'):'';if(a.fotografo){var name=document.createElement('a');name.className='v109-photographer';name.href=igUrl||waUrl||'#';name.target=(igUrl||waUrl)?'_blank':'';name.textContent='📷 '+a.fotografo;name.onclick=function(e){e.stopPropagation();if(!(igUrl||waUrl))e.preventDefault()};row.appendChild(name)}if(igUrl){var ia=document.createElement('a');ia.href=igUrl;ia.target='_blank';ia.textContent='📸 @'+ig;ia.onclick=function(e){e.stopPropagation()};row.appendChild(ia)}if(waUrl){var w=document.createElement('a');w.href=waUrl;w.target='_blank';w.textContent='💬 WhatsApp';w.onclick=function(e){e.stopPropagation()};row.appendChild(w)}card.appendChild(row)})}
-function addDownloadControl(){var grid=document.querySelector('#v109Manager .v109-grid');if(!grid||E('v109FullDownload'))return;var field=document.createElement('div');field.id='v109FullDownloadWrap';field.className='v109-field';field.innerHTML='<label>DESCARGA COMPLETA DESDE DRIVE</label><select id="v109FullDownload"><option value="NO">NO MOSTRAR</option><option value="SI">MOSTRAR DESCARGAR ÁLBUM</option></select>';var empty=E('v109Empty')&&E('v109Empty').closest('.v109-field');grid.insertBefore(field,empty||null)}
+function addDownloadControl(){var grid=document.querySelector('#v109Manager .v109-grid');if(!grid||E('v109FullDownload'))return;var field=document.createElement('div');field.id='v109FullDownloadWrap';field.className='v109-field';field.innerHTML='<label>DESCARGA COMPLETA DESDE DRIVE</label><label class="v121-download-check"><input type="checkbox" id="v121FullDownloadCheck"><span>Mostrar el botón para descargar el álbum completo</span></label><select id="v109FullDownload" hidden><option value="NO">NO</option><option value="SI">SI</option></select><small>El cliente abrirá la carpeta real de Google Drive. Activar sólo cuando quieras compartirla.</small>';var empty=E('v109Empty')&&E('v109Empty').closest('.v109-field');grid.insertBefore(field,empty||null);E('v121FullDownloadCheck').onchange=function(){E('v109FullDownload').value=this.checked?'SI':'NO';E('v109FullDownload').dispatchEvent(new Event('change',{bubbles:true}))}}
 function mergeLegalSections(){var titles=document.querySelectorAll('#v109Manager .v109-section-title'),agreement=null;titles.forEach(function(t){var s=norm(t.textContent);if(s.indexOf('acuerdo')>=0){agreement=t;t.textContent='Acuerdo de licencia, publicación y reportes';t.classList.add('v109-license-title')}else if(s.indexOf('publicacion')>=0&&s.indexOf('report')>=0)t.remove()});return agreement}
-var oldOpen=window.v109Open;if(typeof oldOpen==='function')window.v109Open=function(){var id=arguments[0];addDownloadControl();mergeLegalSections();var r=oldOpen.apply(this,arguments);setTimeout(function(){mergeLegalSections();var a=null;try{var m=albumModel();a=id&&m?(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null}catch(e){}if(E('v109FullDownload'))E('v109FullDownload').value=a&&a.descargaCompleta?'SI':'NO'},40);return r}
-function syncFullDownload(){document.querySelectorAll('#v109FullDownload9,#v109FullDownload10').forEach(function(n){n.remove()});var a=currentAlbum();if(!a||!a.descargaCompleta)return;var host=E('galleryStatus');if(!host)return;var b=document.createElement('button');b.id='v109FullDownload10';b.type='button';b.className='btn-order';b.style.cssText='display:block;margin:8px auto;background:#063d21;border:1px solid #16d56b';b.textContent='⬇ DESCARGAR TODO EL ÁLBUM';b.onclick=function(){window.open('https://drive.google.com/drive/folders/'+encodeURIComponent(a.sourceFolderId||a.id),'_blank','noopener')};host.parentNode.insertBefore(b,host)}
-var oldLoadPhotos=window.loadPhotos;if(typeof oldLoadPhotos==='function')window.loadPhotos=function(){var r=oldLoadPhotos.apply(this,arguments);setTimeout(syncFullDownload,0);return r}
-['openZoom','nextPhoto','prevPhoto'].forEach(function(fn){var old=window[fn];if(typeof old==='function'){window[fn]=function(){var r=old.apply(this,arguments);setTimeout(function(){decorateZoom();centerLogo()},0);return r}}})
-['appendPhotos','loadMorePhotos'].forEach(function(fn){var old=window[fn];if(typeof old==='function'){window[fn]=function(){var r=old.apply(this,arguments);setTimeout(function(){decorateGallery();centerLogo()},0);return r}}})
-var observer=new MutationObserver(function(){decorateCovers()});var eventList=E('eventList');if(eventList)observer.observe(eventList,{childList:true,subtree:true});
+var oldOpen=window.v109Open;if(typeof oldOpen==='function')window.v109Open=function(){var id=arguments[0];addDownloadControl();mergeLegalSections();var r=oldOpen.apply(this,arguments);setTimeout(function(){mergeLegalSections();var a=null;try{var m=albumModel();a=id&&m?(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null}catch(e){}var on=!!(a&&a.descargaCompleta);if(E('v109FullDownload'))E('v109FullDownload').value=on?'SI':'NO';if(E('v121FullDownloadCheck'))E('v121FullDownloadCheck').checked=on},40);return r}
+function clearFullDownload(){var b=E('albumDriveDownload');if(b){b.hidden=true;b.style.setProperty('display','none','important');b.onclick=null}}
+function renderFullDownload(a,folderId){var b=E('albumDriveDownload'),id=String(folderId||a&&a.sourceFolderId||a&&a.id||'').trim();if(!b||!a||!id)return;b.hidden=false;b.style.setProperty('display','block','important');b.onclick=function(){window.open('https://drive.google.com/drive/folders/'+encodeURIComponent(id),'_blank','noopener')}}
+async function syncFullDownload(){clearFullDownload();var a=currentAlbum();if(!a)return;var bridge=String(a.bridgeId||a.id||''),enabled=a.descargaCompleta===true,folder=a.sourceFolderId||a.id,seq=(window.__v125DownloadSeq||0)+1;window.__v125DownloadSeq=seq;if(enabled)renderFullDownload(a,folder);try{var r=await apiGet({action:'albumDownloadState',bridgeId:bridge,t:Date.now()});if(seq!==window.__v125DownloadSeq)return;if(r&&r.success!==false){enabled=r.enabled===true;folder=r.folderId||folder;a.descargaCompleta=enabled}clearFullDownload();if(enabled)renderFullDownload(a,folder)}catch(e){if(seq===window.__v125DownloadSeq&&enabled)renderFullDownload(a,folder)}}
+var oldLoadPhotos=window.loadPhotos;if(typeof oldLoadPhotos==='function')window.loadPhotos=async function(){var r=await oldLoadPhotos.apply(this,arguments);await syncFullDownload();return r};
+['openZoom','nextPhoto','prevPhoto'].forEach(function(fn){var old=window[fn];if(typeof old==='function'){window[fn]=function(){var r=old.apply(this,arguments);setTimeout(function(){decorateZoom();centerLogo()},0);return r}}});
+['appendPhotos','loadMorePhotos'].forEach(function(fn){var old=window[fn];if(typeof old==='function'){window[fn]=function(){var r=old.apply(this,arguments);setTimeout(function(){decorateGallery();centerLogo()},0);return r}}});
 window.addEventListener('load',function(){addDownloadControl();mergeLegalSections();decorateCovers();decorateZoom();centerLogo()});
 })();
 </script>
@@ -13067,7 +12995,6 @@ body.v109-custom-final #lightbox .zoom-watermark::before{inset:4%!important;back
 #v91GroupBar{max-width:calc(100vw - 20px)!important;overflow:hidden!important;flex-wrap:wrap!important}
 #v91GroupBar>*{box-sizing:border-box!important;max-width:100%!important}
 #v91GroupName{min-width:0!important;flex:1 1 180px!important}
-#v91ClearBtn{margin:0!important;flex:0 1 auto!important}
 #v109CbuWrap input{border-color:#1d5268!important;color:#7fd5fa!important}
 .v109-external-payment-data{margin:8px 0;padding:10px 12px;border:1px solid #245b3a;border-radius:12px;background:#06150d;color:#b9efca;font-size:12px;line-height:1.55;text-align:left}
 @media(max-width:600px){#v91GroupBar button{flex:1 1 auto!important;padding:0 8px!important}#v91GroupBar .count{min-width:0!important}}
@@ -13080,7 +13007,7 @@ function currentAlbum11(){try{return activeEvent||window.activeEvent||null}catch
 function printLines11(){var totals={};Object.keys(window.__tomaunoPhotoMeta||{}).forEach(function(id){var ps=((window.__tomaunoPhotoMeta[id]||{}).prints)||{};Object.keys(ps).forEach(function(label){var q=Number(ps[label]||0);if(q>0)totals[label]=Number(totals[label]||0)+q})});return Object.keys(totals).map(function(label){return label+' x'+totals[label]})}
 
 /* Los ítems impresos forman parte del nombre y del detalle persistido del pedido. */
-var api11=window.apiPost;if(typeof api11==='function'&&!api11.__fix11){var apiWrap11=function(data){if(data&&data.action==='submitOrder'){var lines=printLines11();if(lines.length){var detail='Impresiones: '+lines.join(' | '),notes=String(data.notes||'').trim();if(notes.indexOf(detail)<0)data.notes=(notes?notes+'\n\n':'')+detail;var base=String(data.orderType||'Fotografías').replace(/\s*\+\s*Impresiones.*$/i,'');data.orderType=base+' + '+lines.join(', ')}}if(data&&(data.action==='updateAlbumConfig'||data.action==='createAlbumV109')){var cbu=E('v109Cbu');data.cbuPago=cbu?String(cbu.value||'').replace(/\D/g,''):''}return api11.apply(this,arguments)};apiWrap11.__fix11=true;window.apiPost=apiWrap11}
+var api11=window.apiPost;if(typeof api11==='function'&&!api11.__fix11){var apiWrap11=function(data){if(data&&data.action==='submitOrder'){var lines=printLines11();if(lines.length){var detail='Impresiones: '+lines.join(' | '),notes=String(data.notes||'').trim();if(notes.indexOf('Impresiones por fotografía:')<0&&notes.indexOf(detail)<0)data.notes=(notes?notes+'\n\n':'')+detail;var base=String(data.orderType||'Fotografías').replace(/\s*\+\s*Impresiones.*$/i,'');data.orderType=base+' + '+lines.join(', ')}}if(data&&(data.action==='updateAlbumConfig'||data.action==='createAlbumV109')){var cbu=E('v109Cbu');data.cbuPago=cbu?String(cbu.value||'').replace(/\D/g,''):''}return api11.apply(this,arguments)};apiWrap11.__fix11=true;window.apiPost=apiWrap11}
 
 /* Campo CBU separado del alias para álbumes con cobro externo. */
 function addCbu11(){var alias=E('v109AliasWrap'),grid=document.querySelector('#v109Manager .v109-grid');if(!alias||!grid||E('v109Cbu'))return;var f=document.createElement('div');f.id='v109CbuWrap';f.className='v109-field v109-conditional';f.innerHTML='<label>CBU PARA PAGO EXTERNO</label><input id="v109Cbu" inputmode="numeric" maxlength="22" autocomplete="off" placeholder="22 dígitos">';alias.parentNode.insertBefore(f,alias.nextSibling)}
@@ -13134,7 +13061,7 @@ function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\
 function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
 function selectedProduct(){try{return window.getSelectedProduct?window.getSelectedProduct():(window.selectedMainProduct||selectedMainProduct)}catch(e){return window.selectedMainProduct||null}}
 function selectionOnly(){var p=selectedProduct();return !!(p&&(p.selectionOnly||/seleccion|fotolibro|edicion/.test(norm(p.label))))}
-function products(){var a=album(),seen={},out=[];((a&&a.products)||[]).slice().reverse().forEach(function(p){if(!p||norm(p.type)!=='impresion'||Number(p.price||0)<=0)return;var size=(norm(p.label).match(/(10|13|15|20|21|30|45)\s*x?\s*(10|13|15|18|20|21|30|45)/)||[]).slice(1).join('x'),k=size?'impresion:'+size:norm(p.label);if(seen[k])return;seen[k]=1;out.unshift(p)});return out}
+function products(){var a=album(),seen={},out=[];((a&&a.products)||[]).slice().reverse().forEach(function(p){if(!p||norm(p.type)!=='impresion'||/pack|sesion|coreografia/.test(norm(p.label))||Number(p.price||0)<=0)return;var size=(norm(p.label).match(/(10|13|15|20|21|30|45)\s*x?\s*(10|13|15|18|20|21|30|45)/)||[]).slice(1).join('x'),k=size?'impresion:'+size:norm(p.label);if(seen[k])return;seen[k]=1;out.unshift(p)});return out}
 function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
 function printRows(){var byLabel={},byPhoto={};Object.keys(window.__tomaunoPhotoMeta||{}).forEach(function(id){var ps=meta(id).prints;Object.keys(ps).forEach(function(label){var q=Math.max(0,Number(ps[label]||0));if(!q)return;byLabel[label]=Number(byLabel[label]||0)+q;(byPhoto[id]||(byPhoto[id]=[])).push({label:label,qty:q})})});return {byLabel:byLabel,byPhoto:byPhoto}}
 function printTotal(){var prices={};products().forEach(function(p){prices[norm(p.label)]=Number(p.price||0)});var sum=0,rows=printRows().byLabel;Object.keys(rows).forEach(function(label){sum+=Number(rows[label]||0)*Number(prices[norm(label)]||0)});return sum}
@@ -13334,7 +13261,7 @@ function product(){try{return window.getSelectedProduct?window.getSelectedProduc
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function selectionMode(){var p=product();return !!(p&&(p.selectionOnly||/seleccion|fotolibro|edicion/.test(norm(p.label))))}
 function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
-function printProducts(){var a=album();return ((a&&a.products)||[]).filter(function(p){return norm(p.type)==='impresion'&&Number(p.price||0)>0})}
+function printProducts(){var a=album();return ((a&&a.products)||[]).filter(function(p){return norm(p.type)==='impresion'&&!/pack|sesion|coreografia/.test(norm(p.label))&&Number(p.price||0)>0})}
 function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
 function printQty(id){var n=0,ps=meta(id).prints;Object.keys(ps).forEach(function(k){n+=Math.max(0,Number(ps[k]||0))});return n}
 function ensureSelected(id){if(selected().some(function(p){return String(p.id)===String(id)}))return;try{if(typeof window.togglePhoto==='function')window.togglePhoto(id);else if(typeof togglePhoto==='function')togglePhoto(id)}catch(e){}}
@@ -13480,7 +13407,7 @@ function install19(){
   var bar=E('v91GroupBar');if(!bar||E('v91CopyConfig19'))return;
   var copy=document.createElement('button');copy.id='v91CopyConfig19';copy.type='button';copy.textContent='⧉ COPIAR CONFIG.';copy.title='Copiar la configuración del álbum seleccionado';
   var paste=document.createElement('button');paste.id='v91PasteConfig19';paste.type='button';paste.textContent='▣ PEGAR CONFIG.';paste.title='Aplicar la configuración copiada a los álbumes seleccionados';
-  var clear=E('v91ClearBtn');bar.insertBefore(copy,clear);bar.insertBefore(paste,clear);
+  bar.appendChild(copy);bar.appendChild(paste);
   copy.onclick=copyConfig19;paste.onclick=pasteConfig19;sync19()
 }
 function sync19(){var m=model(),n=m?m.selected.size:0,c=E('v91CopyConfig19'),p=E('v91PasteConfig19');if(c)c.disabled=busy19||n!==1;if(p){p.disabled=busy19||!copied19||n<1;p.textContent=copied19?'▣ PEGAR CONFIG. ('+n+')':'▣ PEGAR CONFIG.'}}
@@ -13660,7 +13587,7 @@ function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}
 function current(){var idx;try{idx=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){idx=-1}return photos()[idx]||null}
 function idFromCard(card){return card&&String(card.id||'').replace(/^p-/,'')}
 function meta(id){window.__tomaunoPhotoMeta=window.__tomaunoPhotoMeta||{};var m=window.__tomaunoPhotoMeta[String(id)]||(window.__tomaunoPhotoMeta[String(id)]={});m.prints=m.prints||{};return m}
-function printProducts(){return (((album()||{}).products)||[]).filter(function(p){return norm(p.type)==='impresion'&&Number(p.price||0)>0})}
+function printProducts(){return (((album()||{}).products)||[]).filter(function(p){return norm(p.type)==='impresion'&&!/pack|sesion|coreografia/.test(norm(p.label))&&Number(p.price||0)>0})}
 function defaultPrint(){var ps=printProducts();return ps.find(function(p){return /15\s*[x×]\s*21/.test(norm(p.label))})||ps[0]||null}
 function printQty(id){var n=0,ps=meta(id).prints;Object.keys(ps).forEach(function(k){n+=Math.max(0,Number(ps[k]||0))});return n}
 function quickPrint22(id){var p=defaultPrint();if(!p||!id)return;if(typeof window.v109PrintQty10==='function')window.v109PrintQty10(String(id),String(p.label),1);else{meta(id).prints[p.label]=Number(meta(id).prints[p.label]||0)+1}setTimeout(decorate22,20);if(window.miniToast)miniToast('🖨 '+p.label+': '+Number(meta(id).prints[p.label]||0)+' copia'+(Number(meta(id).prints[p.label]||0)===1?'':'s'))}
@@ -13747,7 +13674,7 @@ if(typeof api23==='function'&&!api23.__v109fix23){
 <script id="tomauno-v110-js">
 (function(){
 'use strict';
-var stats110={siteTotal:0,albums:{}},introDone110=false;
+var stats110={siteTotal:0,albums:{},parents:{}},introDone110=false;window.__tomaunoVisitStats110=stats110;
 function E(id){return document.getElementById(id)}
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function model(){return window.__v91Model||window.__v91||window.__V91||null}
@@ -13755,8 +13682,8 @@ function digits(v){return String(v||'').replace(/\D/g,'')}
 function installWelcome110(){var loading=E('loading');if(introDone110||!loading||E('v110Welcome'))return;var h=document.createElement('section');h.id='v110Welcome';h.className='v110-welcome';h.innerHTML='<span class="v110-kicker">TOMAUNO ESTÁ CON VOS</span><h1>Reviví tus momentos. <span>Para toda la vida.</span></h1><p class="v110-lead">Cada imagen guarda una historia. Encontrá la tuya con la <b>calidad, seguridad y experiencia</b> que hacen de Tomauno una elección de confianza.</p><div class="v110-trust"><span id="v110IntroVisits">👁 Visitas al sitio</span><span>✦ FOTOGRAFÍA CON EXPERIENCIA</span></div>';loading.appendChild(h)}
 function installAlbumBar110(){var view=E('view-events'),title=view&&view.querySelector('h2');if(!title)return;var bar=E('v110AlbumBar');if(!bar){bar=document.createElement('div');bar.id='v110AlbumBar';bar.className='v110-album-bar';bar.innerHTML='<span id="v110SiteVisits">👁 <strong>0</strong> visitas al sitio</span><span>•</span><a href="https://cursostomauno.vercel.app/" target="_blank" rel="noopener">CONOCÉ TOMAUNO →</a>';title.insertAdjacentElement('afterend',bar)}}
 function contact110(a){var parts=[],ig=String(a.instagram||'').replace(/^@/,'').trim(),wa=digits(a.telefonoPublico);if(ig)parts.push('<a href="https://instagram.com/'+encodeURIComponent(ig)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">📸 @'+esc(ig)+'</a>');if(wa)parts.push('<a href="https://wa.me/'+wa+'?text='+encodeURIComponent('Hola, vengo del álbum '+String(a.displayName||'')+' publicado en Tomauno Fotografías.')+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">💬 WhatsApp</a>');return parts.join('')}
-function decorate110(){installWelcome110();installAlbumBar110();var m=model(),map={};if(m)(m.all||[]).forEach(function(a){map[String(a.bridgeId||'')]=a});document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){var id=String(card.getAttribute('data-v91album')||''),a=map[id]||{},row=card.querySelector('.v109-public-meta');if(!row&&(a.instagram||a.telefonoPublico)){row=document.createElement('div');row.className='v109-public-meta';card.appendChild(row)}if(row){var tmp=document.createElement('div');tmp.innerHTML=contact110(a);tmp.querySelectorAll('a').forEach(function(link){var href=link.getAttribute('href')||'',selector=href.indexOf('instagram.com')>-1?'a[href*="instagram.com"]':'a[href*="wa.me"]';if(!row.querySelector(selector))row.appendChild(link)})}var badge=card.querySelector('.v110-album-visits');if(!badge){badge=document.createElement('span');badge.className='v110-album-visits';card.appendChild(badge)}var visitText='👁 '+Number(stats110.albums[id]||0).toLocaleString('es-AR')+' visitas';if(badge.textContent!==visitText)badge.textContent=visitText});var total=Number(stats110.siteTotal||0).toLocaleString('es-AR'),s=E('v110SiteVisits'),intro=E('v110IntroVisits');if(s)s.innerHTML='👁 <strong>'+total+'</strong> visitas al sitio';if(intro)intro.innerHTML='<strong>'+total+'</strong> visitas al sitio'}
-function refreshStats110(){if(typeof window.apiGet!=='function')return Promise.resolve();return apiGet({action:'visitStats',t:Date.now()}).then(function(r){if(r&&r.success!==false){stats110.siteTotal=Number(r.siteTotal||0);stats110.albums=r.albums||{};decorate110()}}).catch(function(){})}
+function decorate110(){installWelcome110();installAlbumBar110();var m=model(),map={};if(m)(m.all||[]).forEach(function(a){map[String(a.bridgeId||'')]=a});document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){var id=String(card.getAttribute('data-v91album')||''),a=map[id]||{},row=card.querySelector('.v109-public-meta');if(!row&&(a.instagram||a.telefonoPublico)){row=document.createElement('div');row.className='v109-public-meta';card.appendChild(row)}if(row){var tmp=document.createElement('div');tmp.innerHTML=contact110(a);tmp.querySelectorAll('a').forEach(function(link){var href=link.getAttribute('href')||'',selector=href.indexOf('instagram.com')>-1?'a[href*="instagram.com"]':'a[href*="wa.me"]';if(!row.querySelector(selector))row.appendChild(link)})}var badge=card.querySelector('.v110-album-visits');if(!badge){badge=document.createElement('span');badge.className='v110-album-visits';card.appendChild(badge)}var visitText='👁 '+Number(stats110.albums[id]||0).toLocaleString('es-AR')+' visitas';if(badge.textContent!==visitText)badge.textContent=visitText});document.querySelectorAll('#eventList .v91-parent[data-v91parent]').forEach(function(card){var g=String(card.getAttribute('data-v91parent')||'');var c=card.querySelector('.count');if(c){var base=c.dataset.v122Base||String(c.textContent||'').split(' · 👁')[0];c.dataset.v122Base=base;c.textContent=base+' · 👁 '+Number(stats110.parents[g]||0).toLocaleString('es-AR')+' visitas'}});var total=Number(stats110.siteTotal||0).toLocaleString('es-AR'),s=E('v110SiteVisits'),intro=E('v110IntroVisits');if(s)s.innerHTML='👁 <strong>'+total+'</strong> visitas al sitio';if(intro)intro.innerHTML='<strong>'+total+'</strong> visitas al sitio'}
+function refreshStats110(){if(typeof window.apiGet!=='function')return Promise.resolve();return apiGet({action:'visitStats',t:Date.now()}).then(function(r){if(r&&r.success!==false){stats110.siteTotal=Number(r.siteTotal||0);stats110.albums=r.albums||{};stats110.parents=r.parents||{};decorate110()}}).catch(function(){})}
 function trackSite110(){if(typeof window.apiPost!=='function')return;apiPost({action:'trackVisit',visitType:'SITE'}).then(function(r){if(r&&r.success!==false){stats110.siteTotal=Number(r.total||stats110.siteTotal);decorate110()}refreshStats110()}).catch(function(){refreshStats110()})}
 function trackAlbum110(){var a;try{a=window.activeEvent||activeEvent}catch(e){a=window.activeEvent}if(!a||typeof window.apiPost!=='function')return;var id=String(a.bridgeId||a.id||'');if(!id)return;apiPost({action:'trackVisit',visitType:'ALBUM',bridgeId:id,albumName:String(a.displayName||'')}).then(function(r){if(r&&r.success!==false){stats110.albums[id]=Number(r.total||0);decorate110()}}).catch(function(){})}
 var mode110=window.openModeModal;if(typeof mode110==='function'&&!mode110.__v110){var wm=function(){var r=mode110.apply(this,arguments);trackAlbum110();return r};wm.__v110=true;window.openModeModal=wm}
@@ -13860,7 +13787,7 @@ window.addEventListener('load',function(){simplifyIntro();setTimeout(function(){
 #lightbox .v107-light-actions #zoomConfirmBtn{grid-column:5!important;grid-row:2!important}
 #v114TalentBtn{font-size:8px!important;border-color:#681321!important;color:#fff!important;background:#100307!important}
 #v114TalentBtn:hover{border-color:#ff0018!important;background:#330009!important}
-.v114-talent-legend{width:min(760px,calc(100% - 24px));margin:9px auto 17px;padding:10px 14px;box-sizing:border-box;text-align:center;border-top:1px solid rgba(255,0,24,.42);border-bottom:1px solid rgba(255,0,24,.20);color:#bdbdbd;font:600 11px/1.45 Arial}.v114-talent-legend b{color:#ff0018}.v114-talent-legend button{margin-left:8px;border:0;background:none;color:#fff;text-decoration:underline;text-decoration-color:#ff0018;text-underline-offset:3px;cursor:pointer;font-weight:850}
+.v114-talent-legend{width:min(760px,calc(100% - 24px));margin:9px auto 17px;padding:10px 14px;box-sizing:border-box;text-align:center;border-top:1px solid rgba(255,0,24,.42);border-bottom:1px solid rgba(255,0,24,.20);color:#bdbdbd;font:600 11px/1.45 Arial}.v114-talent-legend b{display:block;color:#ff0018;margin-bottom:3px}.v114-talent-legend button{margin-left:8px;border:0;background:none;color:#fff;text-decoration:underline;text-decoration-color:#ff0018;text-underline-offset:3px;cursor:pointer;font-weight:850}
 #v114TalentModal{position:fixed;inset:0;z-index:100500;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.9)}#v114TalentModal.open{display:flex}.v114-talent-box{width:min(560px,96vw);max-height:92dvh;overflow:auto;box-sizing:border-box;padding:20px;border:1px solid #ff0018;border-radius:18px;background:linear-gradient(150deg,#100104,#040404 55%);box-shadow:0 24px 80px #000,0 0 34px rgba(255,0,24,.2)}.v114-talent-box h3{margin:0;color:#fff;font-size:20px}.v114-talent-box h3 span{color:#ff0018}.v114-talent-box>p{color:#aaa;font-size:11px;line-height:1.5}.v114-talent-grid{display:grid;grid-template-columns:1fr 90px;gap:8px}.v114-talent-grid .wide{grid-column:1/-1}.v114-talent-grid input,.v114-talent-grid select{width:100%;box-sizing:border-box;padding:11px;border:1px solid #333;border-radius:9px;background:#050505;color:#fff}.v114-consent{display:flex;gap:8px;align-items:flex-start;margin:12px 0;color:#bbb;font-size:10px;line-height:1.4}.v114-talent-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v114-talent-actions button{min-height:41px;border:1px solid #383838;border-radius:10px;background:#111;color:#fff;font-weight:850;cursor:pointer}.v114-talent-actions .send{border-color:#ff0018;background:#d90018}.v114-talent-status{min-height:18px;margin-top:8px;color:#ff6572;font-size:10px;text-align:center}
 #v109TalentWrap select{border-color:rgba(255,0,24,.5)!important;color:#ff7180!important}
 @media(max-width:700px){#lightbox{padding-bottom:250px!important}#lightbox #zoomImg{max-height:calc(100dvh - 330px)!important}#lightbox .v107-light-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}#lightbox .v107-light-actions #zoomSelectBtn{grid-column:1/-1!important;grid-row:1!important}#lightbox .v107-light-actions #v109BackGallery16,#lightbox .v107-light-actions #v101CoreoBtn,#lightbox .v107-light-actions #v109ZoomPrint10,#lightbox .v107-light-actions #v114TalentBtn,#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:auto!important;grid-row:auto!important}#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:2!important}.v114-talent-grid{grid-template-columns:1fr 76px}.v114-talent-box{padding:15px}.v114-talent-legend button{display:block;margin:5px auto 0}}
@@ -13880,7 +13807,7 @@ function installAdmin(){var grid=document.querySelector('#v109Manager .v109-grid
 var post114=window.apiPost;if(typeof post114==='function'&&!post114.__v114){var wp=function(data){if(data&&(data.action==='updateAlbumConfig'||data.action==='createAlbumV109')&&E('v109TalentEnabled'))data.talentosEnabled=E('v109TalentEnabled').value==='SI';var out=post114.apply(this,arguments);return Promise.resolve(out).then(function(r){if(r&&r.success!==false&&data&&data.bridgeId&&data.hasOwnProperty('talentosEnabled')){var m=model(),a=m&&(m.all||[]).find(function(x){return String(x.bridgeId)===String(data.bridgeId)});if(a)a.talentosEnabled=!!data.talentosEnabled}return r})};wp.__v114=true;window.apiPost=wp}
 var open114=window.v109Open;if(typeof open114==='function'&&!open114.__v114){var wo=function(id){installAdmin();var r=open114.apply(this,arguments);setTimeout(function(){var m=model(),a=id&&m?(m.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null;if(E('v109TalentEnabled'))E('v109TalentEnabled').value=a&&a.talentosEnabled?'SI':'NO'},50);return r};wo.__v114=true;window.v109Open=wo}
 function ensureTalentButton(){var row=E('zoomSelectBtn')&&E('zoomSelectBtn').parentElement;if(!row)return;var b=E('v114TalentBtn');if(!b){b=document.createElement('button');b.id='v114TalentBtn';b.type='button';b.className='btn-order';b.textContent='✨ QUIERO QUE TOMAUNO ME DESCUBRA';b.onclick=function(e){e.preventDefault();e.stopPropagation();window.v114OpenTalent()};row.insertBefore(b,E('zoomConfirmBtn')||null)}var a=album(),lb=E('lightbox'),show=!!(a&&a.talentosEnabled&&lb&&getComputedStyle(lb).display!=='none');b.style.setProperty('display',show?'flex':'none','important')}
-function ensureLegend(){var old=E('v114TalentLegend'),a=album(),view=E('view-gallery');if(!a||!a.talentosEnabled||!view){if(old)old.remove();return}if(!old){old=document.createElement('div');old.id='v114TalentLegend';old.className='v114-talent-legend';old.innerHTML='<b>¿QUERÉS QUE TOMAUNO DESCUBRA TU TALENTO?</b> Abrí una foto donde aparezcas y dejanos tu contacto.<button type="button">MÁS INFORMACIÓN</button>';old.querySelector('button').onclick=function(){if(window.luxAlert)luxAlert('TOMAUNO BUSCA TALENTOS','Reviví tus momentos, elegí tus fotografías y dejá que tu talento sea descubierto. Desde el visor de una foto podés enviarnos tu perfil de manera privada.')};var status=E('galleryStatus');if(status&&status.parentNode)status.parentNode.insertBefore(old,status.nextSibling);else view.insertBefore(old,view.firstChild)}}
+function ensureLegend(){var old=E('v114TalentLegend'),a=album(),view=E('view-gallery');if(!a||!a.talentosEnabled||!view){if(old)old.remove();return}if(!old){old=document.createElement('div');old.id='v114TalentLegend';old.className='v114-talent-legend';old.innerHTML='<b>¿QUERÉS QUE TOMAUNO DESCUBRA TU TALENTO?</b><span>Abrí una foto donde aparezcas y dejanos tu contacto.</span><button type="button">MÁS INFORMACIÓN</button>';old.querySelector('button').onclick=function(){if(window.luxAlert)luxAlert('TOMAUNO BUSCA TALENTOS','Soy Javier Móttola, director de la academia de modelos Tomauno Model’s. Constantemente buscamos nuevos perfiles para producciones y actividades. También brindo clases de fotografía, donde convocamos bailarines, modelos y artistas para realizar prácticas fotográficas. Instagram: @tomaunomodels · WhatsApp: 3764354522.')};var status=E('galleryStatus');if(status&&status.parentNode)status.parentNode.insertBefore(old,status.nextSibling);else view.insertBefore(old,view.firstChild)}}
 window.v114OpenTalent=function(){var a=album(),p=current();if(!a||!a.talentosEnabled)return;if(!p){if(window.luxAlert)luxAlert('ABRÍ UNA FOTO','Elegí primero una fotografía donde aparezcas.');return}E('v114TalentStatus').textContent='';E('v114TalentModal').classList.add('open');setTimeout(function(){E('v114TalentName').focus()},30)};
 window.v114CloseTalent=function(){E('v114TalentModal').classList.remove('open')};
 window.v114SendTalent=async function(){var a=album(),p=current(),btn=E('v114TalentSend'),status=E('v114TalentStatus');if(!a||!p)return;var data={action:'submitTalent',bridgeId:String(a.bridgeId||''),albumName:String(a.displayName||''),photoId:String(p.id||p.fileId||''),photoName:String(p.name||''),name:E('v114TalentName').value.trim(),age:Number(E('v114TalentAge').value||0),instagram:E('v114TalentInstagram').value.trim(),whatsapp:E('v114TalentWhatsapp').value.trim(),profile:E('v114TalentProfile').value,responsible:E('v114TalentResponsible').value.trim(),consent:E('v114TalentConsent').checked};try{btn.disabled=true;btn.textContent='ENVIANDO…';status.textContent='';var r=await apiPost(data);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo enviar');status.style.color='#55e58e';status.textContent='✓ Perfil enviado. Tomauno podrá contactarte.';setTimeout(window.v114CloseTalent,1500)}catch(e){status.style.color='#ff6572';status.textContent=e.message}finally{btn.disabled=false;btn.textContent='ENVIAR PERFIL'}};
@@ -13910,9 +13837,10 @@ body.v109-lightbox-open #floatingCart{position:fixed!important;top:66px!importan
 .v115-guardian{display:none!important}.v115-guardian.show{display:block!important}
 .v114-consent{align-items:center!important;font-size:11px!important}.v114-consent input{width:15px!important;height:15px!important;min-width:15px!important;margin:0!important;accent-color:#ff0018!important}
 .v114-talent-legend a{color:#e1306c!important;text-decoration:none!important;font-weight:900!important;margin-left:4px}.v114-talent-legend a:hover{text-decoration:underline!important}
+.v114-talent-help{grid-column:1/-1;margin:-5px 2px 2px;color:#aaa;font:10px/1.4 Arial}.v114-talent-status.has-error{margin-top:10px;padding:9px 11px;border:1px solid #ff2940;border-radius:8px;background:#300008;color:#fff!important;line-height:1.35}.v114-talent-grid .v130-invalid{border-color:#ff2940!important;box-shadow:0 0 0 2px rgba(255,0,24,.16)!important}
 #v115TalentAdmin{position:fixed;inset:0;z-index:100600;display:none;align-items:flex-start;justify-content:center;padding:18px;background:rgba(0,0,0,.94);overflow:auto}#v115TalentAdmin.open{display:flex}.v115-admin-box{width:min(980px,98vw);padding:18px;box-sizing:border-box;border:1px solid #ff0018;border-radius:16px;background:#080808;color:#fff}.v115-admin-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.v115-admin-head h3{margin:0;color:#ff1a30}.v115-talent-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.v115-talent-card{display:grid;grid-template-columns:105px 1fr;gap:11px;padding:10px;border:1px solid #292929;border-radius:12px;background:#030303}.v115-talent-card img{width:105px;height:120px;object-fit:cover;border-radius:8px;background:#111}.v115-talent-card h4{margin:0 0 5px;color:#fff}.v115-talent-card p{margin:3px 0;color:#bbb;font-size:11px;overflow-wrap:anywhere}.v115-talent-card a{color:#ff4b83}.v115-talent-card select{width:100%;margin-top:7px;padding:7px;background:#111;color:#fff;border:1px solid #444;border-radius:7px}
-#v115TalentToast{display:none;position:fixed;right:18px;top:18px;z-index:100700;max-width:320px;padding:14px 17px;border:1px solid #ff0018;border-radius:12px;background:#090909;color:#fff;box-shadow:0 0 28px rgba(255,0,24,.48);font:800 12px/1.4 Arial}#v115TalentToast.show{display:block;animation:v115in .25s ease}@keyframes v115in{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
-.v117-talent-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}.v117-talent-toolbar button{padding:7px 11px;border:1px solid #333;border-radius:999px;background:#0d0d0d;color:#bbb;cursor:pointer}.v117-talent-toolbar button.active{border-color:#ff0018;color:#fff;background:#350007}.v117-photo{display:block;cursor:zoom-in}.v117-no-photo{width:105px;height:120px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed #444;border-radius:8px;color:#777;font-size:10px}.v117-photo-name{color:#aaa!important}.v117-statuses{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}.v117-statuses label{display:flex;gap:4px;align-items:center;padding:5px 6px;border:1px solid #333;border-radius:7px;color:#bbb;font-size:9px;cursor:pointer}.v117-statuses input{accent-color:#ff0018}.v117-delete{margin-left:auto;border:1px solid #64242b;background:#180407;color:#ff6572;border-radius:8px;padding:6px 9px;cursor:pointer}
+#v115TalentToast{display:none;position:fixed;right:18px;top:18px;z-index:100700;max-width:320px;padding:14px 17px;border:1px solid #ff0018;border-radius:12px;background:#090909;color:#fff;box-shadow:0 0 28px rgba(255,0,24,.48);font:800 12px/1.4 Arial;cursor:pointer}#v115TalentToast.show{display:block;animation:v115in .25s ease}.v130-talent-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-left:5px;padding:0 4px;border-radius:999px;background:#ff0018;color:#fff;font:900 10px/1 Arial;box-shadow:0 0 12px rgba(255,0,24,.7)}.v130-talent-alert{border-color:#ff0018!important;box-shadow:0 0 12px rgba(255,0,24,.35)!important}@keyframes v115in{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
+.v117-talent-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}.v117-talent-toolbar button{padding:7px 11px;border:1px solid #333;border-radius:999px;background:#0d0d0d;color:#bbb;cursor:pointer}.v117-talent-toolbar button.active{border-color:#ff0018;color:#fff;background:#350007}.v117-photo{display:block;cursor:zoom-in}.v117-no-photo{width:105px;height:120px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed #444;border-radius:8px;color:#777;font-size:10px}.v117-photo-name{color:#aaa!important}.v117-statuses{display:flex!important;gap:5px!important;align-items:center!important;flex-wrap:wrap!important;margin-top:7px!important}.v117-statuses label{display:inline-flex!important;flex:0 0 auto!important;width:auto!important;height:25px!important;min-height:0!important;gap:4px!important;align-items:center!important;margin:0!important;padding:0 6px!important;border:1px solid #333!important;border-radius:6px!important;color:#bbb!important;font-size:8px!important;line-height:1!important;cursor:pointer!important;box-sizing:border-box!important}.v117-statuses input{width:12px!important;height:12px!important;min-width:12px!important;margin:0!important;accent-color:#ff0018}.v117-delete{width:28px!important;height:25px!important;min-height:0!important;margin:0 0 0 auto!important;border:1px solid #64242b!important;background:#180407!important;color:#ff6572!important;border-radius:6px!important;padding:0!important;cursor:pointer!important}
 @media(max-width:700px){.v115-talent-list{grid-template-columns:1fr}.v115-talent-card{grid-template-columns:78px 1fr}.v115-talent-card img{width:78px;height:96px}#lightbox .v107-light-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}#lightbox .v107-light-actions #zoomSelectBtn{grid-column:1/-1!important}#lightbox .v107-light-actions #v109BackGallery16,#lightbox .v107-light-actions #v116PlayBtn,#lightbox .v107-light-actions #v101CoreoBtn,#lightbox .v107-light-actions #v109ZoomPrint10,#lightbox .v107-light-actions #v114TalentBtn,#lightbox .v107-light-actions #zoomConfirmBtn{grid-column:auto!important;grid-row:auto!important}#lightbox .v107-light-actions #v114TalentBtn{font-size:9px!important}.v114-talent-grid{grid-template-columns:1fr 72px!important}body.v109-lightbox-open #floatingCart{top:7px!important;right:7px!important}}
 </style>
 <div id="v115TalentToast"></div>
@@ -13930,12 +13858,13 @@ function selectedHas(id){return selected().some(function(p){return String(p.id||
 function ensureSelected(id){if(selectedHas(id))return;var p=photos().find(function(x){return String(x.id||x.fileId||x.name)===String(id)});if(p)selected().push(p);try{if(typeof updateFooter==='function')updateFooter()}catch(e){}try{if(window.updateFooter)window.updateFooter()}catch(e){}}
 function repaint(){try{if(window.tomaunoRefreshBadges)window.tomaunoRefreshBadges()}catch(e){}try{if(window.renderOrderSummary)window.renderOrderSummary()}catch(e){}var p=current(),lb=E('lightbox');if(lb&&p)lb.classList.toggle('selected-zoom',selectedHas(p.id||p.fileId||p.name));document.dispatchEvent(new CustomEvent('tomauno-state-change'))}
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
-function defaultPrint(){var ps=(((album()||{}).products)||[]).filter(function(p){return norm(p.type)==='impresion'&&Number(p.price||0)>0});return ps.find(function(p){return /15\s*[x×]\s*21/.test(norm(p.label))})||ps[0]||null}
+function defaultPrint(){var ps=(((album()||{}).products)||[]).filter(function(p){return norm(p.type)==='impresion'&&!/pack|sesion|coreografia/.test(norm(p.label))&&Number(p.price||0)>0});return ps.find(function(p){return /15\s*[x×]\s*21/.test(norm(p.label))})||ps[0]||null}
 function quickPrint(id){var p=defaultPrint();if(!p||!id){if(window.miniToast)miniToast('Este álbum no tiene impresiones configuradas');return}if(window.v109PrintQty10)window.v109PrintQty10(String(id),String(p.label),1);else meta(id).prints[p.label]=Number(meta(id).prints[p.label]||0)+1;setTimeout(repaint,20)}
-/* Un solo clic gobierna los iconos pequeños de impresión y las marcas editoriales. */
+var printClickTimer=0,printClickId='';
+/* Un clic suma una copia. Doble clic abre tamaños y cantidades sin sumar dos veces. */
 window.addEventListener('click',function(e){
   var pb=e.target.closest&&e.target.closest('.v109-print-corner21');
-  if(pb){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var card=pb.closest('.photo-box'),p=card?null:current(),id=card?String(card.id||'').replace(/^p-/,''):String((p&&(p.id||p.fileId||p.name))||'');quickPrint(id);return}
+  if(pb){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var card=pb.closest('.photo-box'),p=card?null:current(),id=card?String(card.id||'').replace(/^p-/,''):String((p&&(p.id||p.fileId||p.name))||'');clearTimeout(printClickTimer);printClickId=id;printClickTimer=setTimeout(function(){quickPrint(printClickId);printClickTimer=0},240);return}
   var b=e.target.closest&&e.target.closest('[data-v112-action],.v109-thumb-tool16[data-a]');if(!b)return;
   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var card=b.closest('.photo-box'),p=card?photos().find(function(x){return String(x.id||x.fileId||x.name)===String(card.id||'').replace(/^p-/,'')}):current();if(!p)return;var id=String(p.id||p.fileId||p.name),a=b.getAttribute('data-v112-action')||b.getAttribute('data-a'),m=meta(id);ensureSelected(id);
   if(a==='cover'){m.cover=!m.cover;b.classList.toggle('active',!!m.cover)}
@@ -13943,14 +13872,15 @@ window.addEventListener('click',function(e){
   if(a==='comment'||a==='note'){var ta=E('zoomInlineComment');if(ta&&!card){ta.classList.toggle('is-open');ta.style.setProperty('display',ta.classList.contains('is-open')?'block':'none','important');if(ta.classList.contains('is-open'))setTimeout(function(){ta.focus()},20)}else if(card){var old=String(m.comment||m.note||''),v=prompt('Nota para esta fotografía:',old);if(v!==null){m.comment=v;m.note=v;b.classList.toggle('active',!!v.trim())}}}
   repaint();
 },true);
+window.addEventListener('dblclick',function(e){var pb=e.target.closest&&e.target.closest('.v109-print-corner21');if(!pb)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();clearTimeout(printClickTimer);printClickTimer=0;var card=pb.closest('.photo-box'),p=card?null:current(),id=card?String(card.id||'').replace(/^p-/,''):String((p&&(p.id||p.fileId||p.name))||'');if(window.v109OpenPrint10)window.v109OpenPrint10(id)},true);
 /* Firmas: sincronización directa aun cuando el formulario fue reconstruido. */
 window.addEventListener('change',function(e){if(e.target.id!=='selectionSignatureCheck')return;var h=E('selectionSignaturePages'),l=E('selectionSignatureToggle');if(h)h.value=e.target.checked?'Sí':'';if(l)l.classList.toggle('on',e.target.checked);try{if(window.renderOrderSummary)window.renderOrderSummary()}catch(x){}},true);
 window.addEventListener('click',function(e){var l=e.target.closest&&e.target.closest('#selectionSignatureToggle');if(!l||e.target.id==='selectionSignatureCheck')return;var c=E('selectionSignatureCheck');if(!c)return;e.preventDefault();e.stopImmediatePropagation();c.checked=!c.checked;c.dispatchEvent(new Event('change',{bubbles:true}))},true);
 /* Formulario de talentos renovado. */
 function rebuildTalent(){var box=E('v114TalentModal')&&E('v114TalentModal').querySelector('.v114-talent-box');if(!box||box.dataset.v115==='1')return;box.dataset.v115='1';box.innerHTML='<h3>QUIERO QUE TOMAUNO<span>DESCUBRA MI TALENTO</span></h3><p>Tu perfil queda vinculado a esta fotografía y sólo será visible para Tomauno.</p><div class="v114-talent-grid"><input id="v114TalentName" placeholder="Nombre y apellido"><input id="v114TalentAge" type="text" inputmode="numeric" maxlength="2" placeholder="Edad"><input id="v114TalentInstagram" class="wide" placeholder="Instagram (sin @)"><input id="v114TalentWhatsapp" class="wide" inputmode="numeric" placeholder="WhatsApp"><select id="v114TalentProfile" class="wide"><option value="">¿Cuál es tu perfil?</option><option>Reina / candidata</option><option>Bailarina / bailarín</option><option>Directora / director de cuerpo de baile</option><option>Música / músico</option><option>Modelo</option><option>Otro talento</option></select><textarea id="v114TalentDescription" placeholder="Breve descripción tuya"></textarea><input id="v114TalentTutorName" class="wide v115-guardian" placeholder="Nombre del tutor"><input id="v114TalentTutorPhone" class="wide v115-guardian" inputmode="numeric" placeholder="Celular del tutor"></div><label class="v114-consent"><input id="v114TalentConsent" type="checkbox"><span>Autorizo a Tomauno a guardar estos datos para conocer mi perfil y brindarme más info.</span></label><div class="v114-talent-actions"><button type="button" onclick="v114CloseTalent()">CANCELAR</button><button type="button" class="send" id="v114TalentSend">ENVIAR PERFIL</button></div><div id="v114TalentStatus" class="v114-talent-status"></div>';
-  var age=E('v114TalentAge');function guardian(){var minor=Number(age.value)>0&&Number(age.value)<18;[E('v114TalentTutorName'),E('v114TalentTutorPhone')].forEach(function(x){if(x)x.classList.toggle('show',minor)})}age.addEventListener('input',function(){age.value=age.value.replace(/\D/g,'').slice(0,2);guardian()});E('v114TalentSend').onclick=sendTalent;
+  var age=E('v114TalentAge'),wa=E('v114TalentWhatsapp'),tutorPhone=E('v114TalentTutorPhone'),help=document.createElement('small');wa.placeholder='WhatsApp con país y área';tutorPhone.placeholder='Celular del tutor con país y área';help.className='v114-talent-help';help.textContent='Celulares: escribí código de país + código de área + número, sin +, espacios ni guiones. Ejemplo Argentina: 5493764354522.';wa.insertAdjacentElement('afterend',help);function guardian(){var minor=Number(age.value)>0&&Number(age.value)<18;[E('v114TalentTutorName'),tutorPhone].forEach(function(x){if(x)x.classList.toggle('show',minor)})}age.addEventListener('input',function(){age.value=age.value.replace(/\D/g,'').slice(0,2);guardian()});[wa,tutorPhone].forEach(function(x){x.addEventListener('input',function(){x.value=x.value.replace(/\D/g,'').slice(0,15)})});E('v114TalentSend').onclick=sendTalent;
 }
-async function sendTalent(){var a=album(),p=current(),btn=E('v114TalentSend'),s=E('v114TalentStatus'),age=Number(E('v114TalentAge').value||0),minor=age>0&&age<18,tutorName=E('v114TalentTutorName').value.trim(),tutorPhone=E('v114TalentTutorPhone').value.trim();s.textContent='';if(!(age>=12&&age<=99)){s.textContent='Ingresá una edad válida.';return}if(minor&&(!tutorName||!tutorPhone)){s.textContent='Completá el nombre y el celular del tutor.';return}var data={action:'submitTalent',bridgeId:String(a&&a.bridgeId||''),albumName:String(a&&a.displayName||''),photoId:String(p&&(p.id||p.fileId)||''),photoName:String(p&&p.name||''),photoUrl:String(p&&(p.urlWeb||p.url)||''),name:E('v114TalentName').value.trim(),age:age,instagram:E('v114TalentInstagram').value.trim(),whatsapp:E('v114TalentWhatsapp').value.trim(),profile:E('v114TalentProfile').value,description:E('v114TalentDescription').value.trim(),tutorName:minor?tutorName:'',tutorPhone:minor?tutorPhone:'',responsible:minor?(tutorName+' · '+tutorPhone):'',consent:E('v114TalentConsent').checked};try{btn.disabled=true;btn.textContent='ENVIANDO…';var r=await apiPost(data);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo enviar');s.style.color='#55e58e';s.textContent='✓ Perfil enviado. Tomauno podrá contactarte.';setTimeout(window.v114CloseTalent,1500)}catch(err){s.style.color='#ff6572';s.textContent=err.message}finally{btn.disabled=false;btn.textContent='ENVIAR PERFIL'}}
+async function sendTalent(){var a=album(),p=current(),btn=E('v114TalentSend'),s=E('v114TalentStatus'),age=Number(E('v114TalentAge').value||0),minor=age>0&&age<18,tutorName=E('v114TalentTutorName').value.trim(),tutorPhone=E('v114TalentTutorPhone').value.trim(),wa=E('v114TalentWhatsapp').value.trim(),ig=E('v114TalentInstagram').value.trim();function fail(msg,field){s.classList.add('has-error');s.style.color='';s.textContent='No pudimos guardar el perfil: '+msg;document.querySelectorAll('.v130-invalid').forEach(function(x){x.classList.remove('v130-invalid')});if(field){field.classList.add('v130-invalid');field.focus()}s.scrollIntoView({block:'nearest',behavior:'smooth'});return false}s.textContent='';s.classList.remove('has-error');document.querySelectorAll('.v130-invalid').forEach(function(x){x.classList.remove('v130-invalid')});if(E('v114TalentName').value.trim().length<2)return fail('escribí tu nombre y apellido.',E('v114TalentName'));if(!(age>=12&&age<=99))return fail('ingresá una edad válida.',E('v114TalentAge'));if(wa&&!(wa.length>=10&&wa.length<=15))return fail('el WhatsApp debe incluir código de país y área. Ejemplo Argentina: 5493764354522.',E('v114TalentWhatsapp'));if(!ig&&!wa)return fail('ingresá tu Instagram o un WhatsApp completo.',E('v114TalentWhatsapp'));if(minor&&!tutorName)return fail('falta el nombre y apellido del tutor.',E('v114TalentTutorName'));if(minor&&!(tutorPhone.length>=10&&tutorPhone.length<=15))return fail('el celular del tutor debe incluir código de país y área. Ejemplo Argentina: 5493764354522.',E('v114TalentTutorPhone'));if(!E('v114TalentConsent').checked)return fail('tenés que marcar la autorización para continuar.',E('v114TalentConsent'));var data={action:'submitTalent',bridgeId:String(a&&a.bridgeId||''),albumName:String(a&&a.displayName||''),photoId:String(p&&(p.id||p.fileId)||''),photoName:String(p&&p.name||''),photoUrl:String(p&&(p.urlWeb||p.url)||''),name:E('v114TalentName').value.trim(),age:age,instagram:ig,whatsapp:wa,profile:E('v114TalentProfile').value,description:E('v114TalentDescription').value.trim(),tutorName:minor?tutorName:'',tutorPhone:minor?tutorPhone:'',responsible:minor?(tutorName+' · '+tutorPhone):'',consent:true};try{btn.disabled=true;btn.textContent='ENVIANDO…';var r=await apiPost(data);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo enviar');s.style.color='#55e58e';s.textContent='✓ Perfil enviado. Tomauno podrá contactarte.';setTimeout(window.v114CloseTalent,1500)}catch(err){fail(err.message||'revisá los datos e intentá nuevamente.')}finally{btn.disabled=false;btn.textContent='ENVIAR PERFIL'}}
 var oldOpen=window.v114OpenTalent;window.v114OpenTalent=function(){rebuildTalent();return oldOpen&&oldOpen.apply(this,arguments)};
 function polishTalent(){var b=E('v114TalentBtn');if(b){b.textContent='✨ CONTACTARME';b.title='Quiero que Tomauno conozca mi perfil y pueda contactarme'}var l=E('v114TalentLegend');if(l&&!l.querySelector('.v115-models')){var a=document.createElement('a');a.className='v115-models';a.href='https://instagram.com/tomaunomodels';a.target='_blank';a.rel='noopener';a.textContent='@tomaunomodels';l.appendChild(a)}}
 /* Un solo controlador decide el carrito para grilla, visor y checkout. */
@@ -13959,19 +13889,21 @@ function syncCart(){var c=E('floatingCart'),count=E('floatingCartCount'),gallery
 /* Bandeja administrativa y aviso sonoro. */
 var talentLast=0,talentLoaded=false,talentAll=[],talentFilter='TODOS';
 function esc(v){return String(v==null?'':v).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]})}
-function notifyTalent(t){var x=E('v115TalentToast');x.textContent='✨ Nuevo talento: '+(t.name||'Perfil recibido');x.classList.add('show');setTimeout(function(){x.classList.remove('show')},6000);try{var A=window.AudioContext||window.webkitAudioContext,ac=new A();[0,180,360].forEach(function(ms,i){setTimeout(function(){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=[660,880,1040][i];g.gain.value=.05;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.13)},ms)})}catch(e){}}
+function updateTalentBadges(list,opened){var max=(list||[]).reduce(function(v,t){return Math.max(v,Number(t.row||0))},0),seen=Number(localStorage.getItem('TOMAUNO_TALENTS_SEEN_ROW')||0);if(opened){seen=max;localStorage.setItem('TOMAUNO_TALENTS_SEEN_ROW',String(max))}var pending=opened?0:(list||[]).filter(function(t){return Number(t.row||0)>seen&&String(t.estado||'NUEVO').toUpperCase()==='NUEVO'}).length;['v116TalentAdminBtn','v116TalentAdminVisibleBtn'].forEach(function(id){var b=E(id);if(!b)return;var badge=b.querySelector('.v130-talent-badge');if(pending&&!badge){badge=document.createElement('span');badge.className='v130-talent-badge';b.appendChild(badge)}if(badge){badge.textContent=String(pending);badge.style.display=pending?'inline-flex':'none'}b.classList.toggle('v130-talent-alert',pending>0)})}
+function notifyTalent(t){var x=E('v115TalentToast');x.textContent='✨ Nuevo talento: '+(t.name||'Perfil recibido')+' · Abrir talentos';x.onclick=function(){x.classList.remove('show');window.tomaunoOpenTalents()};x.classList.add('show');setTimeout(function(){x.classList.remove('show')},8000);try{var A=window.AudioContext||window.webkitAudioContext,ac=new A();[0,180,360].forEach(function(ms,i){setTimeout(function(){var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=[660,880,1040][i];g.gain.value=.05;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.13)},ms)})}catch(e){}}
 function renderTalents(){var box=E('v115TalentList');if(!box)return;var list=talentAll.filter(function(t){return talentFilter==='TODOS'||String(t.estado||'NUEVO')===talentFilter});box.innerHTML=list.length?'':'<p>No hay perfiles en este filtro.</p>';list.forEach(function(t){var card=document.createElement('article');card.className='v115-talent-card';var ig=t.instagram?'<a target="_blank" rel="noopener" href="https://instagram.com/'+encodeURIComponent(String(t.instagram).replace(/^@/,''))+'">@'+esc(String(t.instagram).replace(/^@/,''))+'</a>':'';var wa=t.whatsapp?'<a target="_blank" rel="noopener" href="https://wa.me/'+encodeURIComponent(t.whatsapp)+'">WhatsApp</a>':'';var tutorWa=t.tutorPhone?'<a target="_blank" rel="noopener" href="https://wa.me/'+encodeURIComponent(String(t.tutorPhone).replace(/\D/g,''))+'">'+esc(t.tutorPhone)+'</a>':'';var href=esc(t.photoFullUrl||t.photoUrl||'#'),photo=t.photoUrl?'<a class="v117-photo" target="_blank" rel="noopener" href="'+href+'"><img src="'+esc(t.photoUrl)+'" alt="Abrir fotografía"></a>':'<div class="v117-no-photo">FOTO NO DISPONIBLE<br>Registro anterior</div>';var checks=['VISTO','CONTACTADO','DESCARTADO'].map(function(s){return '<label><input type="checkbox" data-state="'+s+'" '+(t.estado===s?'checked':'')+'> '+s+'</label>'}).join('');card.innerHTML=photo+'<div><h4>'+esc(t.name)+' · '+esc(t.age)+' años</h4><p><b>'+esc(t.profile||'Perfil sin categoría')+'</b> · '+esc(t.album)+'</p><p>'+ig+(ig&&wa?' · ':'')+wa+'</p><p>'+esc(t.description||'')+'</p>'+(t.tutorName?'<p>Tutor: '+esc(t.tutorName)+' · '+tutorWa+'</p>':'')+'<p><a class="v117-photo-name" target="_blank" rel="noopener" href="'+href+'">Foto: '+esc(t.photoName||'Abrir')+'</a></p><div class="v117-statuses">'+checks+'<button type="button" class="v117-delete" title="Eliminar definitivamente">🗑</button></div></div>';card.querySelectorAll('[data-state]').forEach(function(ch){ch.onchange=async function(){var status=ch.checked?ch.dataset.state:'NUEVO';card.querySelectorAll('[data-state]').forEach(function(x){if(x!==ch)x.checked=false});var r=await apiPost({action:'updateTalentStatus',pin:'3233',row:t.row,status:status});if(!r||r.success===false){alert((r&&r.msg)||'No se pudo actualizar');return}t.estado=status;renderTalents()}});card.querySelector('.v117-delete').onclick=async function(){if(!confirm('¿Eliminar este talento de la vista y de la planilla?'))return;var r=await apiPost({action:'deleteTalent',pin:'3233',row:t.row});if(!r||r.success===false){alert((r&&r.msg)||'No se pudo eliminar');return}await loadTalents(false)};box.appendChild(card)})}
-async function loadTalents(open){if(open){E('v115TalentAdmin').classList.add('open');E('v115TalentList').innerHTML='<p>Cargando perfiles…</p>'}if(sessionStorage.getItem('TOMAUNO_ADMIN_OK')!=='1'){if(open)E('v115TalentList').innerHTML='<p>Ingresá primero como administrador.</p>';return}try{var r=await apiGet({action:'talentsAdmin',pin:'3233'});if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudieron leer los perfiles');var list=r.talents||[],max=list.reduce(function(v,t){return Math.max(v,Number(t.row||0))},0);if(talentLoaded&&max>talentLast){var newest=list.find(function(t){return Number(t.row)===max});if(newest)notifyTalent(newest)}talentLast=Math.max(talentLast,max);talentLoaded=true;talentAll=list;renderTalents()}catch(e){if(open)E('v115TalentList').innerHTML='<p style="color:#ff6675">'+esc(e.message)+'. Verificá que Código.gs V117 esté desplegado.</p>'}}
+async function loadTalents(open){if(open){E('v115TalentAdmin').classList.add('open');E('v115TalentList').innerHTML='<p>Cargando perfiles…</p>'}if(sessionStorage.getItem('TOMAUNO_ADMIN_OK')!=='1'){if(open)E('v115TalentList').innerHTML='<p>Ingresá primero como administrador.</p>';return}try{var r=await apiGet({action:'talentsAdmin',pin:'3233',t:Date.now()});if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudieron leer los perfiles');var list=r.talents||[],max=list.reduce(function(v,t){return Math.max(v,Number(t.row||0))},0);if(talentLoaded&&max>talentLast){var newest=list.find(function(t){return Number(t.row)===max});if(newest)notifyTalent(newest)}talentLast=Math.max(talentLast,max);talentLoaded=true;talentAll=list;updateTalentBadges(list,!!open);renderTalents()}catch(e){if(open)E('v115TalentList').innerHTML='<p style="color:#ff6675">'+esc(e.message)+'. Verificá que Código.gs esté desplegado.</p>'}}
 E('v115TalentClose').onclick=function(){E('v115TalentAdmin').classList.remove('open')};
 E('v117TalentFilters').onclick=function(e){var b=e.target.closest&&e.target.closest('[data-filter]');if(!b)return;talentFilter=b.dataset.filter;E('v117TalentFilters').querySelectorAll('button').forEach(function(x){x.classList.toggle('active',x===b)});renderTalents()};
 window.tomaunoOpenTalents=function(){loadTalents(true)};
 /* Presentación automática: sólo existe un temporizador mientras PLAY está activo. */
 var playTimer=0;
-function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=0}var b=E('v116PlayBtn');if(b){b.textContent='▶ PLAY';b.classList.remove('active')}}
-function advancePlay(){var list=photos();if(!list.length)return;var i;try{i=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){i=0}var next=(Number(i)+1)%list.length,img=E('zoomImg');if(img)img.classList.add('v109-changing16');setTimeout(function(){try{if(window.openZoom)window.openZoom(next);else openZoom(next)}catch(e){}if(img)img.classList.remove('v109-changing16')},150)}
-function togglePlay(){if(playTimer){stopPlay();return}var b=E('v116PlayBtn');if(b){b.textContent='⏸ PAUSA';b.classList.add('active')}var lb=E('lightbox');if(lb&&lb.requestFullscreen&&!document.fullscreenElement)lb.requestFullscreen().catch(function(){});playTimer=setInterval(advancePlay,3500)}
+function stopPlay(leaveFullscreen){if(playTimer){clearInterval(playTimer);playTimer=0}var b=E('v116PlayBtn');if(b){b.textContent='▶ PLAY';b.classList.remove('active')}if(leaveFullscreen&&document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(function(){})}
+function advancePlay(){var list=photos();if(!list.length)return;var i;try{i=window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx}catch(e){i=0}if(Number(i)>=list.length-1){stopPlay(true);return}var next=Number(i)+1,img=E('zoomImg');if(img)img.classList.add('v109-changing16');setTimeout(function(){try{if(window.openZoom)window.openZoom(next);else openZoom(next)}catch(e){}if(img)img.classList.remove('v109-changing16')},150)}
+function togglePlay(){if(playTimer){stopPlay(true);return}var b=E('v116PlayBtn');if(b){b.textContent='⏸ PAUSA';b.classList.add('active')}var lb=E('lightbox');if(lb&&lb.requestFullscreen&&!document.fullscreenElement)lb.requestFullscreen().catch(function(){});playTimer=setInterval(advancePlay,3500)}
 function installPlay(){var row=E('zoomSelectBtn')&&E('zoomSelectBtn').parentElement;if(!row)return;var b=E('v116PlayBtn');if(!b){b=document.createElement('button');b.id='v116PlayBtn';b.type='button';b.className='btn-order';b.textContent='▶ PLAY';b.title='Ver las fotografías automáticamente en pantalla completa';b.onclick=function(e){e.preventDefault();e.stopPropagation();togglePlay()};row.insertBefore(b,E('v109ZoomPrint10')||E('zoomConfirmBtn'))}}
 document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement)stopPlay()});
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#v109BackGallery16,#zoomConfirmBtn,#lightbox>span');if(b)stopPlay(true)},true);
 /* Evita reconstruir la misma portada pública al volver del visor. */
 var render=window.v91Render,initialModel=window.__v91Model||window.__v91||window.__V91||{},lastSig=E('eventList')&&E('eventList').children.length?(String(initialModel.parent||'')+'|'+(initialModel.all||[]).map(function(a){return a.bridgeId}).join(',')):'';if(typeof render==='function'&&!render.__v115){var w=function(){var m=window.__v91Model||window.__v91||window.__V91||{},admin=sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'&&E('modalAdmin')&&getComputedStyle(E('modalAdmin')).display!=='none',sig=String(m.parent||'')+'|'+(m.all||[]).map(function(a){return a.bridgeId}).join(',');if(!admin&&sig===lastSig&&E('eventList')&&E('eventList').children.length)return;var r=render.apply(this,arguments);lastSig=sig;return r};w.__v115=true;window.v91Render=w}
 function sync(){rebuildTalent();polishTalent();syncCart();installPlay()}
@@ -13982,7 +13914,7 @@ document.addEventListener('click',function(e){var target=e.target.closest&&e.tar
 window.addEventListener('load',function(){sync();setTimeout(function(){loadTalents(false)},2500)});setInterval(function(){if(sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1')loadTalents(false)},20000);
 })();
 </script>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V118';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V120';</script>
 <!-- /TOMAUNO V116 -->
 <!-- TOMAUNO V117: gestión de talentos y reacciones públicas -->
 <style id="tomauno-v117-css">
@@ -14008,5 +13940,96 @@ document.addEventListener('tomauno-view-change',sync);document.addEventListener(
 })();
 </script>
 <!-- /TOMAUNO V117 -->
+<!-- TOMAUNO V120: cierre de recorrido, carrito móvil y limpieza pospedido -->
+<style id="tomauno-v120-css">
+#arrow-r.v120-ended{display:flex!important;opacity:.18!important;pointer-events:none!important;filter:grayscale(1)!important;cursor:default!important}#arrow-l.v120-disabled{display:flex!important;opacity:.18!important;pointer-events:none!important;filter:grayscale(1)!important}
+#lightbox #floatingCart{display:flex;z-index:10150!important}
+#v117Reactions{left:9px!important;right:auto!important;bottom:30px!important}.v117-thumb-reactions{left:5px!important;right:auto!important;bottom:5px!important}
+#v75CopyBack{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:9px!important;width:100%!important;grid-column:1/-1!important}#v75CopyBack .btn-order{width:100%!important;max-width:none!important;margin:0!important}
+@media(max-width:700px){body.v109-lightbox-open #floatingCart{display:flex!important;visibility:visible!important;opacity:1!important;top:7px!important;right:7px!important;left:auto!important;bottom:auto!important;z-index:10150!important;min-width:92px!important;height:38px!important;padding:0 9px!important}#v117Reactions{left:6px!important;bottom:27px!important}.v117-thumb-reactions{left:4px!important;bottom:4px!important}#v75CopyBack{grid-template-columns:1fr 1fr!important}}
+</style>
+<script id="tomauno-v120-js">
+(function(){'use strict';
+function E(i){return document.getElementById(i)}function photos(){try{return window.allPhotos||allPhotos||[]}catch(e){return []}}function index(){try{return Number(window.currentZoomIdx!=null?window.currentZoomIdx:currentZoomIdx)}catch(e){return 0}}
+function syncArrows(){var list=photos(),i=index(),l=E('arrow-l'),r=E('arrow-r');if(l){l.classList.toggle('v120-disabled',i<=0);l.style.setProperty('display','flex','important')}if(r){var end=!list.length||i>=list.length-1;r.classList.toggle('v120-ended',end);r.setAttribute('aria-disabled',end?'true':'false');r.title=end?'Fin del álbum':'Foto siguiente';r.style.setProperty('display','flex','important')}}
+function syncCartHost(){var c=E('floatingCart'),lb=E('lightbox');if(!c||!lb)return;var open=getComputedStyle(lb).display!=='none';if(open&&c.parentNode!==lb)lb.appendChild(c);else if(!open&&c.parentNode===lb)document.body.appendChild(c);if(open){var has=false;try{has=(window.selectedPhotos||selectedPhotos||[]).length>0||Object.keys(window.__tomaunoPhotoMeta||{}).some(function(id){var p=(window.__tomaunoPhotoMeta[id]||{}).prints||{};return Object.keys(p).some(function(k){return Number(p[k]||0)>0})})}catch(e){}c.style.setProperty('display',has&&!window.__orderCompleted?'flex':'none','important');c.style.setProperty('visibility',has&&!window.__orderCompleted?'visible':'hidden','important');c.style.setProperty('opacity',has&&!window.__orderCompleted?'1':'0','important')}}
+function resetCompletedForGallery(){var g=E('view-gallery'),s=E('view-success');if(!g||getComputedStyle(g).display==='none'||(s&&getComputedStyle(s).display!=='none'))return;if(window.__orderCompleted){window.__orderCompleted=false;document.body.classList.remove('order-completed','at-events');var c=E('floatingCart');if(c)c.classList.remove('order-done');try{if(typeof updateFooter==='function')updateFooter()}catch(e){}}}
+function clearSuccessBehindAdmin(){var adm=E('modalAdmin'),s=E('view-success');if(!adm||getComputedStyle(adm).display==='none'||!s||getComputedStyle(s).display==='none')return;s.style.display='none';var home=E('view-home')||E('view-events');if(home)home.style.display='block';window.__orderCompleted=false;document.body.classList.remove('order-completed','at-events');try{if(typeof selectedPhotos!=='undefined')selectedPhotos=[];window.selectedPhotos=[];if(typeof updateFooter==='function')updateFooter()}catch(e){}}
+function arrangeCopyBack(){var m=E('modalCheckout');if(!m)return;var buttons=[].slice.call(m.querySelectorAll('button')),copy=buttons.find(function(b){return /COPIAR PEDIDO/i.test(b.textContent||'')}),back=buttons.find(function(b){return /^\s*VOLVER\s*$/i.test(b.textContent||'')});if(!copy||!back)return;var row=E('v75CopyBack');if(!row){row=document.createElement('div');row.id='v75CopyBack';var actions=m.querySelector('.t50-actions');if(actions)actions.appendChild(row)}if(row){row.appendChild(copy);row.appendChild(back)}}
+function sync(){resetCompletedForGallery();syncArrows();syncCartHost();arrangeCopyBack()}
+['openZoom','nextPhoto','prevPhoto','appendPhotos','closeZoom','openCheckout'].forEach(function(n){var old=window[n];if(typeof old==='function'&&!old.__v120){var w=function(){var r=old.apply(this,arguments);setTimeout(sync,0);return r};w.__v120=true;window[n]=w}});
+var lb=E('lightbox'),gal=E('view-gallery'),adm=E('modalAdmin'),list=E('photoList');[lb,gal,adm].filter(Boolean).forEach(function(n){new MutationObserver(function(){clearSuccessBehindAdmin();sync()}).observe(n,{attributes:true,attributeFilter:['style','class']})});if(list)new MutationObserver(syncArrows).observe(list,{childList:true});
+document.addEventListener('tomauno-state-change',sync);document.addEventListener('tomauno-view-change',sync);document.addEventListener('DOMContentLoaded',sync);window.addEventListener('load',function(){setTimeout(sync,300)});
+})();
+</script>
+<!-- /TOMAUNO V120 -->
+<!-- TOMAUNO V121: detalle operativo único y lectura limpia -->
+<style id="tomauno-v121-css">
+.photo-box.selected::after{top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;left:7%!important;width:86%!important;border-radius:999px!important;padding:5px 0!important;pointer-events:none!important;z-index:48!important}
+</style>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V121';</script>
+<!-- /TOMAUNO V121 -->
+<!-- TOMAUNO V122: referencias, servicios, descarga y contadores coherentes -->
+<style id="tomauno-v122-css">
+#v117Reactions{left:50%!important;right:auto!important;bottom:9px!important;transform:translateX(-50%)!important;justify-content:center!important;white-space:nowrap!important}
+body.v109-tomauno-final .photo-watermark{background-size:60% auto!important;opacity:.37!important}
+body.v109-tomauno-final #lightbox .zoom-watermark img{width:96%!important;height:96%!important;opacity:.34!important}
+#v109FullDownloadWrap{grid-column:1/-1!important;border:1px solid rgba(35,210,112,.55)!important;background:linear-gradient(145deg,#07170e,#050806)!important;border-radius:12px!important;padding:13px!important}
+#v109FullDownloadWrap>label:first-child{color:#60e79b!important}
+.v121-download-check{display:flex!important;align-items:center!important;gap:9px!important;color:#fff!important;cursor:pointer!important;margin-top:7px!important}
+.v121-download-check input{width:18px!important;height:18px!important;min-width:18px!important;accent-color:#19c96a!important}
+#v109FullDownloadWrap small{display:block;color:#8c9b92;font-size:9px;line-height:1.35;margin-top:7px}
+#albumDriveDownload{margin:8px auto!important;background:#080808!important;color:#fff!important;border:1px solid #ff182d!important;border-radius:9px!important;padding:9px 14px!important;font-size:10px!important}
+#btnMainDownload,#btnMainDownloadFixed{display:none!important}
+@media(max-width:700px){#v117Reactions{bottom:7px!important}#v117Reactions button{min-width:36px!important;padding:3px 5px!important;font-size:9px!important}}
+</style>
+<div id="v122PhotoProtection" role="status">Estas fotografías están disponibles para su compra.</div>
+<script id="tomauno-v122-protection-js">
+(function(){'use strict';
+var timer=0;function E(i){return document.getElementById(i)}
+function galleryActive(){var g=E('view-gallery'),l=E('lightbox');return !!((g&&getComputedStyle(g).display!=='none')||(l&&getComputedStyle(l).display!=='none'))}
+function notice(cover){if(!galleryActive())return;var n=E('v122PhotoProtection');if(!n)return;clearTimeout(timer);document.body.classList.toggle('v122-capture-warning',!!cover);n.classList.add('show');timer=setTimeout(function(){n.classList.remove('show');document.body.classList.remove('v122-capture-warning')},1200)}
+document.addEventListener('keydown',function(e){if(e.key==='PrintScreen'||e.code==='PrintScreen')notice(true)},true);
+document.addEventListener('contextmenu',function(e){if(!galleryActive()||!e.target.closest||!e.target.closest('.photo-box,#lightbox'))return;e.preventDefault();notice(false)},true);
+document.addEventListener('dragstart',function(e){if(e.target&&e.target.closest&&e.target.closest('.photo-box,#lightbox')){e.preventDefault();notice(false)}},true);
+})();
+</script>
+<style id="tomauno-v122-protection-css">
+#v122PhotoProtection{position:fixed;left:50%;bottom:18px;z-index:300500;transform:translate(-50%,18px);opacity:0;pointer-events:none;max-width:calc(100vw - 28px);padding:8px 13px;border:1px solid rgba(255,25,43,.62);border-radius:999px;background:rgba(4,4,4,.92);color:#ddd;font:700 10px/1.25 Arial;text-align:center;box-shadow:0 8px 30px #000;transition:.18s ease}#v122PhotoProtection.show{opacity:1;transform:translate(-50%,0)}
+body.v122-capture-warning .photo-box .photo-watermark,body.v122-capture-warning #lightbox .zoom-watermark{background:rgba(0,0,0,.94)!important;opacity:1!important}body.v122-capture-warning #lightbox .zoom-watermark img{visibility:hidden!important}
+</style>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V122';</script>
+<!-- /TOMAUNO V122 -->
+<!-- TOMAUNO V123: padres persistentes, QR directo y descarga única -->
+<style id="tomauno-v123-css">
+/* Marca más protectora sin repetirla ni inclinar una imagen nueva. */
+body.v109-tomauno-final .photo-watermark{background-size:82% auto!important;opacity:.54!important}
+body.v109-tomauno-final #lightbox .zoom-watermark img{width:190%!important;height:190%!important;opacity:.68!important}
+/* Reacciones de miniatura: derecha, por encima de impresión y lejos de Mi coreo. */
+.v117-thumb-reactions{left:auto!important;right:5px!important;bottom:43px!important;transform:none!important}
+#v123ParentQr{border-color:#ff1a2e!important;color:#fff!important}
+body.v127-albums-loading #eventList{visibility:hidden!important}
+#v128DeleteParent{border-color:#ff1a2e!important;color:#ff6b75!important;background:#190507!important}
+.v91-parent .v128-parent-trash{position:absolute!important;right:108px!important;top:10px!important;width:30px!important;height:28px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0!important;border:1px solid #6b2027!important;border-radius:999px!important;background:#160507!important;color:#ff6872!important;cursor:pointer!important;z-index:91!important;box-shadow:0 0 10px rgba(255,0,24,.12)!important}.v91-parent .v128-parent-trash:hover{background:#e00018!important;color:#fff!important;border-color:#ff2638!important;box-shadow:0 0 16px rgba(255,0,24,.38)!important}.v91-parent .v128-parent-trash span{font-size:13px!important;line-height:1!important}
+@media(max-width:700px){.v117-thumb-reactions{right:4px!important;bottom:40px!important}.v117-thumb-reactions button{padding:3px 4px!important;font-size:8px!important}}
+</style>
+<script id="tomauno-v123-js">
+(function(){'use strict';
+function E(i){return document.getElementById(i)}function model(){return window.__v91Model||window.__v91||window.__V91||null}var currentConfiguredAlbum='';
+function copyText(text,ok){if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(text).then(function(){if(window.miniToast)miniToast(ok)});var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();if(window.miniToast)miniToast(ok);return Promise.resolve()}
+var openAlbumConfig=window.v109Open;if(typeof openAlbumConfig==='function')window.v109Open=function(id){currentConfiguredAlbum=String(id||'');return openAlbumConfig.apply(this,arguments)};
+window.v109CopyLink=function(){if(!currentConfiguredAlbum){if(window.luxAlert)luxAlert('GUARDÁ PRIMERO','Guardá el álbum antes de copiar su enlace.');return}copyText(location.origin+location.pathname+'?album='+encodeURIComponent(currentConfiguredAlbum),'Enlace directo del álbum copiado')};
+function trackParent(name){var m=model();if(!name||!m||m.admin||typeof window.apiPost!=='function')return;apiPost({action:'trackVisit',visitType:'PARENT',parentName:name}).then(function(r){var s=window.__tomaunoVisitStats110;if(r&&r.success!==false&&s){s.parents=s.parents||{};s.parents[name]=Number(r.total||0);if(typeof window.v91Render==='function')setTimeout(function(){var mm=model();if(mm&&!mm.parent)window.v91Render()},0)}}).catch(function(){})}
+document.addEventListener('click',function(e){var p=e.target.closest&&e.target.closest('.v91-parent[data-v91parent]');if(!p||e.target.closest('[data-v91meta]'))return;trackParent(String(p.getAttribute('data-v91parent')||''))},true);
+function installParentQr(){var actions=E('v92MetaOverlay')&&E('v92MetaOverlay').querySelector('.v92-actions');if(!actions)return;if(!E('v123ParentQr')){var b=document.createElement('button');b.type='button';b.id='v123ParentQr';b.textContent='▣ QR DEL ÁLBUM PADRE';b.onclick=function(){var name=String((E('v94MetaName')||{}).value||'').trim();if(!name)return;var url=location.origin+location.pathname+'?parent='+encodeURIComponent(name),qr='https://quickchart.io/qr?size=900&text='+encodeURIComponent(url);window.open(qr,'_blank','noopener')};actions.insertBefore(b,actions.lastElementChild)}if(!E('v130ParentLink')){var l=document.createElement('button');l.type='button';l.id='v130ParentLink';l.textContent='🔗 COPIAR LINK';l.onclick=function(){var name=String((E('v94MetaName')||{}).value||'').trim();if(name)copyText(location.origin+location.pathname+'?parent='+encodeURIComponent(name),'Enlace directo del álbum padre copiado')};actions.insertBefore(l,actions.lastElementChild)}if(!E('v128DeleteParent')){var d=document.createElement('button');d.type='button';d.id='v128DeleteParent';d.textContent='🗑 ELIMINAR PADRE';d.onclick=window.v128DeleteParent;actions.insertBefore(d,actions.firstElementChild)}}
+window.v128DeleteParent=async function(forcedName){var input=E('v94MetaName'),name=String(forcedName||(input&&input.dataset.oldName)||(input&&input.value)||'').trim(),m=model();if(!name||!m)return;if(!confirm('Se eliminará el álbum padre “'+name+'” y TODOS sus álbumes hijos. ¿Continuar?'))return;var all=m.all.slice(),meta=Object.assign({},m.meta),key=name.toLocaleLowerCase('es');m.all=m.all.filter(function(a){return String(a.group||'').trim().toLocaleLowerCase('es')!==key});Object.keys(m.meta).forEach(function(g){if(g.toLocaleLowerCase('es')===key)delete m.meta[g]});m.parent='';var ov=E('v92MetaOverlay');if(ov)ov.classList.remove('open');if(typeof window.v91Render==='function')window.v91Render();if(typeof miniToast==='function')miniToast('Eliminando '+name+'…');try{var r=await apiPost({action:'deleteAlbumGroup',pin:'3233',group:name});if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo eliminar');if(typeof miniToast==='function')miniToast('Eliminado: '+name+' · '+Number(r.deletedAlbums||0)+' álbumes')}catch(err){m.all=all;m.meta=meta;if(typeof window.v91Render==='function')window.v91Render();if(window.luxAlert)luxAlert('ERROR',err.message||String(err))}}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-v128deleteparent]');if(!b)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();window.v128DeleteParent(String(b.getAttribute('data-v128deleteparent')||''))},true);
+function openDirectParent(){var name=new URLSearchParams(location.search).get('parent');if(!name)return;var tries=0,t=setInterval(function(){var m=model(),exists=m&&((m.meta&&m.meta[name])||(m.all||[]).some(function(a){return String(a.group||'')===name}));if(!exists&&++tries<30)return;clearInterval(t);if(!exists)return;document.body.classList.add('v112-intro-finished');m.parent=name;if(typeof window.v91Render==='function')window.v91Render();trackParent(name)},180)}
+function openDirectAlbum(){var id=new URLSearchParams(location.search).get('album');if(!id)return;var tries=0,t=setInterval(function(){var m=model(),a=m&&(m.all||[]).find(function(x){return String(x.bridgeId||x.id)===String(id)});if(!a&&++tries<30)return;clearInterval(t);if(!a)return;document.body.classList.add('v112-intro-finished');if(typeof window.askPass==='function')window.askPass(a.id)},180)}
+document.addEventListener('DOMContentLoaded',function(){installParentQr();openDirectParent();openDirectAlbum()});window.addEventListener('load',installParentQr);
+})();
+</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V134';</script>
+<!-- /TOMAUNO V123 -->
 </body>
 </html>
