@@ -5464,12 +5464,12 @@ function attr(s) {
   #mpDeliveryOverlay .mp54-card{
     width:min(920px,96vw);max-height:92vh;overflow:hidden;background:#090909;
     border:1px solid #303030;border-radius:24px;box-shadow:0 30px 90px #000;
-    display:flex;flex-direction:column
+    display:flex;flex-direction:column;min-height:0
   }
-  #mpDeliveryOverlay .mp54-head{padding:24px 26px 18px;border-bottom:1px solid #222}
+  #mpDeliveryOverlay .mp54-head{padding:20px 26px 16px;border-bottom:1px solid #222;flex:0 0 auto}
   #mpDeliveryOverlay h2{margin:0 0 7px;color:#31d17c;font-size:25px}
   #mpDeliveryOverlay .mp54-sub{color:#aaa;font-size:13px;line-height:1.5}
-  #mpDeliveryOverlay .mp54-files{padding:12px 20px 18px;overflow:auto}
+  #mpDeliveryOverlay .mp54-files{padding:12px 20px 18px;overflow:auto;flex:1 1 auto;min-height:0}
   #mpDeliveryOverlay .mp54-file{
     display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
     padding:12px 5px;border-bottom:1px solid #1c1c1c
@@ -5485,7 +5485,12 @@ function attr(s) {
     justify-content:center;flex-wrap:wrap
   }
   #mpDeliveryOverlay .mp54-error{color:#ddd;line-height:1.6;padding:8px 0}
+  #mpDeliveryOverlay .mp54-files-title{padding:2px 5px 10px;color:#31d17c;font-size:12px;font-weight:900;letter-spacing:.3px;text-align:left}
+  #mpDeliveryOverlay .mp54-files + .t105-receipt{margin:0 20px 12px}
   @media(max-width:650px){
+    #mpDeliveryOverlay .mp54-head{padding:17px 18px 13px}
+    #mpDeliveryOverlay h2{font-size:22px}
+    #mpDeliveryOverlay .mp54-files{padding:10px 14px 14px}
     #mpDeliveryOverlay .mp54-file{grid-template-columns:1fr 1fr}
     #mpDeliveryOverlay .mp54-name{grid-column:1/-1}
     .t50-actions{grid-template-columns:1fr !important}
@@ -5651,12 +5656,12 @@ function attr(s) {
     ov.innerHTML='<div class="mp54-card t105-card">'
       +'<div class="mp54-head"><h2>✅ ¡PAGO CONFIRMADO!</h2>'
       +'<div class="mp54-sub">'+(serviceOnly?'Tu compra quedó registrada y pagada. Presentá este comprobante al personal de Tomauno.':'Tu compra quedó registrada y pagada. Tus fotografías ya están habilitadas para descargar.')+'</div></div>'
-      +detail
-      +(files.length?'<div class="mp54-files">'+files.map(function(f){
+      +(files.length?'<div class="mp54-files"><div class="mp54-files-title">⬇ FOTOGRAFÍAS LISTAS PARA DESCARGAR · '+files.length+'</div>'+files.map(function(f){
         return '<div class="mp54-file"><div class="mp54-name">'+esc(f.name||'Fotografía')+'</div>'
           +'<a class="mp54-btn primary" href="'+esc(f.downloadUrl)+'" target="_blank" rel="noopener">⬇ DESCARGAR</a>'
           +'<a class="mp54-btn" href="'+esc(f.viewUrl)+'" target="_blank" rel="noopener">👁 VER</a></div>';
       }).join('')+'</div>':'')
+      +detail
       +'<div class="mp54-foot"><button class="mp54-btn primary" id="t105ReceiptDownload">⬇ GUARDAR COMPROBANTE</button><a class="mp54-btn" href="'+whatsappFallback(res.row,total,paymentId,'Pago aprobado - envío mi comprobante')+'" target="_blank">💬 WHATSAPP</a><button class="mp54-btn" id="mp54Close">VOLVER AL SITIO</button></div>'
       +'</div>';
     ov.style.display='flex';
