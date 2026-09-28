@@ -1227,6 +1227,12 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
 #downloadStatus .clock { display:inline-block; margin-right:6px; animation:tomaunoSpin 1s linear infinite; color:var(--rojo); }
 @keyframes tomaunoSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 #successActions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+.tomauno-external-payment-card{margin:14px 0 4px;padding:13px 14px;border:1px solid #1f7b49;border-radius:14px;background:rgba(17,80,47,.16);color:#eaf8ef;text-align:left}
+.tomauno-external-payment-card>strong{display:block;color:#6df0a2;font-size:11px;letter-spacing:.08em;margin-bottom:9px}
+.tomauno-ext-payment-rows{display:grid;gap:7px}.tomauno-ext-payment-rows>div{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;font-size:12px}
+.tomauno-ext-payment-rows span{color:#a9b6ae}.tomauno-ext-payment-rows b{color:#fff;text-align:right;overflow-wrap:anywhere}
+.tomauno-copy-alias{margin-top:10px!important;min-height:38px!important;font-size:9px!important}.tomauno-success-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+
 #view-success .modal-box { max-width:560px !important; }
 #view-success p { font-size:16px !important; }
 #downloadList .download-item { font-size:14px !important; gap:10px; }
@@ -1265,6 +1271,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
   #view-success .modal-box { margin:20px 10px !important; }
   #view-success p { font-size:17px !important; line-height:1.45 !important; }
   #successActions .btn-order { width:100% !important; }
+  .tomauno-external-payment-card{padding:11px 12px}.tomauno-ext-payment-rows>div{display:grid;grid-template-columns:90px 1fr;gap:6px}.tomauno-ext-payment-rows b{text-align:left}.tomauno-copy-alias{width:auto!important}.tomauno-success-actions .btn-order{width:auto!important;min-width:210px;max-width:100%;min-height:40px;font-size:10px}
   #downloadStatus { font-size:16px !important; }
 }
 
@@ -1521,6 +1528,7 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
     
 <div class="admin-tools">
   <select id="adminEventFilter" onchange="renderAdminOrders()" style="min-width:170px;margin:0"><option value="">Todos los eventos</option></select>
+  <select id="adminPhotographerFilter" onchange="renderAdminOrders()" style="min-width:190px;margin:0"><option value="">Todos los fotógrafos</option></select>
   <select id="adminStatusFilter" onchange="renderAdminOrders()" style="min-width:170px;margin:0">
     <option value="">Todos los estados</option>
     <option value="pagoPendiente">Pendiente de pago</option>
@@ -1676,7 +1684,24 @@ input, textarea, select { font-size: 16px !important; min-height: 48px !importan
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
     });
-    var data = await res.json();
+    var raw = await res.text();
+    var data = null;
+    try { data = JSON.parse(raw || "null"); } catch(parseErr) {
+      /* Para actualizar configuración podemos verificar por GET. No repetimos submitOrder. */
+      if (payload && payload.action === "updateAlbumConfig" && payload.bridgeId) {
+        try {
+          var check = await apiGet({ action:"getAlbumAdvancedConfig", bridgeId:String(payload.bridgeId) });
+          var cfg = check && check.config ? check.config : null;
+          if (cfg && String(cfg.gestion||"").toUpperCase() === String(payload.gestion||"").toUpperCase() &&
+              String(cfg.pagoModo||"").toUpperCase() === String(payload.pagoModo||"").toUpperCase() &&
+              String(cfg.fotografo||"") === String(payload.fotografo||"")) {
+            return { success:true, verified:true, bridgeId:String(payload.bridgeId) };
+          }
+        } catch(verifyErr) {}
+      }
+      throw new Error(parseErr && parseErr.message ? parseErr.message : "Respuesta inválida del servidor");
+    }
+    if (!res.ok) throw new Error((data && (data.msg || data.error)) || ("Error HTTP " + res.status));
     if (data && data.success === false) throw new Error(data.msg || data.error || "Error del servidor");
     return data;
   }
@@ -2199,11 +2224,13 @@ function openCheckout() {
     return out;
   }
   function getProductsForEvent() {
-    var rawName = activeEvent && (activeEvent.rawName || activeEvent.folderName || activeEvent.name || activeEvent.configName || activeEvent.displayName) || '';
+    var album = activeEvent || window.activeEvent || null;
+    if(!album) return [];
+    var rawName = album.rawName || album.folderName || album.name || album.configName || album.displayName || '';
     var parsedExtras = sanitizeProducts110(parseExtraProductsFromFolderName(rawName));
 
-    if(activeEvent && Array.isArray(activeEvent.products) && activeEvent.products.length) {
-      var products = sanitizeProducts110(activeEvent.products.slice());
+    if(Array.isArray(album.products) && album.products.length) {
+      var products = sanitizeProducts110(album.products.slice());
       if(parsedExtras.length) {
         var existingFamilies = {};
         products.forEach(function(p){ existingFamilies[productFamily110(p.label)] = true; });
@@ -2216,12 +2243,12 @@ function openCheckout() {
     }
 
     var fallback = [];
-    fallback.push({ label:"Descargas Digitales", price:Number(activeEvent.pDigital || 0), perPhoto:true, includesDigital:false, selectionOnly:false, isFullAlbum:false });
-    fallback.push({ label:"Impresiones 15x21", price:Number(activeEvent.pPrint || 0), perPhoto:true, includesDigital:true, selectionOnly:false, isFullAlbum:false });
+    fallback.push({ label:"Descargas Digitales", price:Number(album.pDigital || 0), perPhoto:true, includesDigital:false, selectionOnly:false, isFullAlbum:false });
+    fallback.push({ label:"Impresiones 15x21", price:Number(album.pPrint || 0), perPhoto:true, includesDigital:true, selectionOnly:false, isFullAlbum:false });
     fallback.push({ label:"Selección para edición / fotolibro", price:0, perPhoto:false, includesDigital:false, selectionOnly:true, isFullAlbum:false });
 
-    if(Number(activeEvent.pFull || 0) > 0 || Number(activeEvent.pFull || 0) === -1) {
-      fallback.push({ label:"PACK ÁLBUM COMPLETO", price:Number(activeEvent.pFull) === -1 ? 0 : Number(activeEvent.pFull), perPhoto:false, includesDigital:true, selectionOnly:false, isFullAlbum:true });
+    if(Number(album.pFull || 0) > 0 || Number(album.pFull || 0) === -1) {
+      fallback.push({ label:"PACK ÁLBUM COMPLETO", price:Number(album.pFull) === -1 ? 0 : Number(album.pFull), perPhoto:false, includesDigital:true, selectionOnly:false, isFullAlbum:true });
     }
     parsedExtras.forEach(function(p){ fallback.push(p); });
     return sanitizeProducts110(fallback);
@@ -2508,6 +2535,13 @@ function redeemDownloadCode() {
         return luxAlert("ERROR", (res && res.msg) ? res.msg : "No se pudo validar la clave.");
       }
 
+      if(res.kind === 'photographer' && typeof window.v198OpenPhotographerPanel === 'function'){
+        var md=document.getElementById('modalDownloadCode');
+        if(md)md.style.display='none';
+        window.v198OpenPhotographerPanel(code,res);
+        return;
+      }
+
       var files = res.files || [];
       if(!files.length) return luxAlert("AVISO", "No encontramos fotos para esta clave.");
 
@@ -2574,6 +2608,7 @@ function checkAdminPin() {
       setBtnLoading(btn, false);
       adminOrdersData = res.orders || [];
       populateAdminEventFilter();
+      populateAdminPhotographerFilter();
       renderAdminOrders();
     } catch(err) {
       toggleL(false);
@@ -2597,6 +2632,25 @@ function checkAdminPin() {
       return '<option value="'+escapeHtml(e)+'">'+escapeHtml(e)+'</option>';
     }).join("");
     sel.innerHTML = opts;
+    sel.value = current;
+  }
+
+  function populateAdminPhotographerFilter() {
+    var sel = document.getElementById('adminPhotographerFilter');
+    if(!sel) return;
+    var current = sel.value || '';
+    var photographers = {};
+    (adminOrdersData || []).forEach(function(o){
+      var n = String(o.fotografo || 'TOMAUNO').trim() || 'TOMAUNO';
+      photographers[n] = true;
+    });
+    var names = Object.keys(photographers).sort(function(a,b){
+      if(a === 'TOMAUNO') return -1; if(b === 'TOMAUNO') return 1;
+      return a.localeCompare(b,'es');
+    });
+    sel.innerHTML = '<option value="">Todos los fotógrafos</option>' + names.map(function(n){
+      return '<option value="'+escapeHtml(n)+'">'+escapeHtml(n === 'TOMAUNO' ? 'TOMAUNO · Propios' : n)+'</option>';
+    }).join('');
     sel.value = current;
   }
 
@@ -3031,40 +3085,64 @@ function attr(s) {
 
   window.showOrderSuccessToWhatsapp = function(waUrl){
     lastWhatsappUrl = waUrl || '';
-    var checkout = document.getElementById('modalCheckout');
-    if(checkout) checkout.style.display = 'none';
-    var vs = document.getElementById('view-success');
-    if(vs){
-      vs.classList.remove('download-ready');
-      vs.style.display = 'block';
-      try { vs.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e) { window.scrollTo(0,0); }
+    var checkout=document.getElementById('modalCheckout');
+    if(checkout)checkout.style.display='none';
+    var vs=document.getElementById('view-success');
+    if(vs){vs.classList.remove('download-ready');vs.style.display='block';try{vs.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){window.scrollTo(0,0)}}
+    var h=document.querySelector('#view-success h3');
+    if(h)h.innerText='¡PEDIDO REGISTRADO!';
+    var pay=typeof window.tomaunoExternalPaymentContext==='function'?window.tomaunoExternalPaymentContext():{manualExternal:false};
+    var external=!!pay.external, manual=!!pay.manualExternal;
+    var p=document.querySelector('#view-success p');
+    if(p)p.innerText=external?'Tu pedido quedó registrado correctamente. Ahora podés enviarlo por WhatsApp al fotógrafo.':'Tu pedido quedó registrado. Al aceptar, te llevamos a WhatsApp para enviarnos la confirmación.';
+    var box=document.querySelector('#view-success .modal-box');
+    if(!box)return;
+    var oldInfo=document.getElementById('successExternalPaymentInfo');if(oldInfo)oldInfo.remove();
+    var oldActions=document.getElementById('successActions');if(oldActions)oldActions.remove();
+    if(external){
+      var ctx=window.__tomaunoLastOrderContext||{};
+      var info=document.createElement('div');info.id='successExternalPaymentInfo';info.className='tomauno-external-payment-card';
+      var rows='';
+      if(pay.photographer)rows+='<div><span>📸 Fotógrafo</span><b>'+escapeHtml(pay.photographer)+'</b></div>';
+      if(pay.alias)rows+='<div><span>💳 Alias</span><b>'+escapeHtml(pay.alias)+'</b></div>';
+      if(pay.cbu)rows+='<div><span>🏦 CBU</span><b>'+escapeHtml(pay.cbu)+'</b></div>';
+      if(ctx.album)rows+='<div><span>🎉 Álbum</span><b>'+escapeHtml(ctx.album)+'</b></div>';
+      rows+='<div><span>💰 Total</span><b>'+escapeHtml(ctx.total===0?'GRATIS':'$'+Number(ctx.total||0).toLocaleString('es-AR'))+'</b></div>';
+      var payNote=(pay.alias||pay.cbu)?'<p class="tomauno-ext-payment-note">Podés pagar directamente al fotógrafo y enviar el comprobante por WhatsApp.</p>':'<p class="tomauno-ext-payment-note">Podés continuar por WhatsApp con el fotógrafo.</p>';
+      info.innerHTML='<strong>📸 DATOS DEL FOTÓGRAFO</strong><div class="tomauno-ext-payment-rows">'+rows+'</div>'+payNote+(pay.alias?'<button type="button" class="btn-order tomauno-copy-alias" id="btnCopyExternalAlias">📋 COPIAR ALIAS</button>':'');
+      box.appendChild(info);
+      var cp=document.getElementById('btnCopyExternalAlias');
+      if(cp)cp.onclick=function(){if(pay.alias&&navigator.clipboard)navigator.clipboard.writeText(pay.alias).then(function(){if(typeof miniToast==='function')miniToast('Alias copiado')});else if(pay.alias&&window.prompt)window.prompt('Copiá el alias:',pay.alias)};
     }
-    var h = document.querySelector('#view-success h3');
-    if(h) h.innerText = '¡PEDIDO REGISTRADO!';
-    var p = document.querySelector('#view-success p');
-    if(p) p.innerText = 'Tu pedido quedó registrado. Al aceptar, te llevamos a WhatsApp para enviarnos la confirmación.';
-    var box = document.querySelector('#view-success .modal-box');
-    if(box){
-      var old = document.getElementById('successActions'); if(old) old.remove();
-      var actions = document.createElement('div');
-      actions.id = 'successActions';
-      actions.innerHTML = '<button class="btn-order" id="btnGoWhatsappSuccess">ACEPTAR</button>';
-      box.appendChild(actions);
-      var mainBtn = box.querySelector(':scope > .btn-order');
-      if(mainBtn && mainBtn.parentNode !== actions) mainBtn.style.display = 'none';
-      var go = document.getElementById('btnGoWhatsappSuccess');
-      if(go) go.onclick = function(){
-        if(lastWhatsappUrl) window.open(lastWhatsappUrl, '_blank');
-        actions.innerHTML = '<button class="btn-order" id="btnHomeAfterWhatsapp" style="background:#222">VOLVER AL MENÚ</button>';
-        var home = document.getElementById('btnHomeAfterWhatsapp');
-        if(home) home.onclick = function(){
-          if(vs) vs.style.display='none';
-          var vg=document.getElementById('view-gallery'); if(vg) vg.style.display='none';
-          var ve=document.getElementById('view-events'); if(ve) ve.style.display='block';
-          window.scrollTo(0,0);
-        };
+    var closeX=document.getElementById('btnCloseSuccessX');
+    if(!closeX){
+      closeX=document.createElement('button');
+      closeX.type='button'; closeX.id='btnCloseSuccessX'; closeX.setAttribute('aria-label','Cerrar'); closeX.title='Cerrar';
+      closeX.textContent='×';
+      closeX.style.cssText='position:absolute;top:10px;right:10px;width:30px;height:30px;border:1px solid #333;border-radius:50%;background:#111;color:#aaa;font-size:20px;line-height:26px;padding:0;cursor:pointer;z-index:5';
+      if(getComputedStyle(box).position==='static') box.style.position='relative';
+      box.appendChild(closeX);
+    }
+    closeX.onclick=function(){
+      if(vs)vs.style.display='none';
+      var vg=document.getElementById('view-gallery'); if(vg)vg.style.display='block';
+      window.scrollTo(0,0);
+    };
+    var actions=document.createElement('div');actions.id='successActions';actions.className='tomauno-success-actions';
+    actions.innerHTML='<button class="btn-order" id="btnGoWhatsappSuccess">'+(external?'📲 ENVIAR PEDIDO POR WHATSAPP':'ACEPTAR')+'</button>';
+    box.appendChild(actions);
+    var mainBtn=box.querySelector(':scope > .btn-order');if(mainBtn&&mainBtn.parentNode!==actions)mainBtn.style.display='none';
+    var go=document.getElementById('btnGoWhatsappSuccess');
+    if(go)go.onclick=function(){
+      if(lastWhatsappUrl)window.open(lastWhatsappUrl,'_blank');
+      actions.innerHTML='<button class="btn-order" id="btnHomeAfterWhatsapp" style="background:#222">VOLVER AL MENÚ</button>';
+      var home=document.getElementById('btnHomeAfterWhatsapp');if(home)home.onclick=function(){
+        if(vs)vs.style.display='none';
+        var vg=document.getElementById('view-gallery');if(vg)vg.style.display='none';
+        var ve=document.getElementById('view-events');if(ve)ve.style.display='block';
+        window.scrollTo(0,0);
       };
-    }
+    };
   };
 
   function buildAdminWhatsappMsg(o){
@@ -3077,6 +3155,7 @@ function attr(s) {
       'Te compartimos el estado de tu pedido:',
       '',
       '🎉 *Evento:* ' + (o.evento || ''),
+      '📸 *Fotógrafo:* ' + (o.fotografo || 'TOMAUNO'),
       '🛒 *Pedido:* ' + (o.tipo || ''),
       '📷 *Cantidad:* ' + (o.cantidad || '0') + ' foto' + (Number(o.cantidad || 0) === 1 ? '' : 's'),
       '💰 *Total:* ' + money(o.total || 0),
@@ -3136,9 +3215,11 @@ function attr(s) {
   window.renderAdminOrders = function(){
     var q = ((document.getElementById('adminSearch') || {}).value || '').toLowerCase();
     var evFilter = ((document.getElementById('adminEventFilter') || {}).value || '');
+    var phFilter = ((document.getElementById('adminPhotographerFilter') || {}).value || '');
     var stFilter = ((document.getElementById('adminStatusFilter') || {}).value || '');
     var filtered = adminOrdersData.filter(function(o){
       if(evFilter && o.evento !== evFilter) return false;
+      if(phFilter && String(o.fotografo || 'TOMAUNO').trim() !== phFilter) return false;
       var channelFilter = String(window.__v97ChannelFilter || '');
       var isMp = String(o.canalPago || '').toUpperCase() === 'MERCADOPAGO' || !!o.mpPaymentId || !!o.mpPreferenceId;
       if(channelFilter === 'MP' && !isMp) return false;
@@ -3150,7 +3231,7 @@ function attr(s) {
       if(stFilter === 'entregaPendiente' && entregaOk) return false;
       if(stFilter === 'entregado' && !entregaOk) return false;
       if(stFilter === 'accion' && (pagoOk && entregaOk)) return false;
-      var hay = [o.cliente,o.whatsapp,o.evento,o.tipo,o.pago,o.entrega,o.observaciones,o.fotos].join(' ').toLowerCase();
+      var hay = [o.cliente,o.whatsapp,o.evento,o.tipo,o.fotografo,o.pago,o.entrega,o.observaciones,o.fotos].join(' ').toLowerCase();
       return hay.indexOf(q) > -1;
     });
     window.__lastAdminFiltered = filtered;
@@ -3176,6 +3257,7 @@ function attr(s) {
         '<div class="order-meta">'+
           '🕒 '+escapeHtml(formatDate(o.fecha))+'<br>'+
           '📱 <a class="admin-phone-link" href="tel:'+attr(phoneClean)+'">'+escapeHtml(o.whatsapp || '')+'</a> · 🎉 '+escapeHtml(o.evento || '')+'<br>'+
+          '📸 <b>Fotógrafo:</b> '+escapeHtml(o.fotografo || 'TOMAUNO')+'<br>'+
           '🛒 '+escapeHtml(o.tipo || '')+' · 📷 '+escapeHtml(o.cantidad || '0')+' fotos<br>'+
           '📝 '+escapeHtml(o.observaciones || 'Sin observaciones')+'<br>'+
           '🔐 Clave descarga: '+escapeHtml(o.clave || 'Sin clave')+'<br>'+
@@ -3387,6 +3469,7 @@ function attr(s) {
     </div>
 
     <div class="ticket-actions">
+      <button id="v100SaveTicketBtn" class="btn-order" style="background:#111;border:1px solid #e0000b;color:#fff" onclick="saveFreeTicketManually()">💾 GUARDAR TICKET</button>
       <button class="btn-order" onclick="copyTicketPng()">COPIAR PNG</button>
       <button class="btn-order" onclick="downloadTicketPng()">DESCARGAR</button>
       <button class="btn-order" onclick="printCurrentTicket()">IMPRIMIR</button>
@@ -4076,6 +4159,7 @@ function attr(s) {
       card.style.display = (!q || hay.indexOf(q) > -1) ? '' : 'none';
     });
   }
+  window.filterAlbums = filterAlbums;
   window.loadEvents = async function(){
     if(typeof toggleL === 'function') toggleL(true);
     try{
@@ -4294,17 +4378,6 @@ function attr(s) {
       else if(product && product.includesDigital && !product.isFullAlbum) msg += '✅ Incluye copia digital sin costo adicional.\n\n';
       else if(product && product.isFullAlbum) msg += '✅ Pedido de álbum completo. Entrega a coordinar por WhatsApp.\n\n';
       msg += '━━━━━━━━━━━━━━━\n💰 TOTAL: ' + (total === 0 ? '$0' : money(total));
-      var albumPayMode=String(activeEvent&&activeEvent.pagoModo||'TOMAUNO').toUpperCase();
-      var albumGestion=String(activeEvent&&activeEvent.gestion||'TOMAUNO').toUpperCase();
-      if(!selection && albumGestion==='EXTERNO' && albumPayMode!=='TOMAUNO'){
-        var aliasExt=String(activeEvent&&activeEvent.aliasPago||'').trim();
-        var cbuExt=String(activeEvent&&activeEvent.cbuPago||'').trim();
-        msg += '\n\n💳 DATOS PARA REALIZAR EL PAGO';
-        msg += '\n💰 IMPORTE A PAGAR: ' + (total === 0 ? '$0' : money(total));
-        if(aliasExt) msg += '\n🏦 ALIAS: ' + aliasExt;
-        if(cbuExt) msg += '\n🏦 CBU: ' + cbuExt;
-        msg += '\n📲 Después de realizar el pago, enviá el comprobante por este WhatsApp.';
-      }
       var mc = qs('modalCheckout'); if(mc) mc.style.display = 'none';
       var vg = qs('view-gallery'); if(vg) vg.style.display = 'none';
       var vs = qs('view-success'); if(vs){ vs.classList.remove('download-ready'); vs.style.display='block'; }
@@ -4835,13 +4908,14 @@ function attr(s) {
     if(!rows.length) return luxAlert('SIN DATOS','No hay pedidos para exportar.');
     var reportDate=new Date().toLocaleString('es-AR');
     var evFilter=((qs('adminEventFilter')||{}).value||'Todos los eventos');
+    var phFilter=((qs('adminPhotographerFilter')||{}).value||'Todos los fotógrafos');
     var total=rows.reduce(function(s,o){return s+Number(o.total||0);},0);
     var x=function(v){return esc(String(v==null?'':v).replace(/[\r\n]+/g,' '));};
-    var headers=['Fecha','Cliente','WhatsApp','Evento','Tipo','Trabajo a realizar','Cantidad','Total','Fotos','Observaciones','Pago','Entrega','ClaveDescarga'];
+    var headers=['Fecha','Cliente','WhatsApp','Fotógrafo','Evento','Tipo','Trabajo a realizar','Cantidad','Total','Fotos','Observaciones','Pago','Entrega','ClaveDescarga'];
     var html='<html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif}h1{font-size:22px}.meta{font-size:13px;color:#555;margin-bottom:14px}table{border-collapse:collapse;width:100%;font-size:12px}th{background:#e60000;color:#fff;font-weight:bold}td,th{border:1px solid #ccc;padding:7px;vertical-align:top}.total{font-weight:bold;background:#f2f2f2}</style></head><body>'+
-      '<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+x(reportDate)+'<br>Filtro de evento: '+x(evFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div><table><thead><tr>'+headers.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+
-      rows.map(function(o){return '<tr>'+[fmt(o.fecha),o.cliente,o.whatsapp,o.evento,o.tipo,workSummary(o),o.cantidad,o.total,o.fotos,o.observaciones,o.pago,o.entrega,o.clave].map(function(v){return '<td>'+x(v)+'</td>';}).join('')+'</tr>';}).join('')+
-      '<tr class="total"><td colspan="7">TOTAL</td><td>'+x(money(total))+'</td><td colspan="5"></td></tr></tbody></table></body></html>';
+      '<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+x(reportDate)+'<br>Filtro de fotógrafo: '+x(phFilter)+'<br>Filtro de evento: '+x(evFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div><table><thead><tr>'+headers.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+
+      rows.map(function(o){return '<tr>'+[fmt(o.fecha),o.cliente,o.whatsapp,o.fotografo||'TOMAUNO',o.evento,o.tipo,workSummary(o),o.cantidad,o.total,o.fotos,o.observaciones,o.pago,o.entrega,o.clave].map(function(v){return '<td>'+x(v)+'</td>';}).join('')+'</tr>';}).join('')+
+      '<tr class="total"><td colspan="8">TOTAL</td><td>'+x(money(total))+'</td><td colspan="5"></td></tr></tbody></table></body></html>';
     var blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel;charset=utf-8;'});
     var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Pedidos_Registrados_Tomauno_'+new Date().toISOString().slice(0,10)+'.xls';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
   };
@@ -4855,9 +4929,9 @@ function attr(s) {
     var total=rows.reduce(function(s,o){return s+Number(o.total||0);},0);
     var w=window.open('','_blank'); if(!w) return luxAlert('AVISO','El navegador bloqueó la ventana de impresión.');
     w.document.write('<html><head><title>Pedidos Registrados de Tomauno</title><style>body{font-family:Arial;padding:18px;color:#111}h1{margin:0 0 6px}.meta{color:#666;font-size:12px;margin-bottom:14px}table{width:100%;border-collapse:collapse;font-size:10px}td,th{border:1px solid #ddd;padding:5px;vertical-align:top}th{background:#e00;color:#fff}.total{font-weight:bold;background:#f2f2f2}.small{font-size:9px;line-height:1.25}@media print{button{display:none}}</style></head><body>');
-    w.document.write('<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+esc(reportDate)+'<br>Filtro de evento: '+esc(evFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>');
-    w.document.write('<table><thead><tr><th>Fecha</th><th>Cliente</th><th>WhatsApp</th><th>Evento</th><th>Tipo</th><th>Trabajo</th><th>Cant.</th><th>Total</th><th>Estado</th><th>Clave</th><th>Fotos / Observaciones</th></tr></thead><tbody>');
-    rows.forEach(function(o){w.document.write('<tr><td>'+esc(fmt(o.fecha))+'</td><td>'+esc(o.cliente||'')+'</td><td>'+esc(o.whatsapp||'')+'</td><td>'+esc(o.evento||'')+'</td><td>'+esc(o.tipo||'')+'</td><td>'+esc(workSummary(o))+'</td><td>'+esc(o.cantidad||'')+'</td><td>'+money(o.total)+'</td><td>Pago: '+esc(o.pago||'')+'<br>Entrega: '+esc(o.entrega||'')+'</td><td>'+esc(o.clave||'')+'</td><td class="small"><b>Fotos:</b> '+esc(o.fotos||'')+'<br><b>Obs:</b> '+esc(o.observaciones||'')+'</td></tr>');});
+    w.document.write('<h1>Pedidos Registrados de Tomauno</h1><div class="meta">Fecha del reporte: '+esc(reportDate)+'<br>Filtro de fotógrafo: '+esc(((qs('adminPhotographerFilter')||{}).value||'Todos los fotógrafos'))+'<br>Filtro de evento: '+esc(evFilter)+'<br>Cantidad de pedidos: '+rows.length+'</div>');
+    w.document.write('<table><thead><tr><th>Fecha</th><th>Cliente</th><th>WhatsApp</th><th>Fotógrafo</th><th>Evento</th><th>Tipo</th><th>Trabajo</th><th>Cant.</th><th>Total</th><th>Estado</th><th>Clave</th><th>Fotos / Observaciones</th></tr></thead><tbody>');
+    rows.forEach(function(o){w.document.write('<tr><td>'+esc(fmt(o.fecha))+'</td><td>'+esc(o.cliente||'')+'</td><td>'+esc(o.whatsapp||'')+'</td><td>'+esc(o.fotografo||'TOMAUNO')+'</td><td>'+esc(o.evento||'')+'</td><td>'+esc(o.tipo||'')+'</td><td>'+esc(workSummary(o))+'</td><td>'+esc(o.cantidad||'')+'</td><td>'+money(o.total)+'</td><td>Pago: '+esc(o.pago||'')+'<br>Entrega: '+esc(o.entrega||'')+'</td><td>'+esc(o.clave||'')+'</td><td class="small"><b>Fotos:</b> '+esc(o.fotos||'')+'<br><b>Obs:</b> '+esc(o.observaciones||'')+'</td></tr>');});
     w.document.write('<tr class="total"><td colspan="7">TOTAL</td><td>'+money(total)+'</td><td colspan="3"></td></tr></tbody></table></body></html>');
     w.document.close();w.focus();setTimeout(function(){w.print();},400);
   };
@@ -5161,6 +5235,17 @@ function attr(s) {
     if(notes) txt += '\n\n*INDICACIONES GENERALES*\n'+notes;
     if(flow) txt += '\n\n*INDICACIONES POR FOTOGRAFÍA*\n'+flow;
     txt += '\n\n*FOTOGRAFÍAS*\n'+(fotos || 'Sin fotos');
+    if(forWhatsapp && typeof window.tomaunoExternalPaymentContext==='function'){
+      var ex=window.tomaunoExternalPaymentContext();
+      if(ex.external){
+        txt += '\n\n*DATOS DEL FOTÓGRAFO*\n📸 *Fotógrafo:* '+(ex.photographer||'Responsable del álbum');
+        if(ex.alias||ex.cbu) txt += '\n\n*OPCIÓN DE PAGO DIRECTO*';
+        if(ex.alias)txt += '\n💳 *Alias:* '+ex.alias;
+        if(ex.cbu)txt += '\n🏦 *CBU:* '+ex.cbu;
+        if(ex.alias||ex.cbu) txt += '\n💰 *Total:* '+(total===0?'GRATIS':moneyLocal(total))+'\n📲 Te envío por este medio el comprobante de pago.';
+        else txt += '\n\n📲 Coordinamos por este medio cualquier detalle del pago.';
+      }
+    }
     if(forWhatsapp && txt.length>6500 && !p.isFullAlbum){
       fotos=photoNames.slice(0,12).join('\n')+'\n… y '+Math.max(0,photoNames.length-12)+' foto(s) más. Listado completo guardado en el panel.';
       txt = txt.replace(/\n\n\*FOTOGRAFÍAS\*[\s\S]*$/,'\n\n*FOTOGRAFÍAS*\n'+fotos);
@@ -5193,6 +5278,8 @@ function attr(s) {
     var photos = p.isFullAlbum ? allPhotos() : selected();
     var photoIds = photos.map(photoId), photoNames = p.isFullAlbum ? ['TODO EL ALBUM COMPLETO'] : photos.map(photoName);
     var parts=[]; if(notes) parts.push(notes); if(flow) parts.push(flow); if(extrasPlain) parts.push('Extras: '+extrasPlain); var notesToSave = parts.join('\n\n') || 'Sin observaciones';
+    var exctx=typeof window.tomaunoExternalPaymentContext==='function'?window.tomaunoExternalPaymentContext():{manualExternal:false};
+    window.__tomaunoLastOrderContext={name:name,phone:phone,total:total,album:(window.activeEvent&&activeEvent.displayName)?activeEvent.displayName:'',photos:photoNames.slice(),manualExternal:!!exctx.manualExternal};
     var btn=$('btnSubmit'); if(typeof setBtnLoading==='function') setBtnLoading(btn,true,'ENVIANDO...'); if(typeof toggleL==='function') toggleL(true,'REGISTRANDO...');
     var payload = {action:'submitOrder', name:name, phone:phone, notes:notesToSave, orderType:(extrasPlain? serviceLabel(p)+' + Extras' : serviceLabel(p)), eventName:window.activeEvent?activeEvent.displayName:'', photos:photoIds, photoNames:photoNames, total:total};
     apiPost(payload).then(function(res){
@@ -5200,7 +5287,10 @@ function attr(s) {
       var msg = orderText(true);
       var mc=$('modalCheckout'); if(mc) mc.style.display='none'; var vg=$('view-gallery'); if(vg) vg.style.display='none'; var vs=$('view-success'); if(vs){ vs.classList.remove('download-ready'); vs.style.display='block'; }
       window.__orderCompleted=true; window.selectedPhotos=[]; try{ if(typeof updateFooter==='function') updateFooter(); }catch(e){}
-      if(typeof showOrderSuccessToWhatsapp==='function') showOrderSuccessToWhatsapp('https://wa.me/'+res.whatsappNumber+'?text='+enc(msg));
+      if(typeof showOrderSuccessToWhatsapp==='function'){
+        var waNumber=String(res.whatsappNumber||exctx.wa||'').replace(/\D/g,'');
+        showOrderSuccessToWhatsapp(waNumber?'https://wa.me/'+waNumber+'?text='+enc(msg):'');
+      }
     }).catch(function(err){ if(typeof toggleL==='function') toggleL(false); if(typeof setBtnLoading==='function') setBtnLoading(btn,false); if(window.luxAlert) luxAlert('ERROR','No se pudo registrar el pedido: '+err.message); else alert('No se pudo registrar el pedido: '+err.message); });
   };
 
@@ -5308,7 +5398,7 @@ function attr(s) {
   /* El buscador nunca debe arrancar autocompletado por el navegador. */
   window.addEventListener('load',function(){
     var s=el('albumSearchBox');
-    if(s){ s.value=''; s.autocomplete='off'; filterAlbums && filterAlbums(); }
+    if(s){ s.value=''; s.autocomplete='off'; if(typeof window.filterAlbums==='function') window.filterAlbums(); }
   });
 
   /* Reutilizamos el ticket existente. Solo agregamos un renderer para ticket libre. */
@@ -5464,12 +5554,12 @@ function attr(s) {
   #mpDeliveryOverlay .mp54-card{
     width:min(920px,96vw);max-height:92vh;overflow:hidden;background:#090909;
     border:1px solid #303030;border-radius:24px;box-shadow:0 30px 90px #000;
-    display:flex;flex-direction:column;min-height:0
+    display:flex;flex-direction:column
   }
-  #mpDeliveryOverlay .mp54-head{padding:20px 26px 16px;border-bottom:1px solid #222;flex:0 0 auto}
+  #mpDeliveryOverlay .mp54-head{padding:24px 26px 18px;border-bottom:1px solid #222}
   #mpDeliveryOverlay h2{margin:0 0 7px;color:#31d17c;font-size:25px}
   #mpDeliveryOverlay .mp54-sub{color:#aaa;font-size:13px;line-height:1.5}
-  #mpDeliveryOverlay .mp54-files{padding:12px 20px 18px;overflow:auto;flex:1 1 auto;min-height:0}
+  #mpDeliveryOverlay .mp54-files{padding:12px 20px 18px;overflow:auto}
   #mpDeliveryOverlay .mp54-file{
     display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
     padding:12px 5px;border-bottom:1px solid #1c1c1c
@@ -5485,12 +5575,7 @@ function attr(s) {
     justify-content:center;flex-wrap:wrap
   }
   #mpDeliveryOverlay .mp54-error{color:#ddd;line-height:1.6;padding:8px 0}
-  #mpDeliveryOverlay .mp54-files-title{padding:2px 5px 10px;color:#31d17c;font-size:12px;font-weight:900;letter-spacing:.3px;text-align:left}
-  #mpDeliveryOverlay .mp54-files + .t105-receipt{margin:0 20px 12px}
   @media(max-width:650px){
-    #mpDeliveryOverlay .mp54-head{padding:17px 18px 13px}
-    #mpDeliveryOverlay h2{font-size:22px}
-    #mpDeliveryOverlay .mp54-files{padding:10px 14px 14px}
     #mpDeliveryOverlay .mp54-file{grid-template-columns:1fr 1fr}
     #mpDeliveryOverlay .mp54-name{grid-column:1/-1}
     .t50-actions{grid-template-columns:1fr !important}
@@ -5567,7 +5652,8 @@ function attr(s) {
     if(actions.querySelector('.t54-mp-pay')) return;
 
     var p=currentProduct();
-    if(!isAutomaticDigital(p)) return;
+    var aPay=window.activeEvent||null, pmPay=String(aPay&&aPay.pagoModo||'TOMAUNO').toUpperCase().trim(), autoPay=(pmPay==='TOMAUNO'||pmPay==='MERCADOPAGO'||pmPay==='MERCADO PAGO');
+    if(!isAutomaticDigital(p) || (aPay&&String(aPay.gestion||'TOMAUNO').toUpperCase()==='EXTERNO'&&!autoPay)) return;
 
     submit.textContent='💬 CONTINUAR POR WHATSAPP';
     submit.classList.add('t54-manual');
@@ -5583,6 +5669,74 @@ function attr(s) {
     note.className='t54-pay-note';
     note.textContent='Al confirmar el pago, tus fotos quedan disponibles para descargar.';
     actions.appendChild(note);
+  }
+
+  function buildMpOrderWhatsappUrl(payload,res,p){
+    try{
+      var phone=String((res&&res.whatsappNumber)||((window.activeEvent&&activeEvent.whatsappVentas)||'')).replace(/\D/g,'');
+      if(!phone) return '';
+      var name=String(payload&&payload.name||'').trim();
+      var clientPhone=String(payload&&payload.phone||'').trim();
+      var eventName=String(payload&&payload.eventName||((window.activeEvent&&activeEvent.displayName)||'')).trim();
+      var type=String((p&&p.label)||payload&&payload.orderType||'Descargas Digitales');
+      var photos=Array.isArray(payload&&payload.photoNames)?payload.photoNames:[];
+      var qty=photos.length;
+      var notes=String(payload&&payload.notes||'Sin observaciones').trim();
+      var total=Number(payload&&payload.total||0);
+      var extras=extrasNow();
+      var lines=[
+        '📸 *NUEVO PEDIDO TOMAUNO*',
+        '',
+        '👤 *Cliente:* '+name,
+        '📱 *WhatsApp:* '+clientPhone,
+        '🎉 *Evento:* '+eventName,
+        '',
+        '🛒 *Servicio:* '+type,
+        '📷 *Cantidad:* '+qty,
+        ''
+      ];
+      if(extras) lines.push('➕ *Extras:*',extras,'');
+      lines.push('📝 *Observaciones:*',notes,'','📂 *Fotografías:*',photos.length?photos.join('\n'):'Sin detalle','');
+      if(p&&p.selectionOnly) lines.push('✅ Pedido de selección/lista de fotos. Sin descarga automática.','');
+      if(p&&p.includesDigital&&!p.isFullAlbum) lines.push('✅ Incluye copia digital sin costo adicional.','');
+      if(p&&p.isFullAlbum) lines.push('✅ Pedido de álbum completo. Entrega a coordinar por WhatsApp.','');
+      lines.push('━━━━━━━━━━━━━━━','💰 *TOTAL:* '+(total===0?'$0':'$'+total.toLocaleString('es-AR')));
+      return 'https://wa.me/'+phone+'?text='+encodeURIComponent(lines.join('\n'));
+    }catch(e){ return ''; }
+  }
+
+  /* V222: cada pedido guarda SU propio enlace de WhatsApp. No se reutiliza nunca
+     el dato legado que podia traer el mensaje viejo "AYUDA CON MI COMPRA". */
+  function rememberMpWhatsappUrl(url,row,payload){
+    try{
+      if(!url || !row) return;
+      var key='tomaunoMpReturnWaV222_'+String(row);
+      var data={version:222,url:String(url),row:String(row),eventName:String(payload&&payload.eventName||''),total:Number(payload&&payload.total||0),savedAt:Date.now()};
+      try{sessionStorage.setItem(key,JSON.stringify(data));}catch(e){}
+      try{localStorage.setItem(key,JSON.stringify(data));}catch(e){}
+      /* Limpieza de los formatos anteriores: jamás volver a leerlos. */
+      try{sessionStorage.removeItem('tomaunoMpReturnWa')}catch(e){}
+      try{localStorage.removeItem('tomaunoMpReturnWa')}catch(e){}
+    }catch(e){}
+  }
+
+  function getRememberedMpWhatsappUrl(order){
+    if(!order) return '';
+    var key='tomaunoMpReturnWaV222_'+String(order);
+    var stores=[];
+    try{stores.push(sessionStorage.getItem(key));}catch(e){}
+    try{stores.push(localStorage.getItem(key));}catch(e){}
+    for(var i=0;i<stores.length;i++){
+      try{
+        if(!stores[i]) continue;
+        var data=JSON.parse(stores[i]);
+        if(!data||Number(data.version)!==222||!data.url) continue;
+        if(String(data.row)!==String(order)) continue;
+        if(data.savedAt && Date.now()-Number(data.savedAt)>6*60*60*1000) continue;
+        return String(data.url);
+      }catch(e){}
+    }
+    return '';
   }
 
   async function payWithMercadoPago(){
@@ -5602,7 +5756,19 @@ function attr(s) {
     try{
       var order=await apiPost(payload);
       if(!order || !order.success || !order.row) throw new Error((order&&order.msg)||'No se pudo registrar el pedido.');
-      var pref=await apiPost({action:'createMpPreference',row:order.row});
+
+      /* Guardamos EXACTAMENTE el WhatsApp que usa la compra normal, antes de salir a MP.
+         Así, al volver de Mercado Pago no reconstruimos un mensaje de ayuda genérico. */
+      var returnWa='';
+      try{
+        var waNumber=String((order&&order.whatsappNumber)||((window.activeEvent&&activeEvent.whatsappVentas)||'')).replace(/\D/g,'');
+        var configuredMsg='';
+        try{ if(typeof orderText==='function') configuredMsg=String(orderText(true)||''); }catch(e){}
+        if(waNumber && configuredMsg) returnWa='https://wa.me/'+waNumber+'?text='+enc(configuredMsg);
+      }catch(e){}
+      if(!returnWa) returnWa=buildMpOrderWhatsappUrl(payload,order,currentProduct());
+      rememberMpWhatsappUrl(returnWa,order.row,payload);
+      var pref=await apiPost({action:'createMpPreference',row:order.row,bridgeId:String((window.activeEvent&&activeEvent.bridgeId)||'')});
       if(!pref || !pref.success || !pref.initPoint) throw new Error((pref&&pref.msg)||'Mercado Pago todavía no está configurado.');
       location.href=pref.initPoint;
     }catch(err){
@@ -5613,6 +5779,7 @@ function attr(s) {
     }
   }
   window.payWithMercadoPago=payWithMercadoPago;
+  window.tomaunoInstallPaymentButtons=installPaymentButtons;
 
   var oldOpen=window.openCheckout;
   if(typeof oldOpen==='function'){
@@ -5624,14 +5791,11 @@ function attr(s) {
   }
 
   function whatsappFallback(order,total,paymentId,reason){
-    var phone='5493764354522';
-    var text='📸 *TOMAUNO - AYUDA CON MI COMPRA*\n\n'
-      +'🧾 *Pedido:* '+order+'\n'
-      +'💰 *Total esperado:* $'+Number(total||0).toLocaleString('es-AR')+'\n'
-      +(paymentId?'💳 *ID de pago:* '+paymentId+'\n':'')
-      +'⚠️ *Situación:* '+reason+'\n\n'
-      +'Necesito ayuda para acceder a mis fotografías.';
-    return 'https://wa.me/'+phone+'?text='+encodeURIComponent(text);
+    /* V222: el boton de retorno de MP SOLO puede abrir el WhatsApp guardado
+       para ese pedido. Se elimina el fallback generico que generaba mensajes
+       como "AYUDA CON MI COMPRA", $0 o ID null. */
+    var remembered=getRememberedMpWhatsappUrl(order);
+    return remembered || '#';
   }
 
   function showDelivery(res, paymentId){
@@ -5656,12 +5820,12 @@ function attr(s) {
     ov.innerHTML='<div class="mp54-card t105-card">'
       +'<div class="mp54-head"><h2>✅ ¡PAGO CONFIRMADO!</h2>'
       +'<div class="mp54-sub">'+(serviceOnly?'Tu compra quedó registrada y pagada. Presentá este comprobante al personal de Tomauno.':'Tu compra quedó registrada y pagada. Tus fotografías ya están habilitadas para descargar.')+'</div></div>'
-      +(files.length?'<div class="mp54-files"><div class="mp54-files-title">⬇ FOTOGRAFÍAS LISTAS PARA DESCARGAR · '+files.length+'</div>'+files.map(function(f){
+      +detail
+      +(files.length?'<div class="mp54-files">'+files.map(function(f){
         return '<div class="mp54-file"><div class="mp54-name">'+esc(f.name||'Fotografía')+'</div>'
           +'<a class="mp54-btn primary" href="'+esc(f.downloadUrl)+'" target="_blank" rel="noopener">⬇ DESCARGAR</a>'
           +'<a class="mp54-btn" href="'+esc(f.viewUrl)+'" target="_blank" rel="noopener">👁 VER</a></div>';
       }).join('')+'</div>':'')
-      +detail
       +'<div class="mp54-foot"><button class="mp54-btn primary" id="t105ReceiptDownload">⬇ GUARDAR COMPROBANTE</button><a class="mp54-btn" href="'+whatsappFallback(res.row,total,paymentId,'Pago aprobado - envío mi comprobante')+'" target="_blank">💬 WHATSAPP</a><button class="mp54-btn" id="mp54Close">VOLVER AL SITIO</button></div>'
       +'</div>';
     ov.style.display='flex';
@@ -5671,17 +5835,35 @@ function attr(s) {
 
   function showPaymentIssue(title, detail, order, total, paymentId){
     var ov=$('mpDeliveryOverlay'); if(!ov) return;
+    var wa=whatsappFallback(order,total,paymentId,detail);
     ov.innerHTML='<div class="mp54-card"><div class="mp54-head"><h2 style="color:#ffcc35">'+esc(title)+'</h2>'
       +'<div class="mp54-error">'+esc(detail)+'</div></div>'
-      +'<div class="mp54-foot"><a class="mp54-btn primary" href="'+whatsappFallback(order,total,paymentId,detail)+'" target="_blank">💬 CONTINUAR POR WHATSAPP</a><button class="mp54-btn" id="mp54Close">VOLVER</button></div></div>';
+      +'<div class="mp54-foot"><a class="mp54-btn primary" id="mp54ContinueWa" href="'+esc(wa)+'" target="_blank" rel="noopener">💬 CONTINUAR POR WHATSAPP</a><button class="mp54-btn" id="mp54Close">VOLVER</button></div></div>';
     ov.style.display='flex';
+    var waBtn=$('mp54ContinueWa');
+    if(waBtn && wa==='#'){
+      waBtn.removeAttribute('href');
+      waBtn.removeAttribute('target');
+      waBtn.style.opacity='.55';
+      waBtn.onclick=function(e){e.preventDefault();if(window.luxAlert)luxAlert('WHATSAPP NO DISPONIBLE','No pudimos recuperar el mensaje de WhatsApp de este pedido.');};
+    }
     var c=$('mp54Close'); if(c) c.onclick=function(){ ov.style.display='none'; };
   }
 
+  function showMpReturnChecking(){
+    var ov=$('mpDeliveryOverlay'); if(!ov)return;
+    ov.innerHTML='<div class="mp54-card"><div class="mp54-head"><h2>✅ VOLVISTE DE MERCADO PAGO</h2><div class="mp54-sub">Estamos confirmando tu pago. Un momento…</div></div><div class="mp54-foot"><div class="mp54-sub" style="width:100%;text-align:center">No cierres esta ventana mientras verificamos la operación.</div></div></div>';
+    ov.style.display='flex';
+  }
+
   async function processMpReturn(){
+    if(window.opener){
+      try{window.opener.postMessage({type:'tomauno-mp-opened',status:'returning'},location.origin)}catch(e){}
+    }
     var q=new URLSearchParams(location.search);
     var mp=q.get('mp'), row=q.get('order'), paymentId=q.get('payment_id')||q.get('collection_id');
     if(!mp || !row) return;
+    showMpReturnChecking();
     if(mp!=='success'){
       var status=q.get('status')||q.get('collection_status')||mp;
       showPaymentIssue(status==='pending'?'⏳ PAGO PENDIENTE':'⚠️ PAGO NO COMPLETADO',
@@ -5701,7 +5883,10 @@ function attr(s) {
       showPaymentIssue('⚠️ NO PUDIMOS VALIDAR EL PAGO',String(err&&err.message?err.message:err),row,0,paymentId);
     }
   }
-  window.addEventListener('load',function(){ setTimeout(processMpReturn,180); });
+  window.addEventListener('message',function(e){
+    if(e.origin!==location.origin||!e.data||e.data.type!=='tomauno-mp-return')return;
+  });
+  setTimeout(processMpReturn,60);
 })();
 </script>
 <!-- /TOMAUNO V54 MERCADO PAGO - ETAPA 1 -->
@@ -5773,6 +5958,9 @@ function attr(s) {
   }
   var desc=el('freeTicketDescription');
   if(desc){desc.addEventListener('input',refreshV59);desc.addEventListener('change',refreshV59)}
+  ['freeTicketClient','freeTicketConcept','freeTicketDate','freeTicketPaid'].forEach(function(id){
+    var n=el(id);if(n){n.addEventListener('input',refreshV59);n.addEventListener('change',refreshV59)}
+  });
 
   /* ---- TAB desde IMPORTE va directamente al check PAGADO ---- */
   var amount=el('freeTicketAmount');
@@ -6169,78 +6357,6 @@ function attr(s) {
     }
   };
 
-  /* Garantía final para el botón de Mercado Pago.
-     No usa MutationObserver para evitar el congelamiento detectado en V61. */
-  function selectedProduct(){
-    try{
-      if(typeof window.getSelectedProduct==='function'){
-        var p=window.getSelectedProduct();
-        if(p) return p;
-      }
-    }catch(e){}
-    try{ if(window.selectedMainProduct) return window.selectedMainProduct; }catch(e){}
-    return null;
-  }
-
-  function mpEligible(){
-    var p=selectedProduct();
-    if(!p) return false;
-    var label=String(p.label||p.name||'').toLowerCase();
-    if(/selecci[oó]n|fotolibro|edici[oó]n|impres|portarretrato|cuadro|papel/.test(label)) return false;
-    var digital=/digital|descarga/.test(label) || (!!p.isFullAlbum && !!p.includesDigital);
-    if(!digital) return false;
-
-    var extras=false;
-    try{
-      var q=window.extraQuantities||{};
-      extras=Object.keys(q).some(function(k){return Number(q[k]||0)>0;});
-    }catch(e){}
-    if(extras) return false;
-
-    var total=0;
-    try{
-      if(typeof window.getOrderTotal==='function') total=Number(window.getOrderTotal(p)||0);
-      else total=Number(p.price||0)*((window.selectedPhotos||[]).length||0);
-    }catch(e){}
-    return total>0;
-  }
-
-  function ensureMpButton(){
-    var modal=el('modalCheckout');
-    if(!modal || modal.style.display!=='flex' || !mpEligible()) return;
-
-    var actions=modal.querySelector('.t50-actions');
-    var submit=el('btnSubmit');
-    if(!actions || !submit) return;
-
-    submit.textContent='💬 CONTINUAR POR WHATSAPP';
-    submit.classList.add('t54-manual');
-
-    var mp=actions.querySelector('.t54-mp-pay');
-    if(!mp){
-      mp=document.createElement('button');
-      mp.type='button';
-      mp.className='btn-order t54-mp-pay';
-      mp.textContent='💳 PAGAR CON MERCADO PAGO';
-      mp.onclick=function(){
-        if(typeof window.payWithMercadoPago==='function') window.payWithMercadoPago();
-      };
-      actions.insertBefore(mp,submit);
-    }
-  }
-
-  var oldOpenCheckout=window.openCheckout;
-  if(typeof oldOpenCheckout==='function'){
-    window.openCheckout=function(){
-      var r=oldOpenCheckout.apply(this,arguments);
-      setTimeout(ensureMpButton,70);
-      setTimeout(ensureMpButton,220);
-      return r;
-    };
-  }
-
-  /* Por seguridad, si el formulario ya estaba abierto al cargar este parche. */
-  setTimeout(ensureMpButton,300);
 })();
 </script>
 <!-- /TOMAUNO V62 -->
@@ -6395,58 +6511,6 @@ function attr(s) {
   });
   window.addEventListener('focus',function(){setTimeout(resetMpButton,80)});
 
-  /* Reutilizar la última preferencia creada si el cliente volvió sin pagar.
-     Evita crear otro pedido/otra preferencia simplemente por haber cancelado. */
-  var oldPay=window.payWithMercadoPago;
-  if(typeof oldPay==='function'){
-    window.payWithMercadoPago=async function(){
-      var btn=document.querySelector('.t54-mp-pay');
-      var cached=null;
-      try{cached=JSON.parse(sessionStorage.getItem('TOMAUNO_LAST_MP_PREF')||'null')}catch(e){}
-      if(cached && cached.initPoint && cached.createdAt && (Date.now()-cached.createdAt)<7200000){
-        if(btn){btn.disabled=true;btn.textContent='ABRIENDO MERCADO PAGO...';}
-        location.href=cached.initPoint;
-        return;
-      }
-      return oldPay.apply(this,arguments);
-    };
-
-    /* Aseguramos que incluso botones creados por bloques anteriores usen la lógica V63. */
-    document.addEventListener('click',function(e){
-      var b=e.target && e.target.closest ? e.target.closest('.t54-mp-pay') : null;
-      if(!b) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      window.payWithMercadoPago();
-    },true);
-
-    /* Capturamos preferencias nuevas observando la respuesta de apiPost solo para createMpPreference. */
-    var originalApiPost=window.apiPost;
-    if(typeof originalApiPost==='function'){
-      window.apiPost=async function(data){
-        var res=await originalApiPost.apply(this,arguments);
-        try{
-          if(data && data.action==='createMpPreference' && res && res.success && res.initPoint){
-            sessionStorage.setItem('TOMAUNO_LAST_MP_PREF',JSON.stringify({
-              initPoint:res.initPoint,
-              row:res.row||data.row||'',
-              createdAt:Date.now()
-            }));
-          }
-          if(data && data.action==='verifyMpPayment' && res && res.approved){
-            sessionStorage.removeItem('TOMAUNO_LAST_MP_PREF');
-          }
-        }catch(e){}
-        return res;
-      };
-    }
-  }
-
-  /* Si el retorno dice failure/pending/cancelado, dejamos la preferencia reutilizable.
-     Si el usuario cierra la caja de aviso, el botón vuelve activo. */
-  document.addEventListener('click',function(e){
-    if(e.target && e.target.id==='mp54Close') setTimeout(resetMpButton,80);
-  });
 })();
 </script>
 <!-- /TOMAUNO V63 -->
@@ -9272,6 +9336,9 @@ function bind(){
     }
   });
   document.querySelectorAll('[data-v91meta]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();editMeta(b.dataset.v91meta)}});
+  document.querySelectorAll('[data-v91check]').forEach(function(b){
+    b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();var id=b.dataset.v91check;M.selected.has(id)?M.selected.delete(id):M.selected.add(id);render()}
+  });
   document.querySelectorAll('[data-v91eye]').forEach(function(b){
     b.onclick=async function(ev){
       ev.preventDefault();ev.stopPropagation();
@@ -9450,11 +9517,27 @@ window.addEventListener('DOMContentLoaded',bindSearch)
     <input id="v95MetaInstagram" type="text" autocomplete="off" placeholder="Ej.: @tomaunoestudio">
     <label>WHATSAPP</label>
     <input id="v95MetaWhatsapp" type="text" autocomplete="off" placeholder="Ej.: 3764354522">
+    <label style="color:#d71920">CLAVE SECRETA DEL FOTÓGRAFO · ÁLBUM PADRE</label>
+    <input id="v198MetaPhotographerKey" type="text" inputmode="numeric" autocomplete="new-password" maxlength="12" placeholder="Ej.: 1234">
+    <div class="v92-hint" style="color:#aaa">Esta es la clave que el fotógrafo escribirá en <b>BUSCAR MI FOTO</b> para entrar a su panel. Se hereda automáticamente a todos los álbumes hijos de este padre.</div>
+    <div class="v92-hint">En un álbum sin padre se usa la <b>CLAVE DEL FOTÓGRAFO · ÁLBUM SIN PADRE</b> de la configuración individual del álbum.</div>
     <div class="v92-hint">Todos estos datos son opcionales. Instagram y WhatsApp se muestran como enlaces clickeables.</div>
-    <div class="v92-actions">
+    <div class="v92-actions v198-meta-actions">
       <button type="button" onclick="v92CloseMeta()">CANCELAR</button>
+      <button type="button" class="v198-guide-btn" onclick="v198OpenPhotographerGuide()">📲 GUÍA AL FOTÓGRAFO</button>
       <button type="button" class="save" onclick="v92SaveMeta()">GUARDAR</button>
     </div>
+  </div>
+</div>
+
+<div id="v198PhotographerGuide" class="v198-guide-overlay" aria-hidden="true">
+  <div class="v198-guide-box">
+    <div class="v198-guide-head"><div><span>GUÍA DE USO</span><h3 id="v198GuideTitle">Para el fotógrafo</h3></div><button type="button" onclick="v198ClosePhotographerGuide()">×</button></div>
+    <div class="v198-guide-grid">
+      <div><label>MENSAJE PARA WHATSAPP</label><textarea id="v198GuideText" readonly></textarea><div class="v198-guide-actions"><button type="button" onclick="v198CopyGuide()">📋 COPIAR MENSAJE</button><button type="button" class="wa" onclick="v198SendGuideWhatsApp()">🟢 ENVIAR POR WHATSAPP</button></div></div>
+      <div class="v198-guide-qr"><label>LINK DIRECTO</label><a id="v198GuideLink" href="#" target="_blank" rel="noopener"></a><label>QR DEL ÁLBUM</label><img id="v198GuideQr" alt="Código QR del álbum"><a id="v198GuideQrLink" href="#" target="_blank" rel="noopener">Abrir QR</a></div>
+    </div>
+    <div class="v198-guide-note">El mensaje se arma automáticamente con el nombre del fotógrafo, su clave, el enlace de su colección, el QR y cómo quedó configurado cada álbum.</div>
   </div>
 </div>
 
@@ -9711,7 +9794,13 @@ function recolor93(){
 }
 
 /* CHECKS DE HIJOS: captura global antes de listeners heredados */
-/* V196: no interceptar pointerdown de los checks de álbum. El click global único se ocupa de la selección. */
+document.addEventListener('pointerdown',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.v91-check[data-v91check]'):null;
+  if(!b)return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+},true);
 
 document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('.v91-check[data-v91check]'):null;
@@ -10215,6 +10304,7 @@ window.v92OpenGroupMeta=function(group){
   if(E('v95MetaPhotographer'))E('v95MetaPhotographer').value=meta.photographer||'';
   if(E('v95MetaInstagram'))E('v95MetaInstagram').value=meta.instagram?('@'+String(meta.instagram).replace(/^@/,'')):'';
   if(E('v95MetaWhatsapp'))E('v95MetaWhatsapp').value=meta.whatsapp||'';
+  if(E('v198MetaPhotographerKey'))E('v198MetaPhotographerKey').value=meta.claveFotografo||'';
 };
 
 /* Guardar título + metadata extendida */
@@ -10245,14 +10335,16 @@ window.v92SaveMeta=async function(){
     var r=await apiPost({
       action:'saveAlbumGroupMeta',pin:'3233',group:newName,
       description:desc,date:date,photographer:photographer,
-      instagram:instagram,whatsapp:whatsapp
+      instagram:instagram,whatsapp:whatsapp,
+      claveFotografo:String((E('v198MetaPhotographerKey')||{}).value||'').trim()
     });
     if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar');
 
     m.meta[newName]={
       name:newName,description:r.description||desc,date:r.date||date,
       photographer:r.photographer||photographer,
-      instagram:r.instagram||instagram,whatsapp:r.whatsapp||whatsapp
+      instagram:r.instagram||instagram,whatsapp:r.whatsapp||whatsapp,
+      claveFotografo:r.claveFotografo||String((E('v198MetaPhotographerKey')||{}).value||'').trim()
     };
 
     var ov=E('v92MetaOverlay');if(ov)ov.classList.remove('open');
@@ -11181,6 +11273,7 @@ if(typeof oldOpen==='function'&&!oldOpen.__v100){
   var w=function(){
     window.__v100TicketSaved=false;
     window.__v100TicketNumber='';
+    var b=E('v100SaveTicketBtn');if(b){b.disabled=false;b.textContent='💾 GUARDAR TICKET';b.style.opacity='1'}
     var r=oldOpen.apply(this,arguments);
     setTimeout(function(){renderRecent();},20);
     return r;
@@ -11194,19 +11287,29 @@ if(concept){
   concept.addEventListener('focus',function(){renderRecent(this.value)});
 }
 
-/* Registrar al primer acto real de emisión: copiar, descargar o imprimir.
-   No bloquea la acción existente y evita duplicados en la misma apertura. */
-['copyTicketPng','downloadTicketPng','printCurrentTicket'].forEach(function(name){
-  var old=window[name];
-  if(typeof old!=='function' || old.__v100)return;
-  var w=function(){
-    var args=arguments,ctx=this;
-    registerOnce();
-    return old.apply(ctx,args);
-  };
-  w.__v100=true;window[name]=w;
-});
-
+/* V203: guardar ticket solo cuando el usuario lo pide explícitamente. */
+window.saveFreeTicketManually=async function(){
+  var modal=E('ticketModal');
+  if(!modal || !modal.classList.contains('is-free-ticket'))return;
+  if(window.__v100TicketSaved || saving)return;
+  var d=ticketData();
+  if(!d.cliente){return typeof miniToast==='function' ? miniToast('Falta el nombre del cliente.') : null}
+  if(!d.concepto || d.concepto==='Servicio'){return typeof miniToast==='function' ? miniToast('Falta el concepto / servicio.') : null}
+  saving=true;
+  var b=E('v100SaveTicketBtn');if(b){b.disabled=true;b.textContent='GUARDANDO…'}
+  try{
+    var r=await apiPost(d);
+    if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo guardar el ticket.');
+    window.__v100TicketSaved=true;
+    window.__v100TicketNumber=r.ticket||'';
+    writeRecent(d.concepto);
+    if(b){b.textContent='✓ TICKET GUARDADO';b.style.opacity='.65'}
+    if(typeof miniToast==='function')miniToast('Ticket guardado correctamente.');
+  }catch(err){
+    if(b){b.disabled=false;b.textContent='💾 GUARDAR TICKET'}
+    if(typeof miniToast==='function')miniToast(err.message||'No se pudo guardar el ticket.');
+  }finally{saving=false}
+};
 window.addEventListener('load',function(){setTimeout(renderRecent,300)});
 })();
 </script>
@@ -11562,7 +11665,13 @@ async function payServices101(){
       paymentChannel:'MERCADOPAGO'
     });
     if(!order||!order.success||!order.row)throw new Error((order&&order.msg)||'No se pudo registrar el pedido.');
-    var pref=await apiPost({action:'createMpPreference',row:order.row});
+    try{
+      var svcWaNumber=String((order&&order.whatsappNumber)||((window.activeEvent&&activeEvent.whatsappVentas)||'')).replace(/\D/g,'');
+      var svcMsg='';
+      try{if(typeof orderText==='function')svcMsg=String(orderText(true)||'')}catch(e){}
+      if(svcWaNumber&&svcMsg)rememberMpWhatsappUrl('https://wa.me/'+svcWaNumber+'?text='+enc(svcMsg),order.row,{eventName:(window.activeEvent&&activeEvent.displayName)||'',total:total});
+    }catch(e){}
+    var pref=await apiPost({action:'createMpPreference',row:order.row,bridgeId:String((window.activeEvent&&activeEvent.bridgeId)||'')});
     if(!pref||!pref.success||!pref.initPoint)throw new Error((pref&&pref.msg)||'No se pudo iniciar Mercado Pago.');
     try{
       sessionStorage.setItem('TOMAUNO_LAST_MP_PREF',JSON.stringify({
@@ -12453,48 +12562,32 @@ document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e
 /* 6) Pedidos siempre llevan bridgeId; backend deriva WhatsApp correcto */
 var api108=window.apiPost;if(typeof api108==='function')window.apiPost=function(data){try{if(data&&data.action==='submitOrder'&&!data.bridgeId){var a=currentAlbum108();if(a&&a.bridgeId)data.bridgeId=a.bridgeId}}catch(e){}return api108.apply(this,arguments)};
 
-/* 7) Flujo externo: jamás usa el MP verificado de Tomauno */
-function externalAlbum108(){
-  var a=currentAlbum108(),g=String(a&&a.gestion||'TOMAUNO').toUpperCase(),pay=String(a&&a.pagoModo||'TOMAUNO').toUpperCase();
-  return a&&g==='EXTERNO'?{album:a,pago:pay,usarMercadoPago:pay==='TOMAUNO'}:null;
-}
-function externalPay108(){
-  var x=externalAlbum108();
-  if(!x||x.usarMercadoPago)return false;
-  var a=x.album,alias=String(a.aliasPago||'').trim(),cbu=String(a.cbuPago||'').trim(),wa=String(a.whatsappVentas||'').replace(/\D/g,'');
-  if(alias&&navigator.clipboard)navigator.clipboard.writeText(alias).catch(function(){});
-  var msg='Este álbum es gestionado directamente por '+(a.fotografo||'el fotógrafo responsable')+'.';
-  if(alias)msg+='\n\nAlias de pago: '+alias;
-  if(cbu)msg+='\nCBU: '+cbu;
-  msg+='\n\nDespués de pagar, enviá el comprobante al fotógrafo por WhatsApp. No se utiliza Mercado Pago de Tomauno.';
-  if(window.luxAlert)luxAlert('PAGO AL FOTÓGRAFO',msg);
-  if(wa)setTimeout(function(){window.open('https://wa.me/'+wa+'?text='+encodeURIComponent('Hola. Quiero realizar el pago del pedido del álbum '+(a.displayName||'')+'. Enviaré el comprobante por este medio.'),'_blank')},450);
-  return true;
-}
-var oldPay108=window.payWithMercadoPago;if(typeof oldPay108==='function')window.payWithMercadoPago=function(){if(externalPay108())return;return oldPay108.apply(this,arguments)};
-var oldServ108=window.payServices101;if(typeof oldServ108==='function')window.payServices101=function(){if(externalPay108())return;return oldServ108.apply(this,arguments)};
+/* 7) Pago: una sola implementación. V54 crea el botón; aquí sólo se decide si corresponde mostrarlo. */
+function normPayment108(v){return String(v||'').toUpperCase().trim().replace(/\s+/g,' ')}
+function paymentAllowsMp108(a){var p=normPayment108(a&&a.pagoModo||'TOMAUNO');return p==='TOMAUNO'||p==='MERCADOPAGO'||p==='MERCADO PAGO'||p==='MP TOMAUNO'||p==='MERCADO PAGO TOMAUNO'}
+function paymentContext108(a){return {external:normPayment108(a&&a.gestion||'TOMAUNO')==='EXTERNO',manualExternal:normPayment108(a&&a.gestion||'TOMAUNO')==='EXTERNO'&&!paymentAllowsMp108(a),mp:paymentAllowsMp108(a),photographer:String(a&&a.fotografo||'').trim(),alias:String(a&&a.aliasPago||'').trim(),cbu:String(a&&a.cbuPago||'').replace(/\D/g,''),wa:String(a&&a.whatsappVentas||'').replace(/\D/g,''),album:String(a&&a.displayName||'').trim()}}
+window.tomaunoExternalPaymentContext=function(){return paymentContext108(currentAlbum108())};
+window.tomaunoManualExternalPaymentMode=function(){return !!paymentContext108(currentAlbum108()).manualExternal};
 function syncExternalButtons108(){
-  var a=currentAlbum108(),ext=a&&String(a.gestion||'TOMAUNO').toUpperCase()==='EXTERNO',pay=String(a&&a.pagoModo||'TOMAUNO').toUpperCase();
-  var mp=ext&&pay!=='TOMAUNO';
-  document.body.classList.toggle('v108-external-album',!!ext);
-  document.querySelectorAll('.t54-mp-pay,.v101-mp-services').forEach(function(b){
-    if(mp){
-      b.classList.add('v108-external');
-      b.disabled=true;
-      b.textContent='💳 PAGO ONLINE NO DISPONIBLE';
-      b.title='Este álbum cobra directamente por fuera de Mercado Pago Tomauno.';
-    }else{
-      b.classList.remove('v108-external');
-      b.disabled=false;
-      if(b.classList.contains('t54-mp-pay')){
-        b.textContent='💳 PAGAR CON MERCADO PAGO';
-        b.title='Pagar con Mercado Pago Tomauno';
-      }
-    }
-  });
+  var modal=E('modalCheckout'),actions=modal&&modal.querySelector('.t50-actions'),submit=E('btnSubmit'),a=currentAlbum108();
+  if(!modal||!actions||!submit||!a)return;
+  var ctx=paymentContext108(a),oldMp=actions.querySelector('.t54-mp-pay'),oldService=actions.querySelector('.v101-mp-services');
+  document.body.classList.toggle('v108-external-album',!!ctx.external);
+  if(ctx.manualExternal){
+    if(oldMp)oldMp.remove();if(oldService)oldService.remove();
+    submit.textContent='💬 CONTINUAR POR WHATSAPP';submit.classList.add('t54-manual');return;
+  }
+  submit.textContent='💬 CONTINUAR POR WHATSAPP';submit.classList.add('t54-manual');
+  if(typeof window.tomaunoInstallPaymentButtons==='function')window.tomaunoInstallPaymentButtons();
+  var mp=actions.querySelector('.t54-mp-pay');
+  if(mp){mp.textContent='💳 PAGAR CON MERCADO PAGO';mp.disabled=false;mp.onclick=function(e){e.preventDefault();if(typeof window.payWithMercadoPago==='function')window.payWithMercadoPago()}}
 }
-
-
+window.tomaunoSyncCheckoutPaymentUI=syncExternalButtons108;
+var openCheckout108=window.openCheckout;
+if(typeof openCheckout108==='function'&&!openCheckout108.__tomaunoPaymentUI){
+  var wrappedOpenCheckout108=function(){var r=openCheckout108.apply(this,arguments);setTimeout(syncExternalButtons108,0);return r};
+  wrappedOpenCheckout108.__tomaunoPaymentUI=true;window.openCheckout=wrappedOpenCheckout108;
+}
 /* 8) Identidad del álbum: Tomauno / neutra / logo URL */
 function syncBrand108(){var a=currentAlbum108(),logo=document.querySelector('header .logo-txt');if(!logo||!a)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();if(mode==='NEUTRO'){logo.innerHTML='<span class="v108-neutral-brand">FOTOGRAFÍAS DEL EVENTO</span>';logo.onclick=window.v108GoHome}else if(mode==='PERSONALIZADO'&&a.logoUrl){logo.innerHTML='<img class="v108-album-logo" style="display:block" src="'+String(a.logoUrl).replace(/"/g,'&quot;')+'" alt="Logo del fotógrafo">';logo.onclick=window.v108GoHome}else{logo.innerHTML='Estudio Toma<span>uno</span>';logo.onclick=window.v108GoHome}}
 document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('#eventList .event-card,#zoomConfirmBtn,#btnConfirm,#modalAdmin button,#v109Manager button'):null;if(t)setTimeout(function(){hardenSecrets108(document);addGears108();bindMultiDrag108();syncExternalButtons108()},30)},true);
@@ -12515,18 +12608,18 @@ document.addEventListener('DOMContentLoaded',function(){hardenSecrets108(documen
 <div class="v109-field"><label>GESTIÓN</label><select id="v109Gestion"><option value="TOMAUNO">Tomauno</option><option value="EXTERNO">Fotógrafo externo</option></select></div><div class="v109-field"><label>FOTOS</label><div class="v109-choice" id="v109OriginChoice"><button type="button" data-value="ROOT" title="Carpeta dentro del Drive administrado por Tomauno">📁 CARPETA</button><button type="button" data-value="EXTERNO" title="Usar una carpeta existente mediante enlace o ID de Drive">🔗 LINK DRIVE</button></div><select id="v109Origin" class="v109-hidden-select"><option value="ROOT">ROOT</option><option value="EXTERNO">EXTERNO</option></select></div>
 <div class="v109-field v109-wide v109-conditional" id="v109DriveWrap"><label>LINK / ID DRIVE</label><input id="v109Drive" placeholder="Pegá enlace o ID de Drive"></div>
 <div class="v109-field"><label>WHATSAPP DE VENTAS</label><input id="v109Wa" inputmode="numeric"></div><div class="v109-field"><label>CLAVE DE ACCESO AL ÁLBUM</label><input id="v109Pass" autocomplete="off"></div>
-<div class="v109-field v109-span2"><label>PAGO</label><div class="v109-choice" id="v109PayChoice"><button type="button" data-value="TOMAUNO" title="Checkout verificado de Mercado Pago Tomauno">💳 MP TOMAUNO</button><button type="button" data-value="EXTERNO" title="Pago directo al fotógrafo mediante alias y comprobante">↗ EXTERNO</button><button type="button" data-value="NINGUNO" title="No ofrecer pago online para este álbum">⊘ SIN PAGO</button></div><select id="v109Pay" class="v109-hidden-select"><option value="TOMAUNO">TOMAUNO</option><option value="EXTERNO">EXTERNO</option><option value="NINGUNO">NINGUNO</option></select></div><div class="v109-field v109-conditional" id="v109AliasWrap"><label>ALIAS / DATO DE PAGO</label><input id="v109Alias"></div>
+<div class="v109-field v109-span2"><label>PAGO</label><div class="v109-choice" id="v109PayChoice"><button type="button" data-value="TOMAUNO" title="Checkout verificado de Mercado Pago Tomauno">💳 MP TOMAUNO</button><button type="button" data-value="EXTERNO" title="Pago directo al fotógrafo mediante alias y comprobante">↗ EXTERNO</button><button type="button" data-value="NINGUNO" title="No ofrecer pago online para este álbum">⊘ SIN PAGO</button></div><select id="v109Pay" class="v109-hidden-select"><option value="TOMAUNO">TOMAUNO</option><option value="EXTERNO">EXTERNO</option><option value="NINGUNO">NINGUNO</option></select></div><div class="v109-field v109-conditional" id="v109AliasWrap"><label>ALIAS / DATO DE PAGO (OPCIONAL)</label><input id="v109Alias" autocomplete="off" placeholder="Podés dejarlo vacío"></div>
 <div class="v109-field v109-span2"><label>MARCA DE AGUA</label><div class="v109-choice" id="v109LogoChoice"><button type="button" data-value="TOMAUNO" title="Usar la marca de agua Tomauno sobre las fotografías">TOMAUNO</button><button type="button" data-value="NEUTRO" title="Protección neutra sin identificar a ningún estudio">NEUTRA</button><button type="button" data-value="PERSONALIZADO" title="Usar un logo externo mediante URL">PERSONAL</button><button type="button" data-value="NINGUNO" title="Mostrar las fotografías sin marca de agua">SIN PROTECCIÓN</button></div><select id="v109Logo" class="v109-hidden-select"><option value="TOMAUNO">TOMAUNO</option><option value="NEUTRO">NEUTRO</option><option value="PERSONALIZADO">PERSONALIZADO</option><option value="NINGUNO">SIN PROTECCIÓN</option></select></div><div class="v109-field v109-conditional" id="v109LogoUrlWrap"><label>URL LOGO PERSONALIZADO</label><input id="v109LogoUrl"></div>
 <div class="v109-field"><label>PRECIO DIGITAL</label><input id="v109PD" type="number" placeholder="0"></div><div class="v109-field"><label>PRECIO IMPRESIÓN</label><input id="v109PI" type="number" placeholder="0"></div><div class="v109-field"><label>ÁLBUM COMPLETO</label><input id="v109PFull" type="number" placeholder="0"></div>
 <div class="v109-field v109-wide"><label>PRODUCTOS / SERVICIOS ADICIONALES</label><div id="v109Products" class="v109-products"></div><button class="v109-add-mini" type="button" onclick="v109AddProduct()" title="Agregar producto o servicio">＋</button></div>
 <div class="v109-field" id="v109ModelWrap"><label>ACUERDO</label><select id="v109Model"><option value="NINGUNO">Sin acuerdo registrado</option><option value="MENSUAL">Tarifa mensual</option><option value="COMISION">Comisión por ventas</option></select></div><div class="v109-field v109-conditional" id="v109FeeWrap"><label>TARIFA MENSUAL</label><input id="v109Fee" type="number"></div>
 <div class="v109-field v109-conditional" id="v109PctWrap"><label>COMISIÓN TOMAUNO %</label><input id="v109Pct" type="number" step="0.1"></div><div class="v109-field"><label>VENCIMIENTO / ESTADÍA</label><input id="v109Expiry" type="date"></div>
-<div class="v109-field"><label>AVISOS EXTERNOS</label><select id="v109Notify"><option value="SI">ON · avisar</option><option value="NO">OFF · no molestar</option></select></div><div class="v109-field"><label>CLAVE REPORTES DEL FOTÓGRAFO</label><input id="v109ReportKey" inputmode="numeric" placeholder="Automática al crear"></div>
+<div class="v109-field"><label>AVISOS EXTERNOS</label><select id="v109Notify"><option value="SI">ON · avisar</option><option value="NO">OFF · no molestar</option></select></div><div class="v109-field"><label>CLAVE DEL FOTÓGRAFO · ÁLBUM SIN PADRE</label><input id="v109ReportKey" inputmode="numeric" placeholder="Automática al crear"></div>
 <div class="v109-field v109-wide"><label>MENSAJE SI TODAVÍA NO HAY FOTOS</label><input id="v109Empty" value="Muy pronto las fotografías"></div>
-</div><div id="v109Status" class="v109-status"></div><div class="v109-actions"><button class="v109-btn red" onclick="v109Save()">GUARDAR</button><button class="v109-btn" onclick="v109Qr()">▦ GENERAR QR</button><button class="v109-btn" onclick="v109CopyLink()">🔗 COPIAR LINK</button><button id="v109OpenDriveBtn" class="v109-btn" onclick="v109OpenDrive()">↗ ABRIR DRIVE</button><button id="v109Delete" class="v109-btn" style="margin-left:auto;color:#f66" onclick="v109DeleteAlbum()">ELIMINAR DEFINITIVAMENTE</button></div></div></div>
+</div><div id="v109Status" class="v109-status"></div><div class="v109-actions"><button class="v109-btn red" onclick="v109Save()">GUARDAR</button><button id="v202StandaloneGuideBtn" class="v109-btn gold" onclick="v202OpenStandaloneGuide()" style="display:none">📲 GUÍA FOTÓGRAFO</button><button class="v109-btn" onclick="v109Qr()">▦ GENERAR QR</button><button class="v109-btn" onclick="v109CopyLink()">🔗 COPIAR LINK</button><button id="v109OpenDriveBtn" class="v109-btn" onclick="v109OpenDrive()">↗ ABRIR DRIVE</button><button id="v109Delete" class="v109-btn" style="margin-left:auto;color:#f66" onclick="v109DeleteAlbum()">ELIMINAR DEFINITIVAMENTE</button></div></div></div>
 
 <script>
-(function(){var edit=null,products=[];function E(i){return document.getElementById(i)}function M(){return window.__v91||window.__V91||window.__v91Model||null}function digits(v){return String(v||'').replace(/\D/g,'')}function moneyBlank(v){var n=Number(v||0);return n>0?String(n):''}function ownDefaults(a){var own=!a||String(a.gestion||'TOMAUNO').toUpperCase()==='TOMAUNO';return{wa:own?'5493764354522':'',pay:own?'TOMAUNO':'EXTERNO',alias:own?'tomaunoestudio':''}}window.v109Open=function(id){var m=M(),a=id&&m?(m.all||[]).find(x=>String(x.bridgeId)===String(id)):null,d=ownDefaults(a);edit=a||null;E('v109Title').textContent=a?'CONFIGURAR ÁLBUM':'CREAR ÁLBUM';E('v109Name').value=a?a.displayName:'';E('v109Photographer').value=a?a.fotografo||'Javier Móttola':'';E('v109Description').value=a?a.description||'':'';E('v109Instagram').value=a?a.instagram||'':'';E('v109PhonePublic').value=a?a.telefonoPublico||'':'';E('v109Gestion').value=a?a.gestion:'TOMAUNO';E('v109Origin').value=a?a.origenFotos||'ROOT':'ROOT';E('v109Drive').value=a&&a.origenFotos==='EXTERNO'?(a.sourceFolderId||a.id||''):'';var wa=a?digits(a.whatsappVentas):'';if(a&&String(a.gestion||'TOMAUNO').toUpperCase()==='TOMAUNO'&&(wa.length<10||wa.length>14))wa=d.wa;E('v109Wa').value=wa||d.wa;E('v109Pass').value=a?a.pass||'':'';E('v109Pay').value=a?a.pagoModo||d.pay:d.pay;E('v109Alias').value=a?(a.aliasPago||d.alias):d.alias;E('v109Logo').value=a?a.logoModo||'TOMAUNO':'TOMAUNO';E('v109LogoUrl').value=a?a.logoUrl||'':'';E('v109PD').value=a?moneyBlank(a.pDigital):'';E('v109PI').value=a?moneyBlank(a.pPrint):'';E('v109PFull').value=a?moneyBlank(a.pFull):'';E('v109Model').value=a?(a.modeloComercial||(String(a.gestion||'TOMAUNO').toUpperCase()==='EXTERNO'?'COMISION':'NINGUNO')):'NINGUNO';E('v109Fee').value=a?moneyBlank(a.tarifaMensual):'';E('v109Pct').value=a?moneyBlank(a.comisionPct):'';E('v109Expiry').value=a&&a.fechaVencimiento?String(a.fechaVencimiento).slice(0,10):'';E('v109Notify').value=a&&a.avisosExternos===false?'NO':'SI';E('v109ReportKey').value=a?a.claveReportes||'':'';E('v109Empty').value=a?a.mensajeVacio||'Muy pronto las fotografías':'Muy pronto las fotografías';if(E('v109FullDownload'))E('v109FullDownload').value=a&&a.descargaCompleta?'SI':'NO';products=[];if(a&&a.products)products=a.products.filter(function(p){var l=String(p.label||'').trim();return l&&!/^(Descargas?\s+Digitales?|Impresi[oó]n(?:es)?\s*15x21|Selecci[oó]n|PACK\s+ÁLBUM|SINLOGO|LIBRE|CONDESCARGA)/i.test(l)}).map(p=>({label:p.label,price:p.price||0,mode:p.mode||'cant',type:p.type||(/impresi[oó]n/i.test(String(p.label||''))?'impresion':'producto')}));renderP();E('v109Delete').style.display=a?'':'none';E('v109Status').className='v109-status';E('v109Status').textContent='';E('v109Manager').classList.add('open')};window.v109Close=()=>E('v109Manager').classList.remove('open');window.v109AddProduct=()=>{products.push({label:'',price:'',mode:'cant',type:'producto'});renderP()};function renderP(){E('v109Products').innerHTML=products.map((p,i)=>'<div class="v109-product"><input data-i="'+i+'" data-k="label" value="'+String(p.label||'').replace(/"/g,'&quot;')+'" placeholder="Ej. Ampliación 30x40"><input data-i="'+i+'" data-k="price" type="number" value="'+(Number(p.price||0)>0?Number(p.price):'')+'" placeholder="0"><select data-i="'+i+'" data-k="type"><option value="producto" '+(p.type==='producto'?'selected':'')+'>Producto</option><option value="servicio" '+(p.type==='servicio'?'selected':'')+'>Servicio</option><option value="impresion" '+(p.type==='impresion'?'selected':'')+'>🖨 Impresión</option></select><select data-i="'+i+'" data-k="mode"><option value="cant">Por unidad</option><option value="fijo" '+(p.mode==='fijo'?'selected':'')+'>Fijo</option></select><button class="v109-btn" onclick="v109RemoveProduct('+i+')">×</button></div>').join('');E('v109Products').querySelectorAll('[data-i]').forEach(n=>n.oninput=()=>{products[+n.dataset.i][n.dataset.k]=n.dataset.k==='price'?(n.value===''?'':Number(n.value)):n.value})}window.v109RemoveProduct=i=>{products.splice(i,1);renderP()};E('v109Gestion').addEventListener('change',function(){var own=this.value==='TOMAUNO',d=ownDefaults(own?null:{gestion:'EXTERNO'});if(own){if(!digits(E('v109Wa').value))E('v109Wa').value=d.wa;E('v109Pay').value='TOMAUNO';if(!E('v109Alias').value.trim())E('v109Alias').value=d.alias}else{if(E('v109Wa').value==='5493764354522')E('v109Wa').value='';if(E('v109Alias').value==='tomaunoestudio')E('v109Alias').value='';if(E('v109Pay').value==='TOMAUNO')E('v109Pay').value='EXTERNO'}});function payload(){return{pin:'3233',title:E('v109Name').value.trim(),description:E('v109Description').value.trim(),fotografo:E('v109Photographer').value.trim(),instagram:E('v109Instagram').value.trim(),telefonoPublico:E('v109PhonePublic').value.trim(),gestion:E('v109Gestion').value,origenFotos:E('v109Origin').value,sourceFolderId:E('v109Drive').value.trim(),whatsappVentas:digits(E('v109Wa').value),pass:E('v109Pass').value.trim(),pagoModo:E('v109Pay').value,aliasPago:E('v109Alias').value.trim(),logoModo:E('v109Logo').value,logoUrl:E('v109LogoUrl').value.trim(),pDigital:E('v109PD').value,pPrint:E('v109PI').value,pFull:E('v109PFull').value,productosJson:JSON.stringify(products.filter(x=>x.label)),modeloComercial:E('v109Model').value,tarifaMensual:E('v109Fee').value,comisionPct:E('v109Pct').value,fechaVencimiento:E('v109Expiry').value,avisosExternos:E('v109Notify').value==='SI',claveReportes:E('v109ReportKey').value.trim(),mensajeVacio:E('v109Empty').value.trim(),descargaCompleta:E('v109FullDownload')?E('v109FullDownload').value==='SI':false}}window.v109Save=async()=>{var p=payload();p.action=edit?'updateAlbumConfig':'createAlbumV109';if(edit)p.bridgeId=edit.bridgeId;var st=E('v109Status');try{st.textContent='Actualizando datos…';st.className='v109-status on';var r=await apiPost(p);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo guardar');st.textContent='Guardado. Actualizando álbumes…';if(typeof loadEvents==='function')await loadEvents();st.textContent='Listo';setTimeout(function(){v109Close();if(typeof miniToast==='function')miniToast(edit?'Álbum actualizado':'Álbum creado')},250)}catch(e){st.textContent='Error: '+e.message;st.className='v109-status on';if(window.luxAlert)luxAlert('ERROR',e.message)}};window.v109OpenDrive=()=>{var a=edit;if(a&&(a.sourceFolderId||a.id))window.open('https://drive.google.com/drive/folders/'+(a.sourceFolderId||a.id),'_blank')};window.v109Qr=()=>{var a=edit;if(!a){if(window.luxAlert)luxAlert('GUARDÁ PRIMERO','Guardá el álbum para generar su QR.');return}var url='https://tomaunofotografias.vercel.app/?album='+encodeURIComponent(a.bridgeId),q='https://quickchart.io/qr?size=700&text='+encodeURIComponent(url);window.open(q,'_blank')};window.v109DeleteAlbum=async()=>{if(!edit)return;if(!confirm('Esto elimina configuración y pedidos de este álbum. Si la carpeta fue creada por Tomauno también irá a la papelera.'))return;try{var r=await apiPost({action:'deleteAlbumV109',pin:'3233',bridgeId:edit.bridgeId,confirm:'ELIMINAR'});if(!r||r.success===false)throw Error((r&&r.msg)||'Error');E('v109Status').textContent='Eliminando y actualizando…';E('v109Status').className='v109-status on';if(typeof loadEvents==='function')await loadEvents();v109Close()}catch(e){if(window.luxAlert)luxAlert('ERROR',e.message)}};function addInlineTools(){var bar=E('v91GroupBar');if(!bar)return;if(!E('v109CreateInline')){var b=document.createElement('button');b.id='v109CreateInline';b.type='button';b.textContent='CREAR ÁLBUM';b.onclick=function(){v109Open()};bar.insertBefore(b,bar.firstChild)}}function decorate(){var m=M();if(!m)return;var isAdmin=!!m.admin;if(isAdmin)addInlineTools();document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(c=>{var old=c.querySelector('.v108-gear');if(old)old.style.display='none';var gear=c.querySelector('.v109-gear2');if(isAdmin&&!gear){var b=document.createElement('button');b.className='v109-btn v109-gear2';b.textContent='⚙';b.title='Configurar álbum';b.onclick=e=>{e.preventDefault();e.stopPropagation();v109Open(c.getAttribute('data-v91album'))};c.appendChild(b)}else if(!isAdmin&&gear)gear.remove();var a=(m.all||[]).find(x=>String(x.bridgeId)===String(c.getAttribute('data-v91album')));if(a&&!c.querySelector('.v109-public-meta')&&(a.instagram||a.telefonoPublico)){var d=document.createElement('div');d.className='v109-public-meta';if(a.instagram){var ig=document.createElement('a');var u=String(a.instagram).replace(/^@/,'');ig.href='https://instagram.com/'+u;ig.target='_blank';ig.textContent='@'+u;ig.onclick=e=>e.stopPropagation();d.appendChild(ig)}if(a.telefonoPublico){var ph=document.createElement('a');var waTxt='Hola, vengo del álbum '+String(a.displayName||'').trim()+' publicado en Tomauno Fotografías.';ph.href='https://wa.me/'+digits(a.telefonoPublico)+'?text='+encodeURIComponent(waTxt);ph.target='_blank';ph.textContent='WhatsApp';ph.onclick=e=>e.stopPropagation();d.appendChild(ph)}c.appendChild(d)}})}function syncWatermark(){return;/* FIX8: controlador V109 anterior desactivado */var a=currentAlbum108();if(!a){document.body.classList.remove('v109-neutral-watermark','v109-custom-watermark');return}if(a.configurado!==true)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();document.body.classList.remove('no-watermark-all','v109-neutral-watermark','v109-custom-watermark');document.documentElement.style.removeProperty('--v109-watermark-url');if(mode==='NEUTRO')document.body.classList.add('v109-neutral-watermark');else if(mode==='PERSONALIZADO'&&a.logoUrl){document.body.classList.add('v109-custom-watermark');document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/"/g,'')+'")')}}var __v109RenderBase=window.v91Render;if(typeof __v109RenderBase==='function'){window.v91Render=function(){var r=__v109RenderBase.apply(this,arguments);decorate();syncWatermark();return r}}decorate();syncWatermark();setInterval(syncWatermark,1500);})();
+(function(){var edit=null,products=[];function E(i){return document.getElementById(i)}function M(){return window.__v91||window.__V91||window.__v91Model||null}function digits(v){return String(v||'').replace(/\D/g,'')}function moneyBlank(v){var n=Number(v||0);return n>0?String(n):''}function ownDefaults(a){var own=!a||String(a.gestion||'TOMAUNO').toUpperCase()==='TOMAUNO';return{wa:own?'5493764354522':'',pay:own?'TOMAUNO':'EXTERNO',alias:own?'tomaunoestudio':''}}window.v109Open=function(id){var m=M(),a=id&&m?(m.all||[]).find(x=>String(x.bridgeId)===String(id)):null,d=ownDefaults(a);edit=a||null;window.__tomaunoV109Edit=edit;E('v109Title').textContent=a?'CONFIGURAR ÁLBUM':'CREAR ÁLBUM';E('v109Name').value=a?a.displayName:'';E('v109Photographer').value=a?a.fotografo||'Javier Móttola':'';E('v109Description').value=a?a.description||'':'';E('v109Instagram').value=a?a.instagram||'':'';E('v109PhonePublic').value=a?a.telefonoPublico||'':'';E('v109Gestion').value=a?a.gestion:'TOMAUNO';E('v109Origin').value=a?a.origenFotos||'ROOT':'ROOT';E('v109Drive').value=a&&a.origenFotos==='EXTERNO'?(a.sourceFolderId||a.id||''):'';var wa=a?digits(a.whatsappVentas):'';if(a&&String(a.gestion||'TOMAUNO').toUpperCase()==='TOMAUNO'&&(wa.length<10||wa.length>14))wa=d.wa;E('v109Wa').value=wa||d.wa;E('v109Pass').value=a?a.pass||'':'';E('v109Pay').value=a?a.pagoModo||d.pay:d.pay;E('v109Alias').value=a?(a.aliasPago||d.alias):d.alias;E('v109Logo').value=a?a.logoModo||'TOMAUNO':'TOMAUNO';E('v109LogoUrl').value=a?a.logoUrl||'':'';E('v109PD').value=a?moneyBlank(a.pDigital):'';E('v109PI').value=a?moneyBlank(a.pPrint):'';E('v109PFull').value=a?moneyBlank(a.pFull):'';E('v109Model').value=a?(a.modeloComercial||(String(a.gestion||'TOMAUNO').toUpperCase()==='EXTERNO'?'COMISION':'NINGUNO')):'NINGUNO';E('v109Fee').value=a?moneyBlank(a.tarifaMensual):'';E('v109Pct').value=a?moneyBlank(a.comisionPct):'';E('v109Expiry').value=a&&a.fechaVencimiento?String(a.fechaVencimiento).slice(0,10):'';E('v109Notify').value=a&&a.avisosExternos===false?'NO':'SI';E('v109ReportKey').value=a?a.claveReportes||'':'';E('v109Empty').value=a?a.mensajeVacio||'Muy pronto las fotografías':'Muy pronto las fotografías';if(E('v109FullDownload'))E('v109FullDownload').value=a&&a.descargaCompleta?'SI':'NO';products=[];if(a&&a.products)products=a.products.filter(function(p){var l=String(p.label||'').trim();return l&&!/^(Descargas?\s+Digitales?|Impresi[oó]n(?:es)?\s*15x21|Selecci[oó]n|PACK\s+ÁLBUM|SINLOGO|LIBRE|CONDESCARGA)/i.test(l)}).map(p=>({label:p.label,price:p.price||0,mode:p.mode||'cant',type:p.type||(/impresi[oó]n/i.test(String(p.label||''))?'impresion':'producto')}));renderP();E('v109Delete').style.display=a?'':'none';if(E('v202StandaloneGuideBtn'))E('v202StandaloneGuideBtn').style.display=(a&&String(a.gestion||'').toUpperCase()==='EXTERNO'&&String(a.claveReportes||'').trim())?'':'none';E('v109Status').className='v109-status';E('v109Status').textContent='';E('v109Manager').classList.add('open')};window.v109Close=()=>E('v109Manager').classList.remove('open');window.v109AddProduct=()=>{products.push({label:'',price:'',mode:'cant',type:'producto'});renderP()};function renderP(){E('v109Products').innerHTML=products.map((p,i)=>'<div class="v109-product"><input data-i="'+i+'" data-k="label" value="'+String(p.label||'').replace(/"/g,'&quot;')+'" placeholder="Ej. Ampliación 30x40"><input data-i="'+i+'" data-k="price" type="number" value="'+(Number(p.price||0)>0?Number(p.price):'')+'" placeholder="0"><select data-i="'+i+'" data-k="type"><option value="producto" '+(p.type==='producto'?'selected':'')+'>Producto</option><option value="servicio" '+(p.type==='servicio'?'selected':'')+'>Servicio</option><option value="impresion" '+(p.type==='impresion'?'selected':'')+'>🖨 Impresión</option></select><select data-i="'+i+'" data-k="mode"><option value="cant">Por unidad</option><option value="fijo" '+(p.mode==='fijo'?'selected':'')+'>Fijo</option></select><button class="v109-btn" onclick="v109RemoveProduct('+i+')">×</button></div>').join('');E('v109Products').querySelectorAll('[data-i]').forEach(n=>n.oninput=()=>{products[+n.dataset.i][n.dataset.k]=n.dataset.k==='price'?(n.value===''?'':Number(n.value)):n.value})}window.v109RemoveProduct=i=>{products.splice(i,1);renderP()};E('v109Gestion').addEventListener('change',function(){var own=this.value==='TOMAUNO',d=ownDefaults(own?null:{gestion:'EXTERNO'});if(own){if(!digits(E('v109Wa').value))E('v109Wa').value=d.wa;if(E('v109Pay').value!=='TOMAUNO')E('v109Pay').value='TOMAUNO';if(!E('v109Alias').value.trim())E('v109Alias').value=d.alias}else{if(E('v109Wa').value==='5493764354522')E('v109Wa').value='';if(E('v109Alias').value==='tomaunoestudio')E('v109Alias').value='';/* Gestión externa no cambia la forma de pago: puede ser MP Tomauno o pago directo. */}});function payload(){return{pin:'3233',title:E('v109Name').value.trim(),description:E('v109Description').value.trim(),fotografo:E('v109Photographer').value.trim(),instagram:E('v109Instagram').value.trim(),telefonoPublico:E('v109PhonePublic').value.trim(),gestion:E('v109Gestion').value,origenFotos:E('v109Origin').value,sourceFolderId:E('v109Drive').value.trim(),whatsappVentas:digits(E('v109Wa').value),pass:E('v109Pass').value.trim(),pagoModo:E('v109Pay').value,aliasPago:E('v109Alias').value.trim(),logoModo:E('v109Logo').value,logoUrl:E('v109LogoUrl').value.trim(),pDigital:E('v109PD').value,pPrint:E('v109PI').value,pFull:E('v109PFull').value,productosJson:JSON.stringify(products.filter(x=>x.label)),modeloComercial:E('v109Model').value,tarifaMensual:E('v109Fee').value,comisionPct:E('v109Pct').value,fechaVencimiento:E('v109Expiry').value,avisosExternos:E('v109Notify').value==='SI',claveReportes:E('v109ReportKey').value.trim(),mensajeVacio:E('v109Empty').value.trim(),descargaCompleta:E('v109FullDownload')?E('v109FullDownload').value==='SI':false}}window.v109Save=async()=>{var p=payload();p.action=edit?'updateAlbumConfig':'createAlbumV109';if(edit)p.bridgeId=edit.bridgeId;var st=E('v109Status');try{st.textContent='Actualizando datos…';st.className='v109-status on';var r=await apiPost(p);if(!r||r.success===false)throw Error((r&&r.msg)||'No se pudo guardar');st.textContent='Guardado. Actualizando álbumes…';if(typeof loadEvents==='function')await loadEvents();st.textContent='Listo';setTimeout(function(){v109Close();if(typeof miniToast==='function')miniToast(edit?'Álbum actualizado':'Álbum creado')},250)}catch(e){st.textContent='Error: '+e.message;st.className='v109-status on';if(window.luxAlert)luxAlert('ERROR',e.message)}};window.v109OpenDrive=()=>{var a=edit;if(a&&(a.sourceFolderId||a.id))window.open('https://drive.google.com/drive/folders/'+(a.sourceFolderId||a.id),'_blank')};window.v109Qr=()=>{var a=edit;if(!a){if(window.luxAlert)luxAlert('GUARDÁ PRIMERO','Guardá el álbum para generar su QR.');return}var url='https://tomaunofotografias.vercel.app/?album='+encodeURIComponent(a.bridgeId),q='https://quickchart.io/qr?size=700&text='+encodeURIComponent(url);window.open(q,'_blank')};window.v109DeleteAlbum=async()=>{if(!edit)return;if(!confirm('Esto elimina configuración y pedidos de este álbum. Si la carpeta fue creada por Tomauno también irá a la papelera.'))return;try{var r=await apiPost({action:'deleteAlbumV109',pin:'3233',bridgeId:edit.bridgeId,confirm:'ELIMINAR'});if(!r||r.success===false)throw Error((r&&r.msg)||'Error');E('v109Status').textContent='Eliminando y actualizando…';E('v109Status').className='v109-status on';if(typeof loadEvents==='function')await loadEvents();v109Close()}catch(e){if(window.luxAlert)luxAlert('ERROR',e.message)}};function addInlineTools(){var bar=E('v91GroupBar');if(!bar)return;if(!E('v109CreateInline')){var b=document.createElement('button');b.id='v109CreateInline';b.type='button';b.textContent='CREAR ÁLBUM';b.onclick=function(){v109Open()};bar.insertBefore(b,bar.firstChild)}}function decorate(){var m=M();if(!m)return;var isAdmin=!!m.admin;if(isAdmin)addInlineTools();document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(c=>{var old=c.querySelector('.v108-gear');if(old)old.style.display='none';var gear=c.querySelector('.v109-gear2');if(isAdmin&&!gear){var b=document.createElement('button');b.className='v109-btn v109-gear2';b.textContent='⚙';b.title='Configurar álbum';b.onclick=e=>{e.preventDefault();e.stopPropagation();v109Open(c.getAttribute('data-v91album'))};c.appendChild(b)}else if(!isAdmin&&gear)gear.remove();var a=(m.all||[]).find(x=>String(x.bridgeId)===String(c.getAttribute('data-v91album')));if(a&&!c.querySelector('.v109-public-meta')&&(a.instagram||a.telefonoPublico)){var d=document.createElement('div');d.className='v109-public-meta';if(a.instagram){var ig=document.createElement('a');var u=String(a.instagram).replace(/^@/,'');ig.href='https://instagram.com/'+u;ig.target='_blank';ig.textContent='@'+u;ig.onclick=e=>e.stopPropagation();d.appendChild(ig)}if(a.telefonoPublico){var ph=document.createElement('a');var waTxt='Hola, vengo del álbum '+String(a.displayName||'').trim()+' publicado en Tomauno Fotografías.';ph.href='https://wa.me/'+digits(a.telefonoPublico)+'?text='+encodeURIComponent(waTxt);ph.target='_blank';ph.textContent='WhatsApp';ph.onclick=e=>e.stopPropagation();d.appendChild(ph)}c.appendChild(d)}})}function syncWatermark(){return;/* FIX8: controlador V109 anterior desactivado */var a=currentAlbum108();if(!a){document.body.classList.remove('v109-neutral-watermark','v109-custom-watermark');return}if(a.configurado!==true)return;var mode=String(a.logoModo||'TOMAUNO').toUpperCase();document.body.classList.remove('no-watermark-all','v109-neutral-watermark','v109-custom-watermark');document.documentElement.style.removeProperty('--v109-watermark-url');if(mode==='NEUTRO')document.body.classList.add('v109-neutral-watermark');else if(mode==='PERSONALIZADO'&&a.logoUrl){document.body.classList.add('v109-custom-watermark');document.documentElement.style.setProperty('--v109-watermark-url','url("'+String(a.logoUrl).replace(/"/g,'')+'")')}}var __v109RenderBase=window.v91Render;if(typeof __v109RenderBase==='function'){window.v91Render=function(){var r=__v109RenderBase.apply(this,arguments);decorate();syncWatermark();return r}}decorate();syncWatermark();setInterval(syncWatermark,1500);})();
 </script>
 <!-- /TOMAUNO V109 -->
 
@@ -12613,7 +12706,7 @@ body.v109-custom-watermark .photo-watermark,body.v109-custom-watermark .zoom-wat
   function conditional(){
     var origin=E('v109Origin'),pay=E('v109Pay'),logo=E('v109Logo'),model=E('v109Model'),gestion=E('v109Gestion');
     if(E('v109DriveWrap'))E('v109DriveWrap').classList.toggle('v109-off',!origin||origin.value!=='EXTERNO');
-    if(E('v109AliasWrap'))E('v109AliasWrap').classList.toggle('v109-off',!pay||pay.value!=='EXTERNO');
+    if(E('v109AliasWrap'))E('v109AliasWrap').classList.toggle('v109-off',!gestion||gestion.value!=='EXTERNO');
     if(E('v109LogoUrlWrap'))E('v109LogoUrlWrap').classList.toggle('v109-off',!logo||logo.value!=='PERSONALIZADO');
     if(E('v109FeeWrap'))E('v109FeeWrap').classList.toggle('v109-off',!model||model.value!=='MENSUAL');
     if(E('v109PctWrap'))E('v109PctWrap').classList.toggle('v109-off',!model||model.value!=='COMISION');
@@ -13073,9 +13166,9 @@ var api11=window.apiPost;if(typeof api11==='function'&&!api11.__fix11){var apiWr
 
 /* Campo CBU separado del alias para álbumes con cobro externo. */
 function addCbu11(){var alias=E('v109AliasWrap'),grid=document.querySelector('#v109Manager .v109-grid');if(!alias||!grid||E('v109Cbu'))return;var f=document.createElement('div');f.id='v109CbuWrap';f.className='v109-field v109-conditional';f.innerHTML='<label>CBU PARA PAGO EXTERNO</label><input id="v109Cbu" inputmode="numeric" maxlength="22" autocomplete="off" placeholder="22 dígitos">';alias.parentNode.insertBefore(f,alias.nextSibling)}
-function syncCbu11(a){addCbu11();var pay=E('v109Pay'),wrap=E('v109CbuWrap'),input=E('v109Cbu');if(wrap)wrap.classList.toggle('v109-off',!pay||pay.value!=='EXTERNO');if(input)input.value=String(a&&a.cbuPago||'')}
+function syncCbu11(a){addCbu11();var gestion=E('v109Gestion'),wrap=E('v109CbuWrap'),input=E('v109Cbu');if(wrap)wrap.classList.toggle('v109-off',!gestion||gestion.value!=='EXTERNO');if(input)input.value=String(a&&a.cbuPago||'')}
 var openCfg11=window.v109Open;if(typeof openCfg11==='function'){window.v109Open=function(id){var model=window.__v91||window.__V91||window.__v91Model,a=id&&model?(model.all||[]).find(function(x){return String(x.bridgeId)===String(id)}):null;addCbu11();var r=openCfg11.apply(this,arguments);setTimeout(function(){syncCbu11(a)},30);return r}}
-document.addEventListener('change',function(e){if(e.target&&e.target.id==='v109Pay'){var wrap=E('v109CbuWrap');if(wrap)wrap.classList.toggle('v109-off',e.target.value!=='EXTERNO')}});
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='v109Gestion'){var wrap=E('v109CbuWrap');if(wrap)wrap.classList.toggle('v109-off',e.target.value!=='EXTERNO')}});
 
 /* Guardar configuración sin mantener el aviso bloqueado mientras se relee la portada. */
 var save11=window.v109Save;if(typeof save11==='function'){window.v109Save=async function(){var realLoad=window.loadEvents;try{if(typeof realLoad==='function')window.loadEvents=function(){Promise.resolve(realLoad.apply(this,arguments)).catch(function(){});return Promise.resolve()};return await save11.apply(this,arguments)}finally{window.loadEvents=realLoad;var st=E('v109Status');if(st&&!/^Error:/i.test(st.textContent||'')){st.className='v109-status';st.textContent=''}}}}
@@ -13096,7 +13189,7 @@ if(typeof checkAdminPin11==='function'&&!checkAdminPin11.__opensAlbums11){
 }
 
 /* Datos de pago externo visibles en el checkout. */
-function externalData11(){var a=currentAlbum11(),modal=E('modalCheckout');if(!modal)return;var old=modal.querySelector('.v109-external-payment-data');if(old)old.remove();if(!a||String(a.pagoModo||'').toUpperCase()!=='EXTERNO')return;var alias=String(a.aliasPago||'').trim(),cbu=String(a.cbuPago||'').replace(/\D/g,'');if(!alias&&!cbu)return;var n=document.createElement('div');n.className='v109-external-payment-data';n.innerHTML='<b>Datos para pagar al fotógrafo</b>'+(alias?'<br>Alias: '+alias:'')+(cbu?'<br>CBU: '+cbu:'');var actions=modal.querySelector('.t50-actions');if(actions)actions.parentNode.insertBefore(n,actions)}
+function externalData11(){var a=currentAlbum11(),modal=E('modalCheckout');if(!modal)return;var old=modal.querySelector('.v109-external-payment-data');if(old)old.remove();if(!a||String(a.gestion||'TOMAUNO').toUpperCase()!=='EXTERNO')return;var alias=String(a.aliasPago||'').trim(),cbu=String(a.cbuPago||'').replace(/\D/g,'');if(!alias&&!cbu)return;var n=document.createElement('div');n.className='v109-external-payment-data';n.innerHTML='<b>💳 Datos para pagar directamente al fotógrafo (opcional)</b>'+(alias?'<br>Alias: '+alias:'')+(cbu?'<br>CBU: '+cbu:'');var actions=modal.querySelector('.t50-actions');if(actions)actions.parentNode.insertBefore(n,actions)}
 
 /* El botón del visor se actualiza desde el lightbox real, no desde wrappers antiguos. */
 function syncZoom11(){var b=E('v109ZoomPrint10'),lb=E('lightbox');if(!b||!lb)return;var p=null;try{p=(allPhotos||[])[currentZoomIdx]}catch(e){}var a=currentAlbum11(),has=!!(p&&a&&Array.isArray(a.products)&&a.products.some(function(x){return String(x.type||'').toLowerCase()==='impresion'&&Number(x.price||0)>0}));b.style.display=has?'inline-flex':'none';if(has){var q=0,ps=((window.__tomaunoPhotoMeta||{})[String(p.id)]||{}).prints||{};Object.keys(ps).forEach(function(k){q+=Number(ps[k]||0)});b.textContent=q?'🖨 IMPRESIONES ('+q+')':'🖨 IMPRIMIR'}}
@@ -13179,22 +13272,6 @@ body.v109-neutral-final #lightbox .zoom-watermark::before{font-size:clamp(110px,
 function E(id){return document.getElementById(id)}
 function album(){try{return window.activeEvent||activeEvent||null}catch(e){return window.activeEvent||null}}
 function norm(v){return String(v||'').toUpperCase().trim()}
-function selectionOnly(){var p=null;try{p=window.getSelectedProduct?window.getSelectedProduct():window.selectedMainProduct}catch(e){}return !!(p&&(p.selectionOnly||/SELECCI[ÓO]N|FOTOLIBRO|EDICI[ÓO]N/.test(norm(p.label))))}
-
-/* Mercado Pago depende de la configuración del álbum, y también puede usarse para un fotógrafo externo cuando el pago está configurado como Tomauno. */
-function ensureMp13(){
-  var a=album(),modal=E('modalCheckout');if(!a||!modal||getComputedStyle(modal).display==='none')return;
-  var payMode=norm(a.pagoModo||'TOMAUNO'),mp=payMode==='TOMAUNO'||payMode==='MERCADOPAGO'||payMode==='MERCADO PAGO',total=0;
-  try{total=Number(window.getOrderTotal(window.getSelectedProduct?window.getSelectedProduct():window.selectedMainProduct)||0)}catch(e){}
-  var actions=modal.querySelector('.t50-actions'),submit=E('btnSubmit');if(!actions||!submit)return;
-  var old=actions.querySelector('.t54-mp-pay');
-  if(!mp||selectionOnly()||!(total>0)){if(old)old.remove();return}
-  submit.textContent='💬 CONTINUAR POR WHATSAPP';submit.classList.add('t54-manual');
-  if(!old){old=document.createElement('button');old.type='button';old.className='btn-order t54-mp-pay';old.textContent='💳 PAGAR CON MERCADO PAGO';old.onclick=function(e){e.preventDefault();if(typeof window.payWithMercadoPago==='function')window.payWithMercadoPago()};actions.insertBefore(old,submit)}
-}
-var checkout13=window.openCheckout;if(typeof checkout13==='function'&&!checkout13.__fix13){var c13=function(){var r=checkout13.apply(this,arguments);setTimeout(ensureMp13,80);return r};c13.__fix13=true;window.openCheckout=c13}
-var price13=window.updateFinalPrice;if(typeof price13==='function'&&!price13.__fix13){var p13=function(){var r=price13.apply(this,arguments);setTimeout(ensureMp13,0);return r};p13.__fix13=true;window.updateFinalPrice=p13}
-
 /* Al editar, actualizar el modelo visible sin volver a solicitar todos los álbumes. Crear sí requiere recarga. */
 var save13=window.v109Save;if(typeof save13==='function'&&!save13.__fix13){var s13=async function(){
   var editing=!!(E('v109Delete')&&E('v109Delete').style.display!=='none'),realLoad=window.loadEvents,captured=null,realApi=window.apiPost;
@@ -13204,7 +13281,6 @@ var save13=window.v109Save;if(typeof save13==='function'&&!save13.__fix13){var s
   finally{window.loadEvents=realLoad;window.apiPost=realApi}
 };s13.__fix13=true;window.v109Save=s13}
 
-document.addEventListener('click',function(){setTimeout(ensureMp13,40)},true);
 })();
 </script>
 <!-- /TOMAUNO V109 FIX13 -->
@@ -14340,51 +14416,173 @@ document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V155';
 <style id="tomauno-v156-css">
 .v156-admin-preview{display:flex;align-items:center;justify-content:center;width:180px;height:150px;border:1px solid #3a3a3e;border-radius:9px;background:linear-gradient(145deg,#160006,#050506)}.v156-admin-preview a{display:inline-flex;align-items:center;justify-content:center;max-width:135px;padding:10px;border:1px solid #f00020;border-radius:9px;color:#fff;text-align:center;text-decoration:none;font-size:9px;font-weight:950}.v156-admin-preview a:hover{background:#f00020}@media(max-width:700px){.v156-admin-preview{width:100%;height:120px}.v156-admin-preview a{max-width:none}}
 </style>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V157';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V205';</script>
 <!-- /TOMAUNO V123 -->
 
-<!-- TOMAUNO V196 · CORRECCIONES DE SELECCIÓN, PAGO EXTERNO Y WHATSAPP -->
-<style id="tomauno-v196-fix-css">
-  .v91-check{cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;}
-  .v91-check.on{outline:2px solid #f00020!important;outline-offset:1px!important;}
-  .t54-mp-pay.v108-external:disabled,.v101-mp-services.v108-external:disabled{opacity:.48!important;cursor:not-allowed!important;filter:grayscale(.35)!important;}
+<!-- TOMAUNO V205 · PANEL DEL FOTÓGRAFO -->
+<style id="tomauno-v201-panel-css">
+#v198PhotographerPanel{position:fixed;inset:0;z-index:120500;display:none;align-items:center;justify-content:center;padding:10px;background:rgba(0,0,0,.93);backdrop-filter:blur(5px)}
+#v198PhotographerPanel.open{display:flex}
+.v198-p-shell{width:min(1080px,97vw);max-height:96dvh;overflow:auto;background:linear-gradient(145deg,#0b0b0c,#111);border:1px solid #3a1b1f;border-radius:18px;box-shadow:0 25px 100px #000;padding:15px;color:#eee}
+.v198-p-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.v198-p-head h2{margin:0;font-size:20px;letter-spacing:.03em}.v198-p-head p{margin:3px 0 0;color:#aaa;font-size:10px;font-weight:800;letter-spacing:.06em}.v198-p-close{width:34px;height:34px;flex:0 0 auto;border:1px solid #333;border-radius:50%;background:#09090a;color:#fff;font-size:19px;cursor:pointer;transition:all .16s ease}.v198-p-close:hover{border-color:#f00020;transform:rotate(90deg);box-shadow:0 0 16px rgba(240,0,32,.18)}
+.v198-p-toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:9px}.v198-p-toolbar select{min-width:200px;background:#070708;color:#fff;border:1px solid #34343a;border-radius:10px;padding:9px 11px;outline:none}.v198-p-toolbar select:focus{border-color:#f00020;box-shadow:0 0 0 2px rgba(240,0,32,.10)}.v198-p-btn,.v198-order-actions button,.v198-photo-link-actions button{appearance:none;border:1px solid #34343a!important;background:linear-gradient(180deg,#161618,#09090a)!important;color:#fff!important;border-radius:10px!important;padding:7px 10px!important;font-weight:900!important;cursor:pointer;font-size:8px!important;letter-spacing:.03em;transition:transform .14s ease,border-color .14s ease,background .14s ease,box-shadow .14s ease,color .14s ease}.v198-p-btn:hover,.v198-order-actions button:hover,.v198-photo-link-actions button:hover{border-color:#f00020!important;background:linear-gradient(180deg,#211114,#0b090a)!important;transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,0,0,.35),0 0 13px rgba(240,0,32,.10)}.v198-p-btn:active,.v198-order-actions button:active,.v198-photo-link-actions button:active{transform:translateY(0) scale(.98)}.v198-p-btn.red{background:linear-gradient(180deg,#4d0d13,#26070a)!important;border-color:#7f1b24!important;color:#ffdfe2!important}.v198-photo-link-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;margin-top:5px;padding:5px 6px;border:1px solid #222228;border-radius:9px;background:#070708}.v198-photo-link-name{min-width:0;font-size:8px;color:#bdbdc2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v198-photo-link-actions{display:flex;gap:4px;align-items:center}.v198-photo-link-actions button{padding:5px 7px!important;font-size:7px!important;border-radius:8px!important}.v198-photo-link-actions .v198-download-btn{border-color:#4a3033!important}.v198-order-actions .whatsapp{border-color:#2b6045!important;color:#c9ffe0!important}.v198-order-actions .whatsapp:hover{border-color:#38b86f!important;box-shadow:0 5px 16px rgba(0,0,0,.35),0 0 13px rgba(56,184,111,.12)}
+/* V207: copiar y bajar individuales usan exactamente el mismo lenguaje visual. */
+.v198-photo-link-actions .v198-download-btn{appearance:none!important;border:1px solid #35363b!important;background:linear-gradient(180deg,#18191c,#0d0e10)!important;color:#f5f5f5!important;border-radius:10px!important;box-shadow:0 2px 0 rgba(255,255,255,.03) inset,0 4px 12px rgba(0,0,0,.18)!important;cursor:pointer!important}
+.v198-photo-link-actions .v198-download-btn:hover{filter:brightness(1.22);border-color:#666!important;transform:translateY(-1px);box-shadow:0 7px 18px rgba(0,0,0,.28)!important}
+.v198-photo-link-actions .v198-download-btn:active{transform:translateY(0) scale(.97)}
+.v198-p-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}.v198-stat{padding:9px 10px;border:1px solid #29292e;border-radius:10px;background:#080809}.v198-stat b{display:block;font-size:17px;color:#fff;line-height:1.1}.v198-stat span{color:#777;font-size:8px;text-transform:uppercase;letter-spacing:.07em}
+.v198-p-lower{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);gap:9px;align-items:start;margin-bottom:9px}.v198-p-block-title{font-size:10px;margin:0 0 6px;color:#aaa;letter-spacing:.05em}.v198-p-albums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin:0}.v198-album-stat{padding:8px;border:1px solid #29292e;border-radius:10px;background:#09090a}.v198-album-stat strong{display:block;color:#fff;font-size:10px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v198-album-stat div{font-size:8px;color:#888;line-height:1.45}.v198-album-stat b{color:#ddd}
+.v198-order{border:1px solid #27272c;border-radius:11px;padding:9px;background:#09090a;margin-bottom:6px}.v198-order-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.v198-order-head strong{font-size:11px;color:#fff}.v198-order-head small{font-size:8px;color:#777}.v198-order-meta{font-size:8px;color:#999;line-height:1.45;margin-top:5px}.v198-status{display:inline-flex;padding:3px 5px;border-radius:6px;font-size:7px;font-weight:950;letter-spacing:.04em}.v198-status.ok{color:#7df0a9;background:#0d2a1b;border:1px solid #205936}.v198-status.pending{color:#ffd66b;background:#2b2107;border:1px solid #695318}.v198-status.mp{color:#9fd4ff;background:#091829;border:1px solid #24486d}.v198-links{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.v198-links button{border:1px solid #35353a;background:#151515;color:#eee;border-radius:7px;padding:6px 8px;font-size:8px;font-weight:850;cursor:pointer}.v198-links button.whatsapp{border-color:#1d7c49;color:#8ef3b9}.v198-order-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.v198-order-actions .v198-p-btn{padding:6px 8px;font-size:8px;flex:0 0 auto}
+.v198-report{margin:0;padding:9px;border:1px solid #2c2424;border-radius:10px;background:#0a0808}.v198-report h3{margin:0 0 6px;color:#fff;font-size:11px}.v198-report textarea{width:100%;min-height:180px;box-sizing:border-box;background:#050505;color:#ccc;border:1px solid #333;border-radius:8px;padding:8px;font:9px/1.4 Arial;resize:vertical}
+.v198-empty{padding:24px;text-align:center;color:#777;font-size:10px}
+@media(max-width:700px){#v198PhotographerPanel{padding:4px;align-items:flex-start}.v198-p-shell{padding:9px;border-radius:14px;width:98vw;max-height:98dvh}.v198-p-head{margin-bottom:7px}.v198-p-head h2{font-size:16px}.v198-p-head p{font-size:9px}.v198-p-close{width:30px;height:30px;font-size:17px}.v198-p-toolbar{gap:5px}.v198-p-toolbar select{min-width:100%;padding:8px}.v198-p-btn{padding:7px 8px!important;font-size:7px!important}.v198-p-toolbar .v198-p-btn{flex:1}.v198-p-stats{grid-template-columns:repeat(2,1fr);gap:5px}.v198-stat{padding:8px}.v198-stat b{font-size:15px}.v198-stat span{font-size:7px}.v198-p-lower{grid-template-columns:1fr;gap:7px}.v198-p-albums{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.v198-album-stat{padding:7px}.v198-order{padding:8px}.v198-order-head strong{font-size:10px}.v198-order-meta{font-size:7px}.v198-order-actions{margin-top:5px;gap:4px}.v198-order-actions button{font-size:7px!important;padding:5px 7px!important}.v198-photo-link-row{grid-template-columns:minmax(0,1fr) auto;gap:4px;padding:4px 5px}.v198-photo-link-name{font-size:7px}.v198-photo-link-actions{gap:3px}.v198-photo-link-actions button{font-size:6px!important;padding:5px 6px!important}.v198-report textarea{min-height:145px}}.v198-meta-actions{display:grid!important;grid-template-columns:auto 1fr auto;gap:7px}.v198-guide-btn{border-color:#4a3335!important;color:#ffdfe2!important;background:#18090b!important}.v198-guide-overlay{display:none;position:fixed;inset:0;z-index:121000;align-items:center;justify-content:center;padding:10px;background:rgba(0,0,0,.93);backdrop-filter:blur(4px)}.v198-guide-overlay.open{display:flex}.v198-guide-box{width:min(820px,96vw);max-height:94dvh;overflow:auto;background:#0b0b0c;border:1px solid #4a2227;border-radius:16px;padding:15px;box-shadow:0 25px 90px #000;color:#fff}.v198-guide-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.v198-guide-head span{color:#ff3344;font-size:8px;font-weight:950;letter-spacing:.12em}.v198-guide-head h3{margin:3px 0 0;font-size:18px}.v198-guide-head button{width:32px;height:32px;border-radius:50%;border:1px solid #333;background:#111;color:#fff;font-size:18px}.v198-guide-grid{display:grid;grid-template-columns:minmax(0,1fr) 245px;gap:12px}.v198-guide-grid label{display:block;color:#85858a;font-size:8px;font-weight:900;letter-spacing:.08em;margin:0 0 5px}.v198-guide-grid textarea{width:100%;min-height:300px;box-sizing:border-box;resize:vertical;background:#050505;color:#ddd;border:1px solid #303035;border-radius:10px;padding:10px;font:10px/1.45 Arial}.v198-guide-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}.v198-guide-actions button{border:1px solid #333;background:#161616;color:#fff;border-radius:8px;padding:8px;font-size:9px;font-weight:900}.v198-guide-actions .wa{border-color:#1d7c49;color:#8ef3b9}.v198-guide-qr{padding:11px;border:1px solid #29292e;border-radius:11px;background:#09090a}.v198-guide-qr img{display:block;width:190px;max-width:100%;margin:5px auto 8px;background:#fff;border-radius:8px}.v198-guide-qr a{display:block;color:#aaa;font-size:9px;word-break:break-word;text-decoration:none;margin-bottom:10px}.v198-guide-qr a:hover{color:#fff}.v198-guide-note{margin-top:9px;color:#777;font-size:8px;line-height:1.45}.v198-tiny-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:121500;padding:7px 10px;border:1px solid #343434;border-radius:8px;background:rgba(12,12,12,.95);color:#ddd;font:800 10px Arial;box-shadow:0 8px 25px rgba(0,0,0,.45);pointer-events:none;opacity:0;transition:opacity .12s ease}.v198-tiny-toast.on{opacity:1}.v198-order-link{display:inline-flex!important;align-items:center;gap:3px}.v198-download-btn{border-color:#4d3737!important;color:#ffd9dc!important}.v198-order-actions{align-items:center}.v198-order-actions .v198-p-btn.red{font-size:7px!important;padding:5px 6px!important}
+.v198-p-shell,.v198-p-shell *{box-sizing:border-box}.v198-p-shell{color:#f4f4f5}.v198-p-head h2{color:#fff}.v198-p-head p{color:#b7b7bd}.v198-p-btn,.v198-order-links-head button,.v198-photo-link-actions button{appearance:none;border:1px solid #35363b!important;background:linear-gradient(180deg,#18191c,#0d0e10)!important;color:#f5f5f5!important;box-shadow:0 2px 0 rgba(255,255,255,.03) inset,0 4px 12px rgba(0,0,0,.18);transition:transform .12s ease,filter .12s ease,border-color .12s ease,box-shadow .12s ease}.v198-p-btn:hover,.v198-order-links-head button:hover,.v198-photo-link-actions button:hover{filter:brightness(1.22);border-color:#666!important;transform:translateY(-1px);box-shadow:0 7px 18px rgba(0,0,0,.28)}.v198-p-btn:active,.v198-order-links-head button:active,.v198-photo-link-actions button:active{transform:translateY(0) scale(.97)}.v198-order-links-head button.whatsapp{border-color:#246a48!important;color:#b9ffd5!important}.v198-download-btn{border-color:#5a4246!important;color:#ffe7ea!important}.v198-status,.v198-photo-link-name,.v198-order-meta,.v198-p-block-title,.v198-report h3,.v198-album-stat,.v198-stat span{color:#eee}.v198-order-link-row,.v198-photo-link-row{background:#0c0d0f}.v198-photo-link-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:700px){.v198-order-links-head{display:grid!important;grid-template-columns:1fr 1fr;gap:4px}.v198-order-links-head button,.v198-photo-link-actions button{min-height:30px}.v198-photo-link-actions{display:flex!important}.v198-photo-link-actions button{min-width:64px}}
 </style>
-<script id="tomauno-v196-fix-js">
+<div id="v198PhotographerPanel">
+  <div class="v198-p-shell">
+    <div class="v198-p-head">
+      <div><h2 id="v198WelcomeTitle">BIENVENIDO, FOTÓGRAFO</h2><p id="v198PhotographerName">PANEL DEL FOTÓGRAFO</p></div>
+      <button class="v198-p-close" type="button" onclick="v198ClosePhotographerPanel()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="v198-p-toolbar">
+      <select id="v198AlbumFilter"><option value="">Todos los álbumes</option></select>
+      <button class="v198-p-btn" type="button" onclick="v198LoadPhotographerPanel()">↻ ACTUALIZAR</button>
+      <button class="v198-p-btn" type="button" onclick="v198CopyReport()">📋 INFORME</button>
+      <button class="v198-p-btn" type="button" onclick="v198DownloadReport()">⬇ .TXT</button>
+    </div>
+    <div id="v198Stats" class="v198-p-stats"></div>
+    <div class="v198-p-lower">
+      <section><h3 class="v198-p-block-title">ESTADÍSTICAS POR ÁLBUM</h3><div id="v198AlbumStats" class="v198-p-albums"></div></section>
+      <section class="v198-report"><h3>INFORME</h3><textarea id="v198ReportText" readonly></textarea></section>
+    </div>
+    <h3 class="v198-p-block-title" style="margin-top:8px">PEDIDOS · MÁS RECIENTES PRIMERO</h3>
+    <div id="v198OrderList"></div>
+  </div>
+</div>
+<script>
 (function(){
-  'use strict';
-  function E(id){return document.getElementById(id)}
-  function sync(){try{if(typeof window.syncExternalButtons108==='function')window.syncExternalButtons108()}catch(e){}}
-  function selectedFix(){
-    try{
-      var m=(window.__v91||window.__V91||window.__v91Model||null);
-      document.querySelectorAll('#eventList .event-card[data-v91album]').forEach(function(card){
-        var id=String(card.getAttribute('data-v91album')||''),b=card.querySelector('[data-v91check]');
-        if(!b)return;
-        var on=!!(m&&m.selected&&m.selected.has(id));
-        b.classList.toggle('on',on);
-        b.setAttribute('aria-pressed',on?'true':'false');
-      });
-    }catch(e){}
+'use strict';
+var panelKey='',panelData=null;
+function E(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function money(n){return '$ '+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0})}
+function norm(s){return String(s||'').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9áéíóúñ]/g,'')}
+function fmtDate(v){if(!v)return '';var d=new Date(v);if(!isNaN(d.getTime()))return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});return String(v)}
+function v198Toast(msg){var n=E('v198TinyToast');if(!n){n=document.createElement('div');n.id='v198TinyToast';n.className='v198-tiny-toast';document.body.appendChild(n)}n.textContent=msg||'Copiado';n.classList.add('on');clearTimeout(n._t);n._t=setTimeout(function(){n.classList.remove('on')},1000)}
+async function copy(t,msg){try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(t);v198Toast(msg||'Link copiado');return}var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();v198Toast(msg||'Link copiado')}catch(e){v198Toast('No se pudo copiar')}}
+function currentFilter(){return E('v198AlbumFilter')?E('v198AlbumFilter').value:''}
+function filteredOrders(){var f=currentFilter();return (panelData&&panelData.orders||[]).filter(function(o){return !f||norm(o.album)===norm(f)})}
+function buildReport(){if(!panelData)return '';var list=filteredOrders(),grouped={};list.forEach(function(o){var k=o.album||o.evento||'Sin álbum';if(!grouped[k])grouped[k]={orders:0,photos:0,total:0,pending:0};grouped[k].orders++;if(String(o.pago).toUpperCase()==='PAGADO'){grouped[k].photos+=Number(o.photoCount||o.cantidad||0);grouped[k].total+=Number(o.total||0)}else grouped[k].pending++});var lines=['📸 INFORME TOMAUNO','Fotógrafo: '+(panelData.photographer||''),'',''];Object.keys(grouped).sort(function(a,b){return a.localeCompare(b)}).forEach(function(k){var x=grouped[k];lines.push('ÁLBUM: '+k);lines.push('Pedidos: '+x.orders);lines.push('Fotos vendidas: '+x.photos);lines.push('Total cobrado: '+money(x.total));if(x.pending)lines.push('Pendientes: '+x.pending);lines.push('')});var paid=list.filter(function(o){return String(o.pago).toUpperCase()==='PAGADO'});var photos=paid.reduce(function(n,o){return n+Number(o.photoCount||o.cantidad||0)},0);var total=paid.reduce(function(n,o){return n+Number(o.total||0)},0);lines.push('TOTAL');lines.push('Pedidos: '+list.length);lines.push('Fotos vendidas: '+photos);lines.push('Total cobrado: '+money(total));if(list.some(function(o){return String(o.pago).toUpperCase()!=='PAGADO'}))lines.push('Pendientes de pago: '+list.filter(function(o){return String(o.pago).toUpperCase()!=='PAGADO'}).length);return lines.join('\n')}
+function render(){if(!panelData)return;var orders=filteredOrders(),paid=orders.filter(function(o){return String(o.pago).toUpperCase()==='PAGADO'}),photos=paid.reduce(function(n,o){return n+Number(o.photoCount||o.cantidad||0)},0),total=paid.reduce(function(n,o){return n+Number(o.total||0)},0),pending=orders.filter(function(o){return String(o.pago).toUpperCase()!=='PAGADO'}).length;E('v198Stats').innerHTML='<div class="v198-stat"><b>'+orders.length+'</b><span>Pedidos</span></div><div class="v198-stat"><b>'+photos+'</b><span>Fotos vendidas</span></div><div class="v198-stat"><b>'+money(total)+'</b><span>Total cobrado</span></div><div class="v198-stat"><b>'+pending+'</b><span>Pendientes</span></div>';var grouped={};orders.forEach(function(o){var k=o.album||o.evento||'Sin álbum';if(!grouped[k])grouped[k]={name:k,orders:0,photos:0,total:0,pending:0};grouped[k].orders++;if(String(o.pago).toUpperCase()==='PAGADO'){grouped[k].photos+=Number(o.photoCount||o.cantidad||0);grouped[k].total+=Number(o.total||0)}else grouped[k].pending++});E('v198AlbumStats').innerHTML=Object.keys(grouped).sort(function(a,b){return a.localeCompare(b)}).map(function(k){var x=grouped[k];return '<div class="v198-album-stat"><strong>'+esc(x.name)+'</strong><div>Pedidos: <b>'+x.orders+'</b></div><div>Fotos vendidas: <b>'+x.photos+'</b></div><div>Total cobrado: <b>'+money(x.total)+'</b></div>'+(x.pending?'<div>Pendientes: <b>'+x.pending+'</b></div>':'')+'</div>'}).join('')||'<div class="v198-empty">No hay datos para este filtro.</div>';
+E('v198OrderList').innerHTML=orders.map(function(o){var paidNow=String(o.pago||'').toUpperCase()==='PAGADO';var isMp=!paidNow&&String(o.canalPago||'').toUpperCase().indexOf('MERCADOPAGO')>-1;var linkBtns=o.links&&o.links.length?('<div class="v198-order-links-wrap"><div class="v198-order-links-head"><button type="button" onclick="v198CopyOrderLinks('+o.row+')">📋 COPIAR LINKS</button>'+(o.whatsapp?'<button type="button" class="whatsapp" onclick="v198SendWhatsApp('+o.row+')">🟢 WHATSAPP</button>':'')+'</div>'+o.links.map(function(l){return '<div class="v198-photo-link-row"><span class="v198-photo-link-name" title="'+esc(l.name)+'">'+esc(l.name)+'</span><span class="v198-photo-link-actions"><button type="button" onclick="v198CopyOneLink(this.dataset.url)" data-url="'+esc(l.url)+'">📋 COPIAR</button><button type="button" class="v198-download-btn v198-order-link" onclick="v198DownloadOneLink(this.dataset.url)" data-url="'+esc(l.url)+'">⬇ BAJAR</button></span></div>'}).join('')+'</div>'):'';var paymentAction=isMp?'<span class="v198-status mp">💳 MERCADO PAGO · PENDIENTE</span>':(!paidNow?'<button class="v198-p-btn red" type="button" onclick="v198ConfirmPayment('+o.row+')">✔ CONFIRMAR PAGO</button>':'');var headStatus=paidNow?'<span class="v198-status ok">✅ PAGADO</span>':(isMp?'<span class="v198-status mp">💳 MERCADO PAGO</span>':'<span class="v198-status pending">⏳ PENDIENTE</span>');var actionHtml=linkBtns+(paymentAction&& !isMp?paymentAction:'');return '<div class="v198-order"><div class="v198-order-head"><div><strong>'+esc(o.cliente||'Sin nombre')+'</strong><div style="color:#888;font-size:8px;margin-top:3px">'+esc(o.album||o.evento||'')+'</div></div><div style="text-align:right">'+headStatus+'<br><small>'+esc(fmtDate(o.fecha))+'</small></div></div><div class="v198-order-meta">'+Number(o.photoCount||o.cantidad||0)+' fotos · '+money(o.total)+' · '+esc(o.tipo||'Pedido')+(o.whatsapp?' · '+esc(o.whatsapp):'')+'</div><div class="v198-order-actions">'+actionHtml+'</div></div>'}).join('')||'<div class="v198-empty">No hay pedidos para este filtro.</div>';E('v198ReportText').value=buildReport()}
+function populateAlbums(){var s=E('v198AlbumFilter'),old=s.value;var names=(panelData&&panelData.albums||[]).map(function(a){return a.name}).sort(function(a,b){return a.localeCompare(b)});s.innerHTML='<option value="">Todos los álbumes</option>'+names.map(function(n){return '<option value="'+esc(n).replace(/"/g,'&quot;')+'">'+esc(n)+'</option>'}).join('');if(names.indexOf(old)>=0)s.value=old}
+function v198ResolveLocalPhotographerName(key,fallback){
+  var f=String(fallback||'').trim();
+  // El backend ya resuelve la identidad del fotógrafo. No reemplazar un nombre real
+  // por información local incompleta del modelo de álbumes.
+  if(f && !/^(fotografo|fotógrafo|panel del fotógrafo)$/i.test(f)) return f;
+  var k=norm(key),m=window.__v91Model||window.__v91||window.__V91||{},all=(m.all||[]);
+  for(var i=0;i<all.length;i++){var a=all[i]||{};if(norm(a.claveReportes)===k && String(a.fotografo||'').trim()) return String(a.fotografo).trim();}
+  var groups=m.meta||{};
+  for(var j=0;j<all.length;j++){var b=all[j]||{},g=String(b.group||'').trim(),gm=groups[g]||{};if(g && norm(gm.key)===k && String(b.fotografo||'').trim()) return String(b.fotografo).trim();}
+  for(var gn in groups){if(norm(groups[gn]&&groups[gn].key)===k){var pn=String(groups[gn].photographer||'').trim();if(pn && !/^(fotografo|fotógrafo)$/i.test(pn)) return pn;}}
+  return f;
+}
+function v198DirectDownloadUrl(url){
+  var u=String(url||'').trim(); if(!u)return '';
+  var m=u.match(/[?&]id=([^&]+)/i);
+  if(m && /drive\.google\.com\/uc/i.test(u)) return 'https://drive.usercontent.google.com/download?id='+m[1]+'&export=download&confirm=t';
+  return u;
+}
+
+window.v198OpenPhotographerPanel=function(key,preloaded){panelKey=String(key||'').trim();if(!panelKey)return;if(E('v198PhotographerPanel'))E('v198PhotographerPanel').classList.add('open');if(preloaded&&preloaded.kind==='photographer'){panelData=preloaded;var npre=String(preloaded.photographer||'').trim()||v198ResolveLocalPhotographerName(panelKey,'');if(!npre || /^(fotografo|fotógrafo)$/i.test(npre)) npre='Fotógrafo';E('v198PhotographerName').textContent='PANEL DEL FOTÓGRAFO';if(E('v198WelcomeTitle'))E('v198WelcomeTitle').textContent='BIENVENIDO, '+npre.toUpperCase();populateAlbums();render();return;}v198LoadPhotographerPanel()};
+window.v198ClosePhotographerPanel=function(){if(E('v198PhotographerPanel'))E('v198PhotographerPanel').classList.remove('open')};
+window.v198LoadPhotographerPanel=async function(){if(!panelKey)return;try{if(window.toggleL)toggleL(true,'CARGANDO PANEL DEL FOTÓGRAFO…');var r=await apiGet({action:'download',code:panelKey,t:Date.now()});if(!r||r.kind!=='photographer')throw new Error('No se pudo abrir el panel.');panelData=r;var nr=String(r.photographer||'').trim()||v198ResolveLocalPhotographerName(panelKey,'');if(!nr || /^(fotografo|fotógrafo)$/i.test(nr))nr='Fotógrafo';E('v198PhotographerName').textContent='PANEL DEL FOTÓGRAFO';if(E('v198WelcomeTitle'))E('v198WelcomeTitle').textContent='BIENVENIDO, '+nr.toUpperCase();populateAlbums();render()}catch(e){window.v198ClosePhotographerPanel();if(window.luxAlert)luxAlert('ACCESO','La clave no corresponde a un fotógrafo.')}finally{if(window.toggleL)toggleL(false)}};
+window.v198CopyOrderLinks=function(row){var o=(panelData&&panelData.orders||[]).find(function(x){return Number(x.row)===Number(row)});if(!o||!o.links||!o.links.length)return;return copy(o.links.map(function(l){return l.name+': '+l.url}).join('\n'),'Links copiados')};
+window.v198CopyOneLink=function(url){ return copy(String(url||'').trim(),'Link copiado'); };
+window.v198DownloadOneLink=function(url){
+  var dl=String(url||'').trim(); if(!dl)return;
+  var frame=E('v198DownloadFrame');
+  if(!frame){
+    frame=document.createElement('iframe');
+    frame.id='v198DownloadFrame';
+    frame.name='v198DownloadFrame';
+    frame.title='Descarga';
+    frame.setAttribute('aria-hidden','true');
+    frame.style.position='fixed'; frame.style.width='1px'; frame.style.height='1px'; frame.style.border='0';
+    frame.style.left='-10000px'; frame.style.top='-10000px'; frame.style.opacity='0';
+    document.body.appendChild(frame);
   }
-  function run(){sync();selectedFix()}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else setTimeout(run,0);
-  document.addEventListener('click',function(e){
-    try{
-      if(e.target&&e.target.closest&&e.target.closest('#eventList .event-card [data-v91check]')){
-        setTimeout(function(){selectedFix();try{if(typeof window.sync19==='function')window.sync19()}catch(_){}} ,0);
-      }
-      if(e.target&&e.target.closest&&e.target.closest('.t54-mp-pay,.v101-mp-services,#modalCheckout,#v109Manager'))setTimeout(sync,30);
-    }catch(_){ }
-  },true);
-  document.addEventListener('tomauno-view-change',function(){setTimeout(run,20)});
-  if(window.MutationObserver){
-    var root=E('modalCheckout')||document.body;
-    new MutationObserver(function(){sync()}).observe(root,{childList:true,subtree:true});
-    var list=E('eventList');
-    if(list)new MutationObserver(function(){selectedFix()}).observe(list,{childList:true,subtree:true});
-  }
-  var n=E('v110Version');if(n)n.textContent='TOMAUNO FOTOS · V196';
+  frame.src=dl;
+  v198Toast('Descarga iniciada');
+};
+function normalizeWaNumber(raw){var d=String(raw||'').replace(/\D/g,'');if(!d)return '';if(d.indexOf('00')===0)d=d.slice(2);if(d.indexOf('549')===0)return d;if(d.indexOf('54')===0)return '549'+d.slice(2);if(d.charAt(0)==='0')d=d.slice(1);return '549'+d}
+function whatsappOrderMessage(o){var lines=['Hola '+(o.cliente||'')+',','\n📸 *Tomauno Fotografías*','*Tus fotografías ya están listas para descargar.*'];if(o.album)lines.push('Álbum: *'+o.album+'*');lines.push('\n🔗 *ENLACES DE DESCARGA:*');(o.links||[]).forEach(function(l,i){lines.push((i+1)+'. *'+(l.name||('Foto '+(i+1)))+'*\n'+l.url)});lines.push('\nGracias por elegir *Tomauno* ❤️');return lines.join('\n')}
+window.v198SendWhatsApp=function(row){var o=(panelData&&panelData.orders||[]).find(function(x){return Number(x.row)===Number(row)}),n=normalizeWaNumber(o&&o.whatsapp);if(!o||!n)return;if(!o.links||!o.links.length)return window.luxAlert?luxAlert('SIN LINKS','Este pedido todavía no tiene links disponibles.'):null;window.open('https://wa.me/'+n+'?text='+encodeURIComponent(whatsappOrderMessage(o)),'_blank','noopener')};
+function digitsV198(v){return String(v||'').replace(/\D/g,'')}
+function normWaV198(v){var d=digitsV198(v);if(!d)return '';if(d.indexOf('00')===0)d=d.slice(2);if(d.indexOf('549')===0)return d;if(d.indexOf('54')===0)return '549'+d.slice(2);if(d.charAt(0)==='0')d=d.slice(1);return '549'+d}
+function guideAlbumInfoV198(group){var m=window.__v91Model||window.__v91||window.__V91||{},all=m.all||[];return all.filter(function(a){return String(a.group||'').trim()===String(group||'').trim()})}
+function guideUrlV198(group){return 'https://tomaunofotografias.vercel.app/?parent='+encodeURIComponent(String(group||''))}
+function guideQrV198(url){return 'https://quickchart.io/qr?size=700&margin=2&text='+encodeURIComponent(url)}
+function guidePaymentV198(a){var pay=String(a&&a.pagoModo||'').toUpperCase(),gestion=String(a&&a.gestion||'').toUpperCase();if(gestion==='EXTERNO'&&pay==='TOMAUNO')return 'Mercado Pago Tomauno: el cliente puede pagar online y, una vez aprobado el pago, la descarga se habilita automáticamente.';if(gestion==='EXTERNO')return 'Pago externo/manual: el cliente coordina el pago con vos. Cuando recibís el comprobante, entrás al panel, confirmás el pago y luego podés copiar o enviar los links.';return 'Gestión Tomauno: el pedido se procesa con la modalidad de pago configurada.'}
+function buildPhotographerGuideV198(){var m=window.__v91Model||window.__v91||window.__V91||{},meta=(m.meta&&m.meta[currentGroup92])||{},name=String((E('v95MetaPhotographer')||{}).value||'').trim()||String(meta.photographer||'').trim()||'Fotógrafo',key=String((E('v198MetaPhotographerKey')||{}).value||'').trim(),wa=String((E('v95MetaWhatsapp')||{}).value||'').trim(),group=String(currentGroup92||'').trim(),url=guideUrlV198(group),qr=guideQrV198(url),albums=guideAlbumInfoV198(group),lines=['Hola '+name+',','\n📸 *BIENVENIDO/A A TOMAUNO FOTOGRAFÍAS*','Te comparto tu guía para trabajar con tus álbumes en la plataforma.','', '🔗 *LINK DIRECTO DE TU COLECCIÓN:*',url,'','🔐 *TU CLAVE DEL FOTÓGRAFO:*',key||'(todavía no configurada)','', '📱 *CÓMO TRABAJAR:*','1. Desde Tomauno, entrá en *BUSCAR MI FOTO* y escribí tu clave para abrir tu *Panel del Fotógrafo*.','2. Vas a ver tus pedidos más recientes, podés filtrar por álbum y consultar estadísticas.','3. En cada pedido podés copiar todos los links, copiar un link individual, descargar el archivo o enviárselo directo al cliente por WhatsApp.',''];
+if(albums.length){lines.push('🗂️ *TUS ÁLBUMES Y CONFIGURACIÓN:*');albums.slice().sort(function(a,b){return String(a.displayName||'').localeCompare(String(b.displayName||''))}).forEach(function(a){var p=[];if(Number(a.pDigital||0)>0)p.push('digital '+money(Number(a.pDigital||0)));if(Number(a.pPrint||0)>0)p.push('impresión '+money(Number(a.pPrint||0)));if(Number(a.pFull||0)>0)p.push('álbum completo '+money(Number(a.pFull||0)));if(a.descargaCompleta)p.push('descarga completa habilitada');lines.push('• *'+String(a.displayName||'Álbum')+'*');lines.push('  '+(p.length?p.join(' · '):'servicios a medida')+'.');lines.push('  '+guidePaymentV198(a));});lines.push('');}
+lines.push('💳 *PAGO ONLINE OPCIONAL:*','Podés optar por usar *Mercado Pago Tomauno* en los álbumes que quieras. En ese caso el cliente paga online y el sistema habilita la descarga automáticamente, para que no tengas que hablar con cada cliente para entregar los archivos.','');lines.push('📌 *IMPORTANTE:*','Guardá tu clave. Con ella entrás a tu panel y accedés solamente a los pedidos de tus álbumes.','', '📲 *QR DE TU COLECCIÓN:*',qr,'','Cualquier duda podés escribir a Tomauno.');return {name:name,key:key,wa:wa,group:group,url:url,qr:qr,text:lines.join('\n')}}
+window.v198OpenPhotographerGuide=function(){var d=buildPhotographerGuideV198();if(!String(d.key||'').trim()){v198Toast('Configurá primero la clave del fotógrafo');return}if(E('v198GuideText'))E('v198GuideText').value=d.text;if(E('v198GuideTitle'))E('v198GuideTitle').textContent='Guía para '+d.name;if(E('v198GuideLink')){E('v198GuideLink').textContent=d.url;E('v198GuideLink').href=d.url}if(E('v198GuideQr'))E('v198GuideQr').src=d.qr;if(E('v198GuideQrLink'))E('v198GuideQrLink').href=d.qr;if(E('v198PhotographerGuide')){E('v198PhotographerGuide').classList.add('open');E('v198PhotographerGuide').setAttribute('aria-hidden','false')}}
+window.v198ClosePhotographerGuide=function(){if(E('v198PhotographerGuide')){E('v198PhotographerGuide').classList.remove('open');E('v198PhotographerGuide').setAttribute('aria-hidden','true')}}
+window.v198CopyGuide=function(){var d=buildPhotographerGuideV198();copy(d.text,'Mensaje copiado')};window.v198SendGuideWhatsApp=function(){var textToSend=String((E('v198GuideText')||{}).value||'');var n=normWaV198(String((E('v198GuideText')||{}).dataset.whatsapp||'')||buildPhotographerGuideV198().wa);if(!n){v198Toast('Falta el WhatsApp del fotógrafo');return}window.open('https://wa.me/'+n+'?text='+encodeURIComponent(textToSend),'_blank','noopener')};
+window.v202OpenStandaloneGuide=function(){var name=String((E('v109Photographer')||{}).value||'').trim()||'Fotógrafo',key=String((E('v109ReportKey')||{}).value||'').trim(),wa=String((E('v109Wa')||{}).value||'').trim(),album=String((E('v109Name')||{}).value||'').trim(),bridge=(typeof edit!=='undefined'&&edit)?String(edit.bridgeId||''):'';if(!key){v198Toast('Configurá primero la clave del fotógrafo');return}var url='https://tomaunofotografias.vercel.app/?album='+encodeURIComponent(bridge),qr=guideQrV198(url),pay=String((E('v109Pay')||{}).value||'').toUpperCase(),gestion=String((E('v109Gestion')||{}).value||'').toUpperCase(),p=[];if(Number((E('v109PD')||{}).value||0)>0)p.push('digital '+money(Number(E('v109PD').value)));if(Number((E('v109PI')||{}).value||0)>0)p.push('impresión '+money(Number(E('v109PI').value)));if(Number((E('v109PFull')||{}).value||0)>0)p.push('álbum completo '+money(Number(E('v109PFull').value)));var pago=(gestion==='EXTERNO'&&pay==='TOMAUNO')?'Mercado Pago Tomauno: el sistema habilita la descarga automáticamente cuando se aprueba el pago.':(gestion==='EXTERNO'?'Pago externo/manual: recibís el comprobante, confirmás desde tu panel y luego enviás los links.':'Gestión Tomauno.');var txt=['Hola '+name+',','\n📸 *BIENVENIDO/A A TOMAUNO FOTOGRAFÍAS*','Te comparto los datos para trabajar este álbum.','', '🔗 *LINK DIRECTO DEL ÁLBUM:*',url,'','🔐 *CLAVE DEL FOTÓGRAFO:*',key,'','📱 *PANEL DEL FOTÓGRAFO:*','Desde *BUSCAR MI FOTO*, escribí tu clave. Allí vas a ver tus pedidos, estadísticas y los links de descarga.','', '📂 *ÁLBUM:*',album||'Álbum',p.length?'Precios: '+p.join(' · '):'Precios configurados en la plataforma.',pago,'','💳 *OPCIÓN MERCADO PAGO:*','Podés optar por usar *Mercado Pago Tomauno* para que el cliente pague online y el sistema habilite automáticamente sus archivos, evitando gestionar cada entrega manualmente.','', '📲 *QR:*',qr,'','Guardá tu clave para entrar al panel cuando quieras.'];if(E('v198GuideText'))E('v198GuideText').value=txt.join('\n');if(E('v198GuideTitle'))E('v198GuideTitle').textContent='Guía para '+name;if(E('v198GuideLink')){E('v198GuideLink').textContent=url;E('v198GuideLink').href=url}if(E('v198GuideQr'))E('v198GuideQr').src=qr;if(E('v198GuideQrLink'))E('v198GuideQrLink').href=qr;if(E('v198GuideText'))E('v198GuideText').dataset.whatsapp=wa;if(E('v198PhotographerGuide')){E('v198PhotographerGuide').classList.add('open');E('v198PhotographerGuide').setAttribute('aria-hidden','false')}};
+window.v198ConfirmPayment=async function(row){if(!panelKey||!row)return;try{if(window.toggleL)toggleL(true,'CONFIRMANDO PAGO…');var r=await apiPost({action:'photographerMarkPaid',key:panelKey,row:Number(row)});if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo confirmar');var o=(panelData.orders||[]).find(function(x){return Number(x.row)===Number(row)});if(o){o.pago='PAGADO';o.clave=r.clave;o.links=r.links||[];}render();if(window.miniToast)miniToast(r.msg||'Pago confirmado')}catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e))}finally{if(window.toggleL)toggleL(false)}};
+window.v198CopyReport=function(){copy(buildReport(),'Informe copiado')};
+window.v198DownloadReport=function(){var blob=new Blob([buildReport()],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='informe_tomauno_'+new Date().toISOString().slice(0,10)+'.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000)};
+E('v198AlbumFilter').addEventListener('change',render);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&E('v198PhotographerGuide')&&E('v198PhotographerGuide').classList.contains('open')){e.preventDefault();e.stopPropagation();window.v198ClosePhotographerGuide();return}if(e.key==='Escape'&&E('v198PhotographerPanel')&&E('v198PhotographerPanel').classList.contains('open')){e.preventDefault();e.stopPropagation();window.v198ClosePhotographerPanel()}},true);
 })();
 </script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V202';</script>
+<style id="tomauno-v201-mobile-photo-controls">
+@media(max-width:700px){
+  .photo-box .check-mark{width:31px!important;height:31px!important;top:5px!important;right:5px!important;font-size:12px!important;border-width:1px!important;z-index:80!important}
+  .photo-box.selected{border-width:2px!important}
+  .photo-box.selected::after{left:5px!important;bottom:5px!important;width:auto!important;max-width:calc(100% - 10px)!important;padding:4px 6px!important;font-size:7px!important;letter-spacing:.5px!important;border-radius:6px!important;line-height:1.1!important;z-index:85!important}
+  .v117-thumb-reactions{right:4px!important;bottom:39px!important;gap:3px!important}
+  .v117-thumb-reactions button{min-width:0!important;min-height:0!important;padding:3px 5px!important;font-size:7px!important;line-height:1!important}
+  .v140-reacts{right:4px!important;bottom:40px!important;gap:3px!important}
+  .v140-reacts button{min-width:0!important;min-height:0!important;padding:3px 4px!important;font-size:7px!important;line-height:1!important}
+  .v109-gallery-print{left:5px!important;bottom:5px!important;padding:4px 6px!important;font-size:7px!important}
+  .v109-print-corner21{right:6px!important;bottom:6px!important;min-width:27px!important;height:27px!important;font-size:9px!important;padding:0 5px!important}
+  #zoomSelectionTools .selection-mini-btn{font-size:8px!important;padding:5px 7px!important}
+  #lightbox .v107-light-actions button{min-height:34px!important;font-size:8px!important;padding:5px 7px!important}
+}
+</style>
+<!-- /TOMAUNO V201 -->
+
+<style id="tomauno-v215-external-payment-mobile">
+.tomauno-ext-payment-note{margin:10px 0 0;color:#bfc4cc;font-size:12px;line-height:1.45}
+@media(max-width:700px){
+  #v109Manager .v109-field#v109AliasWrap{grid-column:1/-1!important}
+  #v109Manager #v109AliasWrap input,#v109Manager #v109CbuWrap input{font-size:13px!important;height:38px!important}
+  #v109Manager .v109-choice button{min-height:34px!important;padding:7px 9px!important;font-size:10px!important}
+  #view-success .tomauno-external-payment-card{padding:12px!important;margin-top:10px!important}
+  #view-success .tomauno-ext-payment-rows{gap:6px!important}
+  #view-success .tomauno-success-actions .btn-order{width:100%!important;min-height:42px!important;font-size:12px!important}
+}
+</style>
 </body>
 </html>
+
+<!-- TOMAUNO V203 · PANEL + TICKET UX -->
+<style id="tomauno-v204-admin-photographer-css">
+#adminPhotographerFilter{border-color:#333!important;background:#090909!important;color:#fff!important;font-weight:800!important}
+#adminPhotographerFilter:focus{border-color:#ff0018!important;box-shadow:0 0 0 2px rgba(255,0,24,.13)!important;outline:none}
+.v204-photographer-badge{display:inline-flex;align-items:center;padding:3px 7px;margin:4px 0 0;border:1px solid #3b3b3b;border-radius:7px;background:#080808;color:#fff;font-size:9px;font-weight:900}
+@media(max-width:700px){#adminPhotographerFilter{min-width:100%!important}.v204-photographer-badge{font-size:8px}}
+</style>
+<style id="tomauno-v203-final-polish">
+.v198-order-links-wrap{margin-top:6px}.v198-order-links-head{display:flex;gap:5px;flex-wrap:wrap}.v198-order-links-head button{appearance:none;border:1px solid #34343a;background:linear-gradient(180deg,#161618,#09090a);color:#fff;border-radius:10px;padding:7px 10px;font-size:8px;font-weight:900;cursor:pointer;transition:all .14s ease}.v198-order-links-head button:hover{border-color:#f00020;background:linear-gradient(180deg,#211114,#0b090a);transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,0,0,.35)}.v198-order-links-head .whatsapp{border-color:#2b6045}.v198-order-links-head .whatsapp:hover{border-color:#38b86f!important}
+#v100SaveTicketBtn:disabled{cursor:default;transform:none!important}
+@media(max-width:700px){.v198-order-links-head button{font-size:7px;padding:6px 8px}.v198-order-links-head{gap:4px}}
+</style>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V222';</script>
+
+<!-- TOMAUNO V222 · MERCADO PAGO: WHATSAPP POR PEDIDO, SIN DATOS LEGADOS -->
