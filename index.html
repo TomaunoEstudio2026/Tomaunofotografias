@@ -5701,6 +5701,19 @@ function attr(s) {
       if(p&&p.includesDigital&&!p.isFullAlbum) lines.push('✅ Incluye copia digital sin costo adicional.','');
       if(p&&p.isFullAlbum) lines.push('✅ Pedido de álbum completo. Entrega a coordinar por WhatsApp.','');
       lines.push('━━━━━━━━━━━━━━━','💰 *TOTAL:* '+(total===0?'$0':'$'+total.toLocaleString('es-AR')));
+      try{
+        var aFb=window.activeEvent||{};
+        if(String(aFb.gestion||'TOMAUNO').toUpperCase().trim()==='EXTERNO'){
+          var phFb=String(aFb.fotografo||'').trim();
+          var alFb=String(aFb.aliasPago||'').trim();
+          var cbFb=String(aFb.cbuPago||'').replace(/\D/g,'');
+          if(phFb) lines.push('','*DATOS DEL FOTÓGRAFO*','📸 *Fotógrafo:* '+phFb);
+          else if(alFb||cbFb) lines.push('','*DATOS DEL FOTÓGRAFO*');
+          if(alFb) lines.push('💳 *Alias:* '+alFb);
+          if(cbFb) lines.push('🏦 *CBU:* '+cbFb);
+          if(alFb||cbFb) lines.push('💰 *Total:* '+(total===0?'GRATIS':'$'+total.toLocaleString('es-AR')),'📲 Te envío por este medio el comprobante de pago.');
+        }
+      }catch(e){}
       return 'https://wa.me/'+phone+'?text='+encodeURIComponent(lines.join('\n'));
     }catch(e){ return ''; }
   }
@@ -5764,6 +5777,33 @@ function attr(s) {
         var waNumber=String((order&&order.whatsappNumber)||((window.activeEvent&&activeEvent.whatsappVentas)||'')).replace(/\D/g,'');
         var configuredMsg='';
         try{ if(typeof orderText==='function') configuredMsg=String(orderText(true)||''); }catch(e){}
+
+        /* V223: el mensaje de retorno debe ser el pedido real y completo.
+           Si el álbum es EXTERNO, agregamos fotógrafo/Alias/CBU según estén
+           configurados, aunque una rutina anterior haya generado un texto
+           sin esos datos. Nunca se agregan datos de pago externo a TOMAUNO. */
+        try{
+          var aRet=window.activeEvent||{};
+          var gRet=String(aRet.gestion||'TOMAUNO').toUpperCase().trim();
+          if(gRet==='EXTERNO'){
+            var phRet=String(aRet.fotografo||'').trim();
+            var alRet=String(aRet.aliasPago||'').trim();
+            var cbRet=String(aRet.cbuPago||'').replace(/\D/g,'');
+            var addRet=[];
+            if(phRet && configuredMsg.indexOf('*Fotógrafo:*')<0) addRet.push('📸 *Fotógrafo:* '+phRet);
+            if(alRet && configuredMsg.indexOf('*Alias:*')<0) addRet.push('💳 *Alias:* '+alRet);
+            if(cbRet && configuredMsg.indexOf('*CBU:*')<0) addRet.push('🏦 *CBU:* '+cbRet);
+            if((alRet||cbRet) && configuredMsg.indexOf('📲 Te envío por este medio el comprobante de pago.')<0){
+              addRet.push('💰 *Total:* '+(Number(payload.total||0)===0?'GRATIS':'$'+Number(payload.total||0).toLocaleString('es-AR')));
+              addRet.push('📲 Te envío por este medio el comprobante de pago.');
+            }
+            if(addRet.length){
+              if(configuredMsg.indexOf('*DATOS DEL FOTÓGRAFO*')<0) configuredMsg+='\n\n*DATOS DEL FOTÓGRAFO*';
+              configuredMsg+='\n'+addRet.join('\n');
+            }
+          }
+        }catch(e){}
+
         if(waNumber && configuredMsg) returnWa='https://wa.me/'+waNumber+'?text='+enc(configuredMsg);
       }catch(e){}
       if(!returnWa) returnWa=buildMpOrderWhatsappUrl(payload,order,currentProduct());
@@ -13908,7 +13948,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 window.addEventListener('load',function(){simplifyIntro();setTimeout(function(){if(albumsReady112())finishIntro()},2200);syncViewer()});
 })();
 </script>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V113';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V223';</script>
 <!-- /TOMAUNO V112 -->
 <!-- TOMAUNO V114: talentos por álbum y correcciones finales del visor -->
 <style id="tomauno-v114-css">
@@ -13953,7 +13993,7 @@ function sync(){ensureTalentButton();ensureLegend();var lb=E('lightbox'),open=!!
 var lb=E('lightbox');if(lb)new MutationObserver(function(){setTimeout(function(){sync();document.dispatchEvent(new CustomEvent('tomauno-view-change'))},0)}).observe(lb,{attributes:true,attributeFilter:['style']});var img=E('zoomImg');if(img)new MutationObserver(function(){setTimeout(sync,0)}).observe(img,{attributes:true,attributeFilter:['src']});window.addEventListener('load',function(){installAdmin();sync()});
 })();
 </script>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V114';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V223';</script>
 <!-- /TOMAUNO V114 -->
 <!-- TOMAUNO V115: acciones únicas, firmas y bandeja privada de talentos -->
 <style id="tomauno-v115-css">
@@ -14052,7 +14092,7 @@ document.addEventListener('click',function(e){var target=e.target.closest&&e.tar
 window.addEventListener('load',function(){sync();setTimeout(function(){loadTalents(false)},2500)});setInterval(function(){if(sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1')loadTalents(false)},20000);
 })();
 </script>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V120';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V223';</script>
 <!-- /TOMAUNO V116 -->
 <!-- TOMAUNO V117: gestión de talentos y reacciones públicas -->
 <style id="tomauno-v117-css">
@@ -14105,7 +14145,7 @@ document.addEventListener('tomauno-state-change',sync);document.addEventListener
 <style id="tomauno-v121-css">
 .photo-box.selected::after{top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;left:7%!important;width:86%!important;border-radius:999px!important;padding:5px 0!important;pointer-events:none!important;z-index:48!important}
 </style>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V121';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V223';</script>
 <!-- /TOMAUNO V121 -->
 <!-- TOMAUNO V122: referencias, servicios, descarga y contadores coherentes -->
 <style id="tomauno-v122-css">
@@ -14136,7 +14176,7 @@ document.addEventListener('dragstart',function(e){if(e.target&&e.target.closest&
 #v122PhotoProtection{position:fixed;left:50%;bottom:18px;z-index:300500;transform:translate(-50%,18px);opacity:0;pointer-events:none;max-width:calc(100vw - 28px);padding:8px 13px;border:1px solid rgba(255,25,43,.62);border-radius:999px;background:rgba(4,4,4,.92);color:#ddd;font:700 10px/1.25 Arial;text-align:center;box-shadow:0 8px 30px #000;transition:.18s ease}#v122PhotoProtection.show{opacity:1;transform:translate(-50%,0)}
 body.v122-capture-warning .photo-box .photo-watermark,body.v122-capture-warning #lightbox .zoom-watermark{background:rgba(0,0,0,.94)!important;opacity:1!important}body.v122-capture-warning #lightbox .zoom-watermark img{visibility:hidden!important}
 </style>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V122';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V223';</script>
 <!-- /TOMAUNO V122 -->
 <!-- TOMAUNO V123: padres persistentes, QR directo y descarga única -->
 <style id="tomauno-v123-css">
@@ -14416,7 +14456,7 @@ document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V155';
 <style id="tomauno-v156-css">
 .v156-admin-preview{display:flex;align-items:center;justify-content:center;width:180px;height:150px;border:1px solid #3a3a3e;border-radius:9px;background:linear-gradient(145deg,#160006,#050506)}.v156-admin-preview a{display:inline-flex;align-items:center;justify-content:center;max-width:135px;padding:10px;border:1px solid #f00020;border-radius:9px;color:#fff;text-align:center;text-decoration:none;font-size:9px;font-weight:950}.v156-admin-preview a:hover{background:#f00020}@media(max-width:700px){.v156-admin-preview{width:100%;height:120px}.v156-admin-preview a{max-width:none}}
 </style>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V205';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V223';</script>
 <!-- /TOMAUNO V123 -->
 
 <!-- TOMAUNO V205 · PANEL DEL FOTÓGRAFO -->
@@ -14539,7 +14579,7 @@ E('v198AlbumFilter').addEventListener('change',render);
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&E('v198PhotographerGuide')&&E('v198PhotographerGuide').classList.contains('open')){e.preventDefault();e.stopPropagation();window.v198ClosePhotographerGuide();return}if(e.key==='Escape'&&E('v198PhotographerPanel')&&E('v198PhotographerPanel').classList.contains('open')){e.preventDefault();e.stopPropagation();window.v198ClosePhotographerPanel()}},true);
 })();
 </script>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V202';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V223';</script>
 <style id="tomauno-v201-mobile-photo-controls">
 @media(max-width:700px){
   .photo-box .check-mark{width:31px!important;height:31px!important;top:5px!important;right:5px!important;font-size:12px!important;border-width:1px!important;z-index:80!important}
@@ -14583,6 +14623,6 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&E('v198Phot
 #v100SaveTicketBtn:disabled{cursor:default;transform:none!important}
 @media(max-width:700px){.v198-order-links-head button{font-size:7px;padding:6px 8px}.v198-order-links-head{gap:4px}}
 </style>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V222';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V223';</script>
 
 <!-- TOMAUNO V222 · MERCADO PAGO: WHATSAPP POR PEDIDO, SIN DATOS LEGADOS -->
