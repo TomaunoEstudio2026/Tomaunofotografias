@@ -15382,95 +15382,200 @@ window.addEventListener('load',function(){ensureConfig190();bindArrows190();if(w
 </style>
 <div id="v238PageControls" aria-hidden="true"><button type="button" title="Subir una tanda">↑</button><button type="button" title="Bajar una tanda">↓</button></div>
 <div id="v238StoryModal" aria-hidden="true"><div class="v238-story-box"><button type="button" class="mini-btn" style="position:absolute;right:8px;top:8px;z-index:3" id="v238StoryClose">×</button><canvas id="v238StoryCanvas" width="1080" height="1920"></canvas><div class="v238-story-actions"><h3 style="margin:0;color:#fff">LISTA PARA TU <span style="color:#f00020">HISTORIA</span></h3><p id="v238StoryStatus" style="color:#aaa;font-size:11px;line-height:1.4">Preparando la placa…</p><button id="v238StoryShare">↗ COMPARTIR</button><button class="alt" id="v238StoryDownload">↓ DESCARGAR IMAGEN</button></div></div></div>
-<script id="tomauno-v242-minimal-fixes">
+<script id="tomauno-v240-special-final-js">
 (function(){'use strict';
 function E(id){return document.getElementById(id)}
-function S(){return window.__v179SpecialState||{photos:[],idx:0,gallery:null,admin:[]}}
+function S(){return window.__v179SpecialState||{photos:[],idx:0,gallery:null,admin:[],admin:false}}
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function adm(){try{return sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(e){return false}}
 function toast(t){if(window.miniToast)window.miniToast(t);else if(window.toast)window.toast(t)}
-function token(k){try{var t=localStorage.getItem(k)||'';if(!t){t=(crypto&&crypto.randomUUID)?crypto.randomUUID():Date.now()+'-'+Math.random();localStorage.setItem(k,t)}return t}catch(e){return Date.now()+'-'+Math.random()}}
+function installCss(){if(E('v240-css'))return;var st=document.createElement('style');st.id='v240-css';st.textContent='#v240ViewerActions{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:1400;width:min(94vw,720px);display:flex;justify-content:center;pointer-events:none}.v240-panel-inner{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;padding:7px 9px;background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.16);border-radius:12px;pointer-events:auto;box-sizing:border-box}.v240-btn{position:static!important;width:auto!important;height:30px!important;min-width:30px!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:8px!important;background:#111!important;color:#fff!important;padding:4px 8px!important;font-size:11px!important;line-height:20px!important;cursor:pointer!important;box-shadow:none!important}.v240-btn.vote{font-weight:700}.v240-btn.voted,.v240-btn.done{background:#7d0010!important;border-color:#ff3348!important}.v240-count{font-size:10px;color:#aaa;padding:0 4px;white-space:nowrap}.v240-admin-selected{border-color:#e00022!important;box-shadow:0 0 0 1px #e00022 inset!important}#v179Viewer .v236-prev,#v179Viewer .v236-next,#v179Viewer .prev,#v179Viewer .next{pointer-events:auto!important}#v179Viewer .v236-close{display:flex!important;position:absolute!important;right:12px!important;top:12px!important;z-index:1600!important;width:38px!important;height:38px!important;align-items:center!important;justify-content:center!important;border-radius:50%!important;background:rgba(0,0,0,.78)!important;color:#fff!important;font-size:25px!important;line-height:1!important;border:1px solid rgba(255,255,255,.28)!important;cursor:pointer!important}#v179ViewerCaption a{color:#ff1493!important;text-decoration:none!important;font-weight:800!important}#v241SpecialGear{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:38px!important;height:38px!important;border:1px solid #444!important;border-radius:10px!important;background:#19191c!important;color:#fff!important;font-size:18px!important;cursor:pointer!important;flex:0 0 auto!important}#v241SpecialGear:hover{border-color:#e51b23!important;color:#ff3348!important}.v241-card-gear{margin-left:auto!important;color:#fff!important;font-size:15px!important;min-width:34px!important}.v240-download-icon{font-size:18px!important;line-height:18px!important}';document.head.appendChild(st)}
+installCss();
+function adm(){try{return sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(e){return false}}
+function token(k){var t='';try{t=localStorage.getItem(k)||'';if(!t){t=(crypto&&crypto.randomUUID)?crypto.randomUUID():Date.now()+'-'+Math.random();localStorage.setItem(k,t)}}catch(e){t=Date.now()+'-'+Math.random()}return t}
 function voterToken(){return token('TOMAUNO_VOTER_TOKEN_V189')}
 function reactionToken(){return token('TOMAUNO_SPECIAL_REACTION_V189')}
 function fingerprint(){return navigator.userAgent+'|'+navigator.language+'|'+screen.width+'x'+screen.height}
 function img(p){return window.img190?window.img190(p):(window.specialImg188?window.specialImg188(p):(p&&p.imageUrl||''))}
 function statePhoto(){var s=S();return s.photos&&s.photos[s.idx]}
 function stage(){return E('v236-viewer-stage')||E('v179Viewer')}
-
-/* V242: solo correcciones visuales/experiencia. Descarga y flyer conservan su funcionamiento V240. */
-(function css(){if(E('v242-css'))return;var st=document.createElement('style');st.id='v242-css';st.textContent=`
-#v240ViewerActions{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:1400;width:min(94vw,720px);display:flex;justify-content:center;pointer-events:none}
-.v240-panel-inner{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;padding:7px 9px;background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,.16);border-radius:12px;pointer-events:auto;box-sizing:border-box}
-.v240-btn{position:static!important;width:auto!important;height:30px!important;min-width:30px!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:8px!important;background:#111!important;color:#fff!important;padding:4px 8px!important;font-size:11px!important;line-height:20px!important;cursor:pointer!important;box-shadow:none!important}
-.v240-btn.vote{font-weight:700}.v240-btn.voted{background:#7d0010!important;border-color:#ff3348!important;color:#fff!important}.v240-btn.done{background:#111!important;border-color:#555!important;color:#fff!important}
-.v240-count{font-size:10px;color:#aaa;padding:0 4px;white-space:nowrap}.v240-admin-selected{border-color:#e00022!important;box-shadow:0 0 0 1px #e00022 inset!important}
-#v179Viewer .v236-prev,#v179Viewer .v236-next,#v179Viewer .prev,#v179Viewer .next{pointer-events:auto!important}
-#v179Viewer .v236-close,#v179Viewer .close{display:flex!important;position:absolute!important;right:12px!important;top:12px!important;z-index:1600!important;width:38px!important;height:38px!important;align-items:center!important;justify-content:center!important;border-radius:50%!important;background:rgba(0,0,0,.78)!important;color:#fff!important;font-size:25px!important;line-height:1!important;border:1px solid rgba(255,255,255,.28)!important;cursor:pointer!important}
-#v179ViewerCaption a{color:#ff1493!important;text-decoration:none!important;font-weight:800!important}.v190-photo-author a,.v183-special-card a{color:#ff1493!important;text-decoration:none!important;font-weight:800!important}.v240-download-icon{font-size:18px!important;line-height:18px!important}
-.v242-voted-indicator{position:absolute;left:50%;top:58px;transform:translateX(-50%);z-index:1450;background:rgba(120,0,16,.94);border:1px solid #ff3348;color:#fff;border-radius:10px;padding:7px 11px;font-size:12px;font-weight:900;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.v242-voted-indicator .heart{color:#ff3348;font-size:15px;margin-right:4px}.v242-admin-card-clickable{cursor:pointer!important}.v242-admin-card-clickable.v240-admin-selected{border-color:#e00022!important;box-shadow:0 0 0 1px #e00022 inset!important}
-.v242-admin-gear{font-size:18px!important;min-width:34px!important}.v242-flyer-loading{visibility:hidden!important}
-`;document.head.appendChild(st)})();
-function clearOld(){var v=E('v179Viewer');if(!v)return;['v183ViewerVote','v184ViewerReact','v189ViewerVote','v190ViewerVote','v194ViewerReactions','v196ViewerReactions','v237Vote','v237Download','v239Download'].forEach(function(id){var n=E(id);if(n)n.remove()});Array.from(v.querySelectorAll('.v196-viewer-reactions,.v194-viewer-reactions,.v183-viewer-vote,.v183-viewer-reactions,.v189-viewer-vote,.v190-viewer-vote')).forEach(function(n){n.remove()})}
+function actionPanel(){return E('v240ViewerActions')}
+function clearOldViewerControls(){var v=E('v179Viewer');if(!v)return;['v183ViewerVote','v184ViewerReact','v189ViewerVote','v190ViewerVote','v194ViewerReactions','v196ViewerReactions','v237Vote','v237Download','v239Download'].forEach(function(id){var n=E(id);if(n)n.remove()});Array.from(v.querySelectorAll('.v196-viewer-reactions,.v194-viewer-reactions,.v183-viewer-vote,.v183-viewer-reactions,.v189-viewer-vote,.v190-viewer-vote')).forEach(function(n){n.remove()})}
 function ensurePanel(){var v=E('v179Viewer'),st=stage();if(!v||!st)return null;var p=E('v240ViewerActions');if(!p){p=document.createElement('div');p.id='v240ViewerActions';p.className='v240-viewer-panel';st.appendChild(p)}return p}
-function ensureClose(){var v=E('v179Viewer');if(!v)return;var c=v.querySelector('.v236-close,.close');if(!c){c=document.createElement('button');c.type='button';c.className='v236-close';c.textContent='×';c.setAttribute('aria-label','Cerrar visor');v.appendChild(c)}c.onclick=function(e){e.preventDefault();e.stopPropagation();window.v179CloseViewer()}}
-function viewerPaint(){var s=S(),p=statePhoto(),v=E('v179Viewer'),im=E('v179ViewerImg'),cap=E('v179ViewerCaption'),panel=ensurePanel();if(!p||!v||!im||!panel)return;clearOld();panel.innerHTML='';ensureClose();
-  im.src=img(p);im.style.cssText='display:block;position:relative;left:auto;top:auto;transform:none;max-width:88vw;max-height:78vh;object-fit:contain;margin:auto;z-index:1';
-  var author=String(p.author||p.fotografo||p.photographer||(s.gallery&&s.gallery.fotografo)||'').trim();
-  var ig=String(p.instagram||p.instagramUser||p.instagramUsername||p.photographerInstagram||p.fotografoInstagram||(s.gallery&&s.gallery.instagram)||'').replace(/^@/,'').trim();
-  if(cap){cap.innerHTML=(author?'📷 '+esc(author):'')+(ig?' · <a href="https://www.instagram.com/'+encodeURIComponent(ig)+'/'+'" target="_blank" rel="noopener">@'+esc(ig)+'</a>':'');cap.style.cssText='position:absolute;left:50%;top:12px;bottom:auto;transform:translateX(-50%);z-index:1250;background:rgba(0,0,0,.72);padding:6px 10px;border-radius:9px;color:#fff;font-size:11px'}
-  var oldInd=v.querySelector('.v242-voted-indicator');if(oldInd)oldInd.remove();if(p.voted){var ind=document.createElement('div');ind.className='v242-voted-indicator';ind.innerHTML='<span class="heart">♥</span> FOTO VOTADA';v.appendChild(ind)}
-  var inner=document.createElement('div');inner.className='v240-panel-inner';
-  if(s.gallery&&s.gallery.contest){var vb=document.createElement('button');vb.type='button';vb.textContent=p.voted?'✓ VOTADO':'♥ VOTAR';vb.className='v240-btn vote '+(p.voted?'voted':'');vb.dataset.photoId=String(p.id||'');vb.onclick=function(e){e.preventDefault();e.stopPropagation();toggleVote()};inner.appendChild(vb)}
-  if(s.gallery&&s.gallery.reactions){[['heart','❤️'],['like','👍'],['clap','👏'],['fire','🔥']].forEach(function(x){var b=document.createElement('button');b.type='button';b.className='v240-btn reaction'+(p['__react_'+x[0]]?' done':'');b.dataset.react=x[0];b.dataset.photoId=String(p.id||'');b.textContent=x[1]+' '+Number(p.reactions&&p.reactions[x[0]]||0);b.onclick=function(e){e.preventDefault();e.stopPropagation();toggleReaction(x[0]);};inner.appendChild(b)})}
-  /* DESCARGA: intacta respecto de V240. */
-  if(adm()||s.gallery.allowDownload===true){var db=document.createElement('button');db.type='button';db.className='v240-btn v240-download-icon';db.title='Descarga esta fotografía';db.setAttribute('aria-label','Descarga esta fotografía');db.textContent='⬇';db.onclick=function(e){e.preventDefault();e.stopPropagation();downloadPhoto(db)};inner.appendChild(db)}
-  /* COMPARTIR/FLYER: intacto en su flujo; solo se limpia el estado visual antes de preparar otra foto. */
-  var sh=document.createElement('button');sh.type='button';sh.className='v240-btn';sh.textContent='↗ COMPARTIR';sh.onclick=function(e){e.preventDefault();e.stopPropagation();openStory(p,s.gallery)};inner.appendChild(sh);
-  var ct=document.createElement('span');ct.className='v240-count';ct.textContent='foto '+(s.idx+1)+' / '+s.photos.length;inner.appendChild(ct);panel.appendChild(inner);bindArrows();
+function viewerPaint(){var s=S(),p=statePhoto(),v=E('v179Viewer'),im=E('v179ViewerImg'),cap=E('v179ViewerCaption'),panel=ensurePanel();if(!p||!v||!im||!panel)return;clearOldViewerControls();panel.innerHTML='';
+ im.src=img(p);im.style.cssText='display:block;position:relative;left:auto;top:auto;transform:none;max-width:88vw;max-height:78vh;object-fit:contain;margin:auto;z-index:1';
+ var author=String(p.author||p.fotografo||p.photographer||'').trim(),ig=String(p.instagram||'').replace(/^@/,'').trim();
+ if(cap){cap.innerHTML=(author?'📷 '+esc(author):'')+(ig?' · <a href="https://www.instagram.com/'+encodeURIComponent(ig)+'/" target="_blank" rel="noopener">@'+esc(ig)+'</a>':'');cap.style.cssText='position:absolute;left:50%;top:12px;bottom:auto;transform:translateX(-50%);z-index:1250;background:rgba(0,0,0,.72);padding:6px 10px;border-radius:9px;color:#fff;font-size:11px'}
+ var inner=document.createElement('div');inner.className='v240-panel-inner';
+ if(s.gallery&&s.gallery.contest){var vb=document.createElement('button');vb.type='button';vb.textContent=p.voted?'✓ VOTADO':'♥ VOTAR';vb.className='v240-btn vote '+(p.voted?'voted':'');vb.onclick=function(e){e.preventDefault();e.stopPropagation();toggleVote()};inner.appendChild(vb)}
+ if(s.gallery&&s.gallery.reactions){[['heart','❤️'],['like','👍'],['clap','👏'],['fire','🔥']].forEach(function(x){var b=document.createElement('button');b.type='button';b.className='v240-btn reaction'+(p.reacted&&p.reacted[x[0]]?' done':'');b.dataset.react=x[0];b.textContent=x[1]+' '+Number(p.reactions&&p.reactions[x[0]]||0);b.onclick=function(e){e.preventDefault();e.stopPropagation();toggleReaction(x[0],b)};inner.appendChild(b)})}
+ if(adm()||s.gallery.allowDownload===true){var db=document.createElement('button');db.type='button';db.className='v240-btn v240-download-icon';db.title='Descarga esta fotografía';db.setAttribute('aria-label','Descarga esta fotografía');db.textContent='⬇';db.onclick=function(e){e.preventDefault();e.stopPropagation();downloadPhoto(db)};inner.appendChild(db)}
+ var sh=document.createElement('button');sh.type='button';sh.className='v240-btn';sh.textContent='↗ COMPARTIR';sh.onclick=function(e){e.preventDefault();e.stopPropagation();openStory(p,s.gallery)};inner.appendChild(sh);
+ var ct=document.createElement('span');ct.className='v240-count';ct.textContent='foto '+(s.idx+1)+' / '+s.photos.length;inner.appendChild(ct);panel.appendChild(inner);
+ bindViewerArrows();
 }
-function bindArrows(){var v=E('v179Viewer');if(!v)return;var p=v.querySelector('.v236-prev,.prev'),n=v.querySelector('.v236-next,.next');if(p){p.style.cssText='position:absolute!important;left:18px!important;top:50%!important;transform:translateY(-50%)!important;z-index:1300!important;pointer-events:auto!important';p.onclick=function(e){e.preventDefault();e.stopPropagation();window.v242Move(-1)}}if(n){n.style.cssText='position:absolute!important;right:18px!important;top:50%!important;transform:translateY(-50%)!important;z-index:1300!important;pointer-events:auto!important';n.onclick=function(e){e.preventDefault();e.stopPropagation();window.v242Move(1)}}}
-window.v242Move=function(d){var s=S();if(!s.photos||!s.photos.length)return;s.idx=(Number(s.idx||0)+(d>0?1:-1)+s.photos.length)%s.photos.length;viewerPaint()};window.v240Move=window.v242Move;window.v241Move=window.v242Move;
+function bindViewerArrows(){var v=E('v179Viewer');if(!v)return;var p=v.querySelector('.v236-prev,.prev'),n=v.querySelector('.v236-next,.next'),c=v.querySelector('.v236-close,.close');if(p){p.style.cssText='position:absolute!important;left:18px!important;top:50%!important;transform:translateY(-50%)!important;z-index:1300!important;pointer-events:auto!important';p.onclick=function(e){e.preventDefault();e.stopPropagation();window.v240Move(-1)}}if(n){n.style.cssText='position:absolute!important;right:18px!important;top:50%!important;transform:translateY(-50%)!important;z-index:1300!important;pointer-events:auto!important';n.onclick=function(e){e.preventDefault();e.stopPropagation();window.v240Move(1)}}if(c)c.onclick=function(e){e.preventDefault();e.stopPropagation();window.v179CloseViewer()}}
+window.v240Move=function(d){var s=S();if(!s.photos||!s.photos.length)return;s.idx=(Number(s.idx||0)+(d>0?1:-1)+s.photos.length)%s.photos.length;viewerPaint()};
 window.v179OpenViewer=function(i){var s=S();if(!s.photos||!s.photos.length)return;s.idx=Math.max(0,Math.min(Number(i)||0,s.photos.length-1));var v=E('v179Viewer');if(v){v.classList.add('open');v.setAttribute('aria-hidden','false')}viewerPaint()};
-document.addEventListener('keydown',function(e){var v=E('v179Viewer');if(!v||!v.classList.contains('open'))return;if(e.key==='ArrowLeft'){e.preventDefault();e.stopImmediatePropagation();window.v242Move(-1)}else if(e.key==='ArrowRight'){e.preventDefault();e.stopImmediatePropagation();window.v242Move(1)}else if(e.key==='Escape'){e.preventDefault();window.v179CloseViewer()}else if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||'')&&S().gallery&&S().gallery.contest){e.preventDefault();e.stopImmediatePropagation();toggleVote()}},true);
-async function toggleVote(){var s=S(),p=statePhoto(),g=s.gallery;if(!p||!g||!g.contest)return;var old=!!p.voted;if(p.__voteBusy)return;p.__voteBusy=true;p.voted=!old;p.voteCount=Math.max(0,Number(p.voteCount||0)+(old?-1:1));viewerPaint();
-  /* No esperamos a Excel para mostrar el estado. Si la respuesta tarda o viene corrupta, el estado visual queda y se reintenta. */
-  var payload={action:old?'unvoteSpecialPhoto':'voteSpecialPhoto',galleryId:g.id,photoId:p.id,voterToken:voterToken(),fingerprint:fingerprint(),accessToken:g.voteAccessToken||'',password:g.__password||''};
-  function send(n){return apiPost(payload).then(function(r){if(!r||r.success===false)throw Error(r&&r.msg||'No se pudo actualizar el voto');if(r.voteCount!=null)p.voteCount=Number(r.voteCount)}).catch(function(e){if(n<2)return new Promise(function(resolve){setTimeout(function(){send(n+1).then(resolve).catch(resolve)},1200)});throw e})}
-  send(0).catch(function(){/* no revertimos una acción ya mostrada; próxima lectura de galería sincroniza */}).finally(function(){p.__voteBusy=false;viewerPaint()});
-}
-async function toggleReaction(type){var s=S(),p=statePhoto(),g=s.gallery;if(!p||!g||!g.reactions)return;p.reactions=p.reactions||{};var oldActive=!!p['__react_'+type]||!!(p.reacted&&p.reacted[type]);var oldCount=Number(p.reactions[type]||0);p['__react_'+type]=!oldActive;p.reacted=p.reacted||{};p.reacted[type]=!oldActive;p.reactions[type]=Math.max(0,oldCount+(oldActive?-1:1));viewerPaint();
-  var payload={action:'specialGalleryReaction',galleryId:g.id,photoId:p.id,reaction:type,reactionToken:reactionToken()};
-  function send(n){return apiPost(payload).then(function(r){if(!r||r.success===false)throw Error(r&&r.msg||'No se pudo guardar la reacción');if(r.count!=null)p.reactions[type]=Number(r.count);if(r.active!=null){p['__react_'+type]=!!r.active;p.reacted[type]=!!r.active}}).catch(function(e){if(n<2)return new Promise(function(resolve){setTimeout(function(){send(n+1).then(resolve).catch(resolve)},1200)});throw e})}
-  send(0).catch(function(){/* conservamos la respuesta visual; se sincroniza al recargar */}).finally(function(){viewerPaint()});
-}
-/* DESCARGA ORIGINAL V240, sin cambios. */
+document.addEventListener('keydown',function(e){var v=E('v179Viewer');if(!v||!v.classList.contains('open'))return;if(e.key==='ArrowLeft'){e.preventDefault();e.stopImmediatePropagation();v240Move(-1)}else if(e.key==='ArrowRight'){e.preventDefault();e.stopImmediatePropagation();v240Move(1)}else if(e.key==='Escape'){e.preventDefault();window.v179CloseViewer()}else if(e.code==='Space'&&S().gallery&&S().gallery.contest){e.preventDefault();e.stopImmediatePropagation();toggleVote()}},true);
+async function toggleVote(){var s=S(),p=statePhoto(),g=s.gallery;if(!p||!g||!g.contest||p.__voteBusy)return;p.__voteBusy=true;var old=!!p.voted;var oldCount=Number(p.voteCount||0);p.voted=!old;p.voteCount=Math.max(0,oldCount+(old?-1:1));viewerPaint();try{var r=await apiPost({action:old?'unvoteSpecialPhoto':'voteSpecialPhoto',galleryId:g.id,photoId:p.id,voterToken:voterToken(),fingerprint:fingerprint(),accessToken:g.voteAccessToken||'',password:g.__password||''});if(!r||r.success===false)throw Error('No se pudo actualizar el voto');if(r.voteCount!=null)p.voteCount=Number(r.voteCount);if(window.v183RenderPhotos)window.v183RenderPhotos()}catch(e){p.voted=old;p.voteCount=oldCount;viewerPaint()}finally{p.__voteBusy=false}}
+async function toggleReaction(type,b){var s=S(),p=statePhoto(),g=s.gallery;if(!p||!g||!g.reactions||b.disabled)return;b.disabled=true;p.reacted=p.reacted||{};p.reactions=p.reactions||{};var oldActive=!!p.reacted[type],oldCount=Number(p.reactions[type]||0);p.reacted[type]=!oldActive;p.reactions[type]=Math.max(0,oldCount+(oldActive?-1:1));viewerPaint();try{var r=await apiPost({action:'specialGalleryReaction',galleryId:g.id,photoId:p.id,reaction:type,reactionToken:reactionToken()});if(!r||r.success===false)throw Error('No se pudo actualizar');p.reacted[type]=r.active!==false;p.reactions[type]=Number(r.count!=null?r.count:p.reactions[type]) ;viewerPaint()}catch(e){p.reacted[type]=oldActive;p.reactions[type]=oldCount;viewerPaint()}finally{b.disabled=false}}
 async function downloadPhoto(b){var s=S(),p=statePhoto(),g=s.gallery;if(!p||!g)return;b.disabled=true;try{var r=await apiGet({action:'specialPhotoDownload',photoId:p.id,galleryId:g.id,pin:adm()?'3233':'',password:g.__password||''});if(!r||!r.imageData)throw Error(r&&r.msg||'No se pudo preparar la fotografía.');var a=document.createElement('a');a.href=r.imageData;a.download=r.fileName||'tomauno-fotografia.jpg';document.body.appendChild(a);a.click();a.remove();p.downloadCount=Number(p.downloadCount||0)+1}catch(e){toast(e.message||e)}finally{b.disabled=false}}
-
-/* Flyer: mismo mecanismo V240, pero cacheamos por foto y nunca dejamos visible la placa anterior. */
-var flyerCache=window.__v242FlyerCache||Object.create(null);window.__v242FlyerCache=flyerCache;var flyerSeq=0;
-async function openStory(p,g){var modal=E('v238StoryModal'),canvas=E('v238StoryCanvas');if(!modal||!canvas){toast('No se pudo preparar la historia.');return}var seq=++flyerSeq;modal.style.display='flex';modal.setAttribute('aria-hidden','false');canvas.classList.add('v242-flyer-loading');var ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#080808';ctx.fillRect(0,0,canvas.width,canvas.height);E('v238StoryStatus').textContent='Preparando la placa…';
-  try{var data=flyerCache[String(p.id)];if(!data){var r=await apiGet({action:'specialPhotoImage',photoId:p.id,galleryId:g.id,password:g.__password||''});if(!r||!r.imageData)throw Error(r&&r.msg||'No se pudo obtener la foto');data=r.imageData;flyerCache[String(p.id)]=data}if(seq!==flyerSeq)return;var im=new Image();im.crossOrigin='anonymous';im.onload=function(){if(seq!==flyerSeq)return;ctx.fillStyle='#080808';ctx.fillRect(0,0,1080,1920);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 58px Arial';ctx.fillText('TOMAUNO',540,95);ctx.font='bold 34px Arial';ctx.fillStyle='#f00020';ctx.fillText(g.name||'',540,155);var ratio=Math.min(1000/im.width,1250/im.height),w=im.width*ratio,h=im.height*ratio;ctx.drawImage(im,(1080-w)/2,270+(1250-h)/2,w,h);ctx.fillStyle='#fff';ctx.font='bold 30px Arial';ctx.fillText(p.author||'',540,1610);ctx.font='24px Arial';ctx.fillText(p.instagram?'@'+String(p.instagram).replace(/^@/,''):'',540,1655);ctx.font='22px Arial';ctx.fillText('tomaunofotografias.vercel.app',540,1810);ctx.font='bold 24px Arial';ctx.fillText('TOMAUNO ESTÁ CON VOS',540,1860);canvas.classList.remove('v242-flyer-loading');E('v238StoryStatus').textContent='Historia lista.'};im.onerror=function(){canvas.classList.remove('v242-flyer-loading');E('v238StoryStatus').textContent='No se pudo preparar la placa.'};im.src=data;
-    E('v238StoryShare').onclick=async function(){try{canvas.toBlob(async function(blob){var f=new File([blob],'tomauno-historia.png',{type:'image/png'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:g.name||'Tomauno'});else{var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tomauno-historia.png';a.click()}})}catch(e){}};E('v238StoryDownload').onclick=function(){canvas.toBlob(function(blob){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tomauno-historia.png';a.click()})};E('v238StoryClose').onclick=function(){++flyerSeq;canvas.classList.remove('v242-flyer-loading');modal.style.display='none';modal.setAttribute('aria-hidden','true')};
-  }catch(e){if(seq===flyerSeq){canvas.classList.remove('v242-flyer-loading');E('v238StoryStatus').textContent=e.message||e}}
-}
-
-/* Administración: los banners son seleccionables y debajo aparecen solo votos/reacciones. Sin selector desplegable. */
-function removeVotePicker(){var x=E('v196VotePicker');if(x)x.remove();var sels=document.querySelectorAll('select');sels.forEach(function(sel){if((sel.id||'').toLowerCase().indexOf('vote')>=0||/seleccioná una galería|seleccione una galería/i.test(sel.textContent||'')){var par=sel.closest('#v196VotePicker');if(par)par.remove()}})}
-function showAdminVotes(g){var host=E('v196VoteResults');if(!host)return;host.innerHTML='';var title=document.createElement('div');title.textContent='🗳️ '+(g.name||'')+' · votos y reacciones';host.appendChild(title);apiGet({action:'specialGalleryPhotos',id:g.id,pin:'3233',t:Date.now()}).then(function(r){var ps=(r.photos||[]).filter(function(p){return Number(p.voteCount||0)>0||Object.keys(p.reactions||{}).some(function(k){return Number(p.reactions[k]||0)>0})});ps.sort(function(a,b){return (Number(b.voteCount||0)+reactionTotal(b))-(Number(a.voteCount||0)+reactionTotal(a))});if(!ps.length){host.innerHTML+='<div style="color:#888;font-size:11px;margin-top:6px">No hay fotografías con votos o reacciones.</div>';return}var grid=document.createElement('div');grid.className='v190-admin-result-grid';ps.forEach(function(p){var d=document.createElement('div');d.className='v190-admin-result';d.innerHTML='<img src="'+esc(img(p))+'"><div class="rank">'+Number(p.voteCount||0)+' votos · '+reactionTotal(p)+' reacciones'+(p.award?' · '+esc(p.award):'')+'</div><div class="v">'+esc(p.author||'Sin autor')+'</div>';grid.appendChild(d)});host.appendChild(grid)}).catch(function(e){host.innerHTML+='<div style="color:#ff6675">'+esc(e.message||e)+'</div>'})}
+async function openStory(p,g){var modal=E('v238StoryModal'),canvas=E('v238StoryCanvas');if(!modal||!canvas){toast('No se pudo preparar la historia.');return}modal.style.display='flex';modal.setAttribute('aria-hidden','false');var ctx=canvas.getContext('2d'),im=new Image();im.crossOrigin='anonymous';try{var r=await apiGet({action:'specialPhotoImage',photoId:p.id,galleryId:g.id,password:g.__password||''});if(!r||!r.imageData)throw Error(r&&r.msg||'No se pudo obtener la foto');im.onload=function(){ctx.fillStyle='#080808';ctx.fillRect(0,0,1080,1920);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 58px Arial';ctx.fillText('TOMAUNO',540,95);ctx.font='bold 34px Arial';ctx.fillStyle='#f00020';ctx.fillText(g.name||'',540,155);var ratio=Math.min(1000/im.width,1250/im.height),w=im.width*ratio,h=im.height*ratio;ctx.drawImage(im,(1080-w)/2,270+(1250-h)/2,w,h);ctx.fillStyle='#fff';ctx.font='bold 30px Arial';ctx.fillText(p.author||'',540,1610);ctx.font='24px Arial';ctx.fillText(p.instagram?'@'+String(p.instagram).replace(/^@/,''):'',540,1655);ctx.font='22px Arial';ctx.fillText('tomaunofotografias.vercel.app',540,1810);ctx.font='bold 24px Arial';ctx.fillText('TOMAUNO ESTÁ CON VOS',540,1860);E('v238StoryStatus').textContent='Historia lista.'};im.src=r.imageData;E('v238StoryShare').onclick=async function(){try{canvas.toBlob(async function(blob){var f=new File([blob],'tomauno-historia.png',{type:'image/png'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:g.name||'Tomauno'});else{var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tomauno-historia.png';a.click()}})}catch(e){}};E('v238StoryDownload').onclick=function(){canvas.toBlob(function(blob){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tomauno-historia.png';a.click()})};E('v238StoryClose').onclick=function(){modal.style.display='none';modal.setAttribute('aria-hidden','true')};}catch(e){E('v238StoryStatus').textContent=e.message||e}}
+/* Oculta el selector desplegable viejo: la selección ahora es tocando la tarjeta. */
+function removeVotePicker(){var x=E('v196VotePicker');if(x)x.remove()}
+function bindAdminSelection(){var box=E('v179AdminList');if(!box)return;removeVotePicker();Array.from(box.querySelectorAll('.v179-admin-item')).forEach(function(item){var id=item.dataset.specialId||item.getAttribute('data-special-id');var g=(S().admin||[]).find(function(x){return String(x.id)===String(id)});if(!g)return;item.onclick=function(e){if(e.target.closest&&e.target.closest('button'))return;Array.from(box.querySelectorAll('.v179-admin-item')).forEach(function(x){x.classList.remove('v240-admin-selected')});item.classList.add('v240-admin-selected');showAdminVotes(g)}})}
+async function showAdminVotes(g){var host=E('v196VoteResults');if(!host)return;host.innerHTML='';var title=document.createElement('div');title.textContent='🗳️ '+(g.name||'')+' · votos y reacciones';host.appendChild(title);try{var r=await apiGet({action:'specialGalleryPhotos',id:g.id,pin:'3233',t:Date.now()}),ps=(r.photos||[]).filter(function(p){return Number(p.voteCount||0)>0||Object.keys(p.reactions||{}).some(function(k){return Number(p.reactions[k]||0)>0})});ps.sort(function(a,b){return (Number(b.voteCount||0)+reactionTotal(b))-(Number(a.voteCount||0)+reactionTotal(a));});if(!ps.length){host.innerHTML+='<div style="color:#888;font-size:11px;margin-top:6px">No hay fotografías con votos o reacciones.</div>';return}var grid=document.createElement('div');grid.className='v190-admin-result-grid';ps.forEach(function(p){var d=document.createElement('div');d.className='v190-admin-result';d.innerHTML='<img src="'+esc(img(p))+'"><div class="rank">'+Number(p.voteCount||0)+' votos · '+reactionTotal(p)+' reacciones'+(p.award?' · '+esc(p.award):'')+'</div><div class="v">'+esc(p.author||'Sin autor')+'</div>';grid.appendChild(d)});host.appendChild(grid)}catch(e){host.textContent=e.message||e}}
 function reactionTotal(p){return Object.keys(p.reactions||{}).reduce(function(n,k){return n+Number(p.reactions[k]||0)},0)}
-function bindAdminSelection(){var box=E('v179AdminList');if(!box)return;removeVotePicker();var arr=S().admin||[];Array.from(box.querySelectorAll('.v179-admin-item')).forEach(function(item,index){var id=item.dataset.specialId||item.getAttribute('data-special-id');var g=id?arr.find(function(x){return String(x.id)===String(id)}):arr[index];if(!g)return;item.dataset.specialId=g.id;item.classList.add('v242-admin-card-clickable');item.onclick=function(e){if(e.target.closest&&e.target.closest('button'))return;Array.from(box.querySelectorAll('.v179-admin-item')).forEach(function(x){x.classList.remove('v240-admin-selected')});item.classList.add('v240-admin-selected');showAdminVotes(g)}})}
-
-/* Tuerca práctica: solo en el dock ADM principal; no se agrega ninguna tuerca dentro del listado de galerías. */
-function bindMainGear(){removeVotePicker();var dock=E('v73AdminDock');if(!dock||!adm())return;dock.style.display='flex';var old=E('v242SpecialGear');if(!old){old=document.createElement('button');old.id='v242SpecialGear';old.type='button';old.className='v242-admin-gear';old.textContent='⚙';old.title='Configurar galerías especiales';old.setAttribute('aria-label','Configurar galerías especiales');old.onclick=function(e){e.preventDefault();e.stopPropagation();if(window.v179OpenAdmin)window.v179OpenAdmin()};dock.appendChild(old)}}
-var oldLoad=window.v179LoadAdmin;if(oldLoad&&!oldLoad.__v242){window.v179LoadAdmin=async function(){var r=await oldLoad.apply(this,arguments);setTimeout(function(){removeVotePicker();bindAdminSelection();bindMainGear()},0);return r};window.v179LoadAdmin.__v242=true}
-function pageControls(){var box=E('v238PageControls'),g=E('v179GalleryView'),m=E('v179Masonry');if(!box||!g)return;var busy=!!(m&&/Cargando|ABRIENDO|Preparando/i.test(m.textContent||''));box.classList.toggle('open',g.classList.contains('open')&&!E('v179Viewer')?.classList.contains('open')&&!busy);var bs=box.querySelectorAll('button');var step=Math.round(innerHeight*.95);if(bs[0])bs[0].onclick=function(e){e.preventDefault();e.stopPropagation();g.scrollBy({top:-step,behavior:'smooth'})};if(bs[1])bs[1].onclick=function(e){e.preventDefault();e.stopPropagation();g.scrollBy({top:step,behavior:'smooth'})};bs.forEach(function(b,i){if(b.__v242Hold)return;b.__v242Hold=true;var timer=null,start=function(e){e.preventDefault();e.stopPropagation();var dir=i?1:-1;timer=setInterval(function(){g.scrollBy({top:dir*Math.round(innerHeight*.9),behavior:'auto'})},150)},stop=function(){if(timer){clearInterval(timer);timer=null}};b.addEventListener('pointerdown',start);['pointerup','pointercancel','pointerleave'].forEach(function(ev){b.addEventListener(ev,stop)})})}
-function specialVisibility(){var w=E('v179PublicWrap'),vg=E('view-gallery');if(w)w.style.display=vg&&getComputedStyle(vg).display!=='none'?'none':'';pageControls();bindMainGear();removeVotePicker()}
-window.addEventListener('click',function(){setTimeout(function(){specialVisibility();bindAdminSelection()},50)},true);window.addEventListener('load',function(){setTimeout(function(){specialVisibility();bindMainGear();bindAdminSelection()},150)},true);setInterval(function(){if(adm())bindMainGear()},1200);
-var v=E('v179Viewer');if(v){v.addEventListener('click',function(){setTimeout(pageControls,0)},true)}
-removeVotePicker();setTimeout(function(){bindMainGear();bindAdminSelection();pageControls()},100);
+function bindGear(){var box=E('v179AdminList');if(!box)return;Array.from(box.querySelectorAll('.v179-admin-item')).forEach(function(item,ix){var id=item.dataset.specialId||item.getAttribute('data-special-id'),g=(S().admin||[]).find(function(x){return String(x.id)===String(id)})||(S().admin||[])[ix];if(!g)return;item.dataset.specialId=g.id;var actions=item.querySelector('.v179-admin-actions');if(!actions)return;var gear=actions.querySelector('.v241-card-gear');if(!gear){gear=document.createElement('button');gear.type='button';gear.className='mini-btn v241-card-gear';gear.textContent='⚙';gear.title='Configurar galería';gear.setAttribute('aria-label','Configurar galería');gear.onclick=function(e){e.preventDefault();e.stopPropagation();if(window.v189EditGallery)window.v189EditGallery(g)};actions.insertBefore(gear,actions.firstChild)}});var dock=E('v73AdminDock');if(dock&&adm()&&!E('v241SpecialGear')){var b=document.createElement('button');b.id='v241SpecialGear';b.type='button';b.textContent='⚙';b.title='Configurar galerías especiales';b.setAttribute('aria-label','Configurar galerías especiales');b.onclick=function(e){e.preventDefault();e.stopPropagation();window.v179OpenAdmin()};dock.appendChild(b)}}
+var oldLoad=window.v179LoadAdmin;if(oldLoad&&!oldLoad.__v240){window.v179LoadAdmin=async function(){var r=await oldLoad.apply(this,arguments);bindGear();return r};window.v179LoadAdmin.__v240=true}
+/* Reaplicar los controles sin recargar fotos; al cambiar de galería se limpia primero el resultado anterior. */
+var oldShow=window.v179OpenGalleryId;if(oldShow&&!oldShow.__v240){window.v179OpenGalleryId=function(id){var h=E('v196VoteResults');if(h)h.innerHTML='';return oldShow.apply(this,arguments)};window.v179OpenGalleryId.__v240=true}
+function pageControls(){var box=E('v238PageControls'),g=E('v179GalleryView');if(!box||!g)return;box.classList.toggle('open',g.classList.contains('open')&&!E('v179Viewer')?.classList.contains('open'));var bs=box.querySelectorAll('button');if(bs[0])bs[0].onclick=function(e){e.preventDefault();e.stopPropagation();g.scrollBy({top:-Math.round(innerHeight*.78),behavior:'smooth'})};if(bs[1])bs[1].onclick=function(e){e.preventDefault();e.stopPropagation();g.scrollBy({top:Math.round(innerHeight*.78),behavior:'smooth'})}}
+function specialVisibility(){var w=E('v179PublicWrap'),vg=E('view-gallery');if(w)w.style.display=vg&&getComputedStyle(vg).display!=='none'?'none':'';pageControls()}
+window.addEventListener('click',function(){setTimeout(specialVisibility,50)},true);window.addEventListener('load',function(){setTimeout(function(){specialVisibility();bindGear()},150)},true);
+var v=E('v179Viewer');if(v){v.addEventListener('click',function(){setTimeout(function(){pageControls()},0)},true)}
+removeVotePicker();setTimeout(bindGear,100);setTimeout(pageControls,100);
 })();
 </script>
-<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V242';</script>
+<script>document.getElementById('v110Version').textContent='TOMAUNO FOTOS · V241';</script>
 </body>
+
+<!-- TOMAUNO V243 - CORRECCIONES QUIRURGICAS -->
+<style id="tomauno-v243-css">
+/* Solo correcciones V243: no modifica descarga ni flyers. */
+#v243TopControls{position:fixed;right:16px;bottom:82px;z-index:100850;display:none;flex-direction:column;gap:5px}
+#v243TopControls.open{display:flex}
+#v243TopControls button{width:34px;height:34px;border:1px solid #555;border-radius:50%;background:rgba(8,8,8,.94);color:#fff;font-size:16px;cursor:pointer}
+#v179AdminList .v241-card-gear{display:none!important}
+#v179AdminList .v179-admin-item.v243-selected{border-color:#f00020!important;box-shadow:0 0 0 2px rgba(240,0,32,.16)!important}
+#v241SpecialGear.v243-hidden{display:none!important}
+#v179UploadModal .v243-upload-center{display:flex!important;justify-content:center!important;text-align:center!important}
+</style>
+<script id="tomauno-v243-surgical-fixes">
+(function(){'use strict';
+function E(id){return document.getElementById(id)}
+function adm(){try{return sessionStorage.getItem('TOMAUNO_ADMIN_OK')==='1'}catch(e){return false}}
+function toast(t){if(window.miniToast)window.miniToast(t);else if(window.toast190)window.toast190(t);else if(window.toast)window.toast(t)}
+function S(){return window.__v179SpecialState||{photos:[],idx:0,gallery:null,admin:[]}}
+
+/* 1) Subida: eliminamos definitivamente la ruta antigua que llamaba dataURL183 fuera de su alcance. */
+function bindUpload243(){
+  var b=document.querySelector('#v179UploadModal .btn-order');
+  if(!b)return;
+  var fresh=b.cloneNode(true);
+  fresh.removeAttribute('onclick');
+  fresh.classList.add('v243-real-upload');
+  b.replaceWith(fresh);
+  fresh.onclick=function(e){e.preventDefault();e.stopImmediatePropagation();if(typeof window.v183StartUpload==='function')window.v183StartUpload();};
+}
+
+/* 2) Botón oculto: doble clic entra directamente a Galerías Especiales cuando ya hay sesión ADM. */
+function bindSecret243(){
+  var b=E('secretAdminBtn');if(!b||b.dataset.v243Dbl==='1')return;
+  b.dataset.v243Dbl='1';
+  b.addEventListener('dblclick',function(e){e.preventDefault();e.stopImmediatePropagation();if(typeof window.v179OpenAdmin==='function')window.v179OpenAdmin();},true);
+}
+
+/* 3) Una sola tuerca: sirve para entrar al panel especial desde ADM. No agregamos tuercas a cada galería. */
+function ensureSpecialGear243(){
+  var dock=E('v73AdminDock');if(!dock||!adm())return;
+  var b=E('v241SpecialGear');
+  if(!b){
+    b=document.createElement('button');b.id='v241SpecialGear';b.type='button';b.textContent='⚙';b.title='Configurar galerías especiales';b.setAttribute('aria-label','Configurar galerías especiales');
+    b.onclick=function(e){e.preventDefault();e.stopPropagation();if(window.v179OpenAdmin)window.v179OpenAdmin()};
+    dock.appendChild(b);
+  }
+  b.classList.toggle('v243-hidden',!!(E('v179SpecialAdminModal')&&E('v179SpecialAdminModal').classList.contains('open')));
+}
+
+/* 4) Los banners del panel ADM vuelven a ser seleccionables: rojo + resultados debajo. */
+function removePicker243(){var p=E('v196VotePicker');if(p)p.remove()}
+function bindAdminCards243(){
+  var box=E('v179AdminList');if(!box)return;
+  removePicker243();
+  Array.from(box.querySelectorAll('.v179-admin-item')).forEach(function(item,ix){
+    if(!item.dataset.specialId && S().admin && S().admin[ix])item.dataset.specialId=S().admin[ix].id;
+    if(item.dataset.v243Click==='1')return;
+    item.dataset.v243Click='1';
+    item.addEventListener('click',function(e){
+      if(e.target.closest&&e.target.closest('.v179-admin-actions,button,a,input,select'))return;
+      Array.from(box.querySelectorAll('.v179-admin-item')).forEach(function(x){x.classList.remove('v243-selected','v240-admin-selected')});
+      item.classList.add('v243-selected');
+      var id=item.dataset.specialId||item.getAttribute('data-special-id');
+      var g=(S().admin||[]).find(function(x){return String(x.id)===String(id)});
+      if(g&&typeof window.v243ShowAdminVotes==='function')window.v243ShowAdminVotes(g);
+    },true);
+  });
+  Array.from(box.querySelectorAll('.v241-card-gear')).forEach(function(g){g.remove()});
+}
+window.v243ShowAdminVotes=async function(g){
+  var host=E('v196VoteResults');if(!host)return;host.innerHTML='<div style="color:#aaa;font-size:11px">Cargando resultados de '+String(g.name||'')+'…</div>';
+  try{
+    var r=await apiGet({action:'specialGalleryPhotos',id:g.id,pin:'3233',t:Date.now()}),ps=(r&&r.photos)||[];
+    ps=ps.filter(function(p){return Number(p.voteCount||0)>0||Object.keys(p.reactions||{}).some(function(k){return Number(p.reactions[k]||0)>0})});
+    ps.sort(function(a,b){return (Number(b.voteCount||0)+reactTotal243(b))-(Number(a.voteCount||0)+reactTotal243(a))});
+    if(!ps.length){host.innerHTML='<div style="color:#aaa;font-size:11px">No hay fotografías con votos o reacciones.</div>';return}
+    var grid=document.createElement('div');grid.className='v190-admin-result-grid';
+    ps.forEach(function(p){var d=document.createElement('div');d.className='v190-admin-result';d.innerHTML='<img src="'+String((p.imageUrl||'')).replace(/"/g,'&quot;')+'"><div class="rank">'+Number(p.voteCount||0)+' votos · '+reactTotal243(p)+' reacciones'+(p.award?' · '+String(p.award):'')+'</div><div class="v">'+String(p.author||'Sin autor')+'</div>';grid.appendChild(d)});
+    host.innerHTML='<div class="v180-contest-card"><b>🗳️ '+String(g.name||'')+'</b></div>';host.querySelector('.v180-contest-card').appendChild(grid);
+  }catch(e){host.innerHTML='<div style="color:#ff6875">'+String(e.message||e)+'</div>'}
+};
+function reactTotal243(p){var r=p&&p.reactions||{};return Object.keys(r).reduce(function(n,k){return n+Number(r[k]||0)},0)}
+
+/* 5) Editar vs crear: un único estado V243 evita que GUARDAR CAMBIOS cree otra galería. */
+var editing243=null;
+var oldEdit243=window.v189EditGallery;
+window.v189EditGallery=function(g){editing243=g||null;window.__v243EditingGallery=editing243;var r=oldEdit243?oldEdit243.apply(this,arguments):null;setTimeout(bindSave243,80);return r};
+var oldCreate243=window.v179OpenCreate;
+window.v179OpenCreate=function(){editing243=null;window.__v243EditingGallery=null;var r=oldCreate243?oldCreate243.apply(this,arguments):null;setTimeout(bindSave243,80);return r};
+function form243(){
+ return {pin:'3233',name:String((E('v179Name')||{}).value||'').trim(),description:String((E('v179Desc')||{}).value||'').trim(),uploadKey:String((E('v179Key')||{}).value||'').trim(),storageLimitGB:Number((E('v179Limit')||{}).value||0),isPublic:!!(E('v179Public')&&E('v179Public').checked),password:editing243&&E('v179Pass')&&E('v179Pass').value===''?'__KEEP__':String((E('v179Pass')||{}).value||'').trim(),allowVideos:!!(E('v179Videos')&&E('v179Videos').checked),reactions:!!(E('v179Reactions')&&E('v179Reactions').checked),contest:!!(E('v179Contest')&&E('v179Contest').checked),hideAuthor:!!(E('v179HideAuthor')&&E('v179HideAuthor').checked),showVotes:!!(E('v179ShowVotes')&&E('v179ShowVotes').checked),voteStart:String((E('v179VoteStart')||{}).value||''),voteEnd:String((E('v179VoteEnd')||{}).value||''),compressOnUpload:true,externalDriveFolder:String((E('v183Drive')||{}).value||'').trim(),maxFileMB:Number((E('v190MaxMB')||{}).value||25)};
+}
+async function save243(e){
+ if(e){e.preventDefault();e.stopImmediatePropagation()}
+ var st=E('v179CreateStatus'),p=form243();
+ if(p.name.length<2||!(p.storageLimitGB>0)){if(st)st.textContent='Completá nombre y límite de almacenamiento.';return}
+ var edit=editing243&&editing243.id;
+ if(st)st.textContent=edit?'Guardando cambios…':'Creando galería…';
+ try{
+   var r=edit?await apiPost(Object.assign({action:'updateSpecialGallery',id:editing243.id},p)):await apiPost(Object.assign({action:'createSpecialGallery'},p));
+   if(!r||r.success===false)throw Error(r&&r.msg||'No se pudo guardar la galería.');
+   if(st)st.textContent=edit?'✓ Cambios guardados.':'✓ Galería creada.';
+   editing243=null;window.__v243EditingGallery=null;
+   if(window.v179CloseCreate)window.v179CloseCreate();
+   if(window.v179LoadAdmin)await window.v179LoadAdmin();
+   if(window.v183RefreshPublic)await window.v183RefreshPublic(true);
+ }catch(err){if(st)st.textContent='ERROR: '+(err.message||err);toast(err.message||err)}
+}
+function bindSave243(){
+ var b=E('v189CreateSave')||document.querySelector('#v179CreateModal .btn-order');if(!b)return;
+ var fresh=b.cloneNode(true);fresh.removeAttribute('onclick');fresh.id='v243CreateSave';fresh.textContent=editing243&&editing243.id?'GUARDAR CAMBIOS':'CREAR GALERÍA';b.replaceWith(fresh);fresh.addEventListener('click',save243,false);
+}
+
+/* 6) Navegación de página: tres pasos: arriba, subir tanda, bajar tanda. */
+function pageControls243(){
+ var old=E('v238PageControls');if(!old)return;
+ var wrap=E('v243TopControls');if(!wrap){wrap=document.createElement('div');wrap.id='v243TopControls';wrap.innerHTML='<button type="button" title="Ir arriba de la página">⇈</button><button type="button" title="Subir una tanda">↑</button><button type="button" title="Bajar una tanda">↓</button>';old.parentNode.insertBefore(wrap,old);}
+ var g=E('v179GalleryView'),open=g&&g.classList.contains('open')&&!E('v179Viewer')?.classList.contains('open');wrap.classList.toggle('open',!!open);
+ var bs=wrap.querySelectorAll('button');if(!bs.length)return;
+ bs[0].onclick=function(){if(g)g.scrollTo({top:0,behavior:'smooth'})};
+ bs[1].onclick=function(){if(g)g.scrollBy({top:-Math.round(innerHeight*1.65),behavior:'smooth'})};
+ bs[2].onclick=function(){if(g)g.scrollBy({top:Math.round(innerHeight*1.65),behavior:'smooth'})};
+}
+
+function finalBind243(){
+ bindSecret243();ensureSpecialGear243();bindUpload243();bindAdminCards243();bindSave243();pageControls243();removePicker243();
+ var modal=E('v179SpecialAdminModal');if(modal)modal.classList.toggle('v243-special-open',modal.classList.contains('open'));
+}
+
+window.addEventListener('load',function(){setTimeout(finalBind243,300);setTimeout(finalBind243,900);setTimeout(finalBind243,1800)});
+document.addEventListener('click',function(e){
+ setTimeout(function(){ensureSpecialGear243();bindAdminCards243();bindUpload243();bindSave243();pageControls243();removePicker243();},40);
+},true);
+document.addEventListener('dblclick',function(e){if(e.target&&e.target.id==='secretAdminBtn'&&typeof window.v179OpenAdmin==='function'){e.preventDefault();e.stopImmediatePropagation();window.v179OpenAdmin()}},true);
+/* Version visible definitiva. */
+function version243(){document.querySelectorAll('[id$="Version"]').forEach(function(n){n.textContent='TOMAUNO FOTOS · V243'});var n=E('v110Version');if(n)n.textContent='TOMAUNO FOTOS · V243'}
+window.addEventListener('load',version243);version243();
+})();
+</script>
 </html>
