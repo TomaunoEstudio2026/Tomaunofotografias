@@ -13911,7 +13911,7 @@ if(typeof api23==='function'&&!api23.__v109fix23){
 #eventList .v109-public-meta a:hover{color:#fff!important;background:transparent!important;box-shadow:none!important;text-shadow:0 0 11px currentColor!important;transform:translateY(-1px)}
 @media(max-width:700px){.v110-welcome{margin-top:10px;padding:23px 13px 20px;border-radius:18px}.v110-welcome h1{letter-spacing:-.7px}.v110-trust{gap:6px}.v110-trust span,.v110-more{padding:0 9px;font-size:8px}#v110Version{font-size:7px;right:5px;bottom:3px}}
 </style>
-<div id="v110Version">TOMAUNO FOTOS · V239</div>
+<div id="v110Version">TOMAUNO FOTOS · V240</div>
 <script id="tomauno-v110-js">
 (function(){
 'use strict';
@@ -14572,7 +14572,14 @@ function money(n){return '$ '+Number(n||0).toLocaleString('es-AR',{minimumFracti
 function norm(s){return String(s||'').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9áéíóúñ]/g,'')}
 function fmtDate(v){if(!v)return '';var d=new Date(v);if(!isNaN(d.getTime()))return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});return String(v)}
 function v198Toast(msg){var n=E('v198TinyToast');if(!n){n=document.createElement('div');n.id='v198TinyToast';n.className='v198-tiny-toast';document.body.appendChild(n)}n.textContent=msg||'Copiado';n.classList.add('on');clearTimeout(n._t);n._t=setTimeout(function(){n.classList.remove('on')},1000)}
-async function copy(t,msg){try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(t);v198Toast(msg||'Link copiado');return}var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();v198Toast(msg||'Link copiado')}catch(e){v198Toast('No se pudo copiar')}}
+async function copy(t,msg){
+  t=String(t==null?'':t);var ok=false;
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(t);ok=true}}catch(e){ok=false}
+  if(!ok){
+    try{var ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;z-index:2147483647';document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,t.length);ok=document.execCommand('copy');ta.remove()}catch(e){ok=false}
+  }
+  v198Toast(ok?(msg||'Copiado'):'No se pudo copiar solo: mantené apretado el texto y elegí Copiar');
+}
 function currentFilter(){return E('v198AlbumFilter')?E('v198AlbumFilter').value:''}
 function filteredOrders(){var f=currentFilter();return (panelData&&panelData.orders||[]).filter(function(o){return !f||norm(o.album)===norm(f)})}
 function buildReport(){if(!panelData)return '';var list=filteredOrders(),grouped={};list.forEach(function(o){var k=o.album||o.evento||'Sin álbum';if(!grouped[k])grouped[k]={orders:0,photos:0,total:0,pending:0};grouped[k].orders++;if(String(o.pago).toUpperCase()==='PAGADO'){grouped[k].photos+=Number(o.photoCount||o.cantidad||0);grouped[k].total+=Number(o.total||0)}else grouped[k].pending++});var lines=['📸 INFORME TOMAUNO','Fotógrafo: '+(panelData.photographer||''),'',''];Object.keys(grouped).sort(function(a,b){return a.localeCompare(b)}).forEach(function(k){var x=grouped[k];lines.push('ÁLBUM: '+k);lines.push('Pedidos: '+x.orders);lines.push('Fotos vendidas: '+x.photos);lines.push('Total cobrado: '+money(x.total));if(x.pending)lines.push('Pendientes: '+x.pending);lines.push('')});var paid=list.filter(function(o){return String(o.pago).toUpperCase()==='PAGADO'});var photos=paid.reduce(function(n,o){return n+Number(o.photoCount||o.cantidad||0)},0);var total=paid.reduce(function(n,o){return n+Number(o.total||0)},0);lines.push('TOTAL');lines.push('Pedidos: '+list.length);lines.push('Fotos vendidas: '+photos);lines.push('Total cobrado: '+money(total));if(list.some(function(o){return String(o.pago).toUpperCase()!=='PAGADO'}))lines.push('Pendientes de pago: '+list.filter(function(o){return String(o.pago).toUpperCase()!=='PAGADO'}).length);return lines.join('\n')}
@@ -14633,7 +14640,7 @@ if(albums.length){lines.push('🗂️ *TUS ÁLBUMES Y CONFIGURACIÓN:*');albums.
 lines.push('💳 *PAGO ONLINE OPCIONAL:*','Podés optar por usar *Mercado Pago Tomauno* en los álbumes que quieras. En ese caso el cliente paga online y el sistema habilita la descarga automáticamente, para que no tengas que hablar con cada cliente para entregar los archivos.','');lines.push('📌 *IMPORTANTE:*','Guardá tu clave. Con ella entrás a tu panel y accedés solamente a los pedidos de tus álbumes.','', '📲 *QR DE TU COLECCIÓN:*',qr,'','Cualquier duda podés escribir a Tomauno.');return {name:name,key:key,wa:wa,group:group,url:url,qr:qr,text:lines.join('\n')}}
 window.v198OpenPhotographerGuide=function(){var d=buildPhotographerGuideV198();if(!String(d.key||'').trim()){v198Toast('Configurá primero la clave del fotógrafo');return}if(E('v198GuideText'))E('v198GuideText').value=d.text;if(E('v198GuideTitle'))E('v198GuideTitle').textContent='Guía para '+d.name;if(E('v198GuideLink')){E('v198GuideLink').textContent=d.url;E('v198GuideLink').href=d.url}if(E('v198GuideQr'))E('v198GuideQr').src=d.qr;if(E('v198GuideQrLink'))E('v198GuideQrLink').href=d.qr;if(E('v198PhotographerGuide')){E('v198PhotographerGuide').classList.add('open');E('v198PhotographerGuide').setAttribute('aria-hidden','false')}}
 window.v198ClosePhotographerGuide=function(){if(E('v198PhotographerGuide')){E('v198PhotographerGuide').classList.remove('open');E('v198PhotographerGuide').setAttribute('aria-hidden','true')}}
-window.v198CopyGuide=function(){var d=buildPhotographerGuideV198();copy(d.text,'Mensaje copiado')};window.v198SendGuideWhatsApp=function(){var textToSend=String((E('v198GuideText')||{}).value||'');var n=normWaV198(String((E('v198GuideText')||{}).dataset.whatsapp||'')||buildPhotographerGuideV198().wa);if(!n){v198Toast('Falta el WhatsApp del fotógrafo');return}window.open('https://wa.me/'+n+'?text='+encodeURIComponent(textToSend),'_blank','noopener')};
+window.v198CopyGuide=function(){var d=buildPhotographerGuideV198(),ta=E('v198GuideText'),txt=String((ta&&ta.value)||d.text||'');copy(txt,'Mensaje copiado')};window.v198SendGuideWhatsApp=function(){var textToSend=String((E('v198GuideText')||{}).value||'');var n=normWaV198(String((E('v198GuideText')||{}).dataset.whatsapp||'')||buildPhotographerGuideV198().wa);if(!n){v198Toast('Falta el WhatsApp del fotógrafo');return}window.open('https://wa.me/'+n+'?text='+encodeURIComponent(textToSend),'_blank','noopener')};
 window.v202OpenStandaloneGuide=function(){var name=String((E('v109Photographer')||{}).value||'').trim()||'Fotógrafo',key=String((E('v109ReportKey')||{}).value||'').trim(),wa=String((E('v109Wa')||{}).value||'').trim(),album=String((E('v109Name')||{}).value||'').trim(),bridge=(typeof edit!=='undefined'&&edit)?String(edit.bridgeId||''):'';if(!key){v198Toast('Configurá primero la clave del fotógrafo');return}var url='https://tomaunofotografias.vercel.app/?album='+encodeURIComponent(bridge),qr=guideQrV198(url),pay=String((E('v109Pay')||{}).value||'').toUpperCase(),gestion=String((E('v109Gestion')||{}).value||'').toUpperCase(),p=[];if(Number((E('v109PD')||{}).value||0)>0)p.push('digital '+money(Number(E('v109PD').value)));if(Number((E('v109PI')||{}).value||0)>0)p.push('impresión '+money(Number(E('v109PI').value)));if(Number((E('v109PFull')||{}).value||0)>0)p.push('álbum completo '+money(Number(E('v109PFull').value)));var pago=(gestion==='EXTERNO'&&pay==='TOMAUNO')?'Mercado Pago Tomauno: el sistema habilita la descarga automáticamente cuando se aprueba el pago.':(gestion==='EXTERNO'?'Pago externo/manual: recibís el comprobante, confirmás desde tu panel y luego enviás los links.':'Gestión Tomauno.');var txt=['Hola '+name+',','\n📸 *BIENVENIDO/A A TOMAUNO FOTOGRAFÍAS*','Te comparto los datos para trabajar este álbum.','', '🔗 *LINK DIRECTO DEL ÁLBUM:*',url,'','🔐 *CLAVE DEL FOTÓGRAFO:*',key,'','📱 *PANEL DEL FOTÓGRAFO:*','Desde *BUSCAR MI FOTO*, escribí tu clave. Allí vas a ver tus pedidos, estadísticas y los links de descarga.','', '📂 *ÁLBUM:*',album||'Álbum',p.length?'Precios: '+p.join(' · '):'Precios configurados en la plataforma.',pago,'','💳 *OPCIÓN MERCADO PAGO:*','Podés optar por usar *Mercado Pago Tomauno* para que el cliente pague online y el sistema habilite automáticamente sus archivos, evitando gestionar cada entrega manualmente.','', '📲 *QR:*',qr,'','Guardá tu clave para entrar al panel cuando quieras.'];if(E('v198GuideText'))E('v198GuideText').value=txt.join('\n');if(E('v198GuideTitle'))E('v198GuideTitle').textContent='Guía para '+name;if(E('v198GuideLink')){E('v198GuideLink').textContent=url;E('v198GuideLink').href=url}if(E('v198GuideQr'))E('v198GuideQr').src=qr;if(E('v198GuideQrLink'))E('v198GuideQrLink').href=qr;if(E('v198GuideText'))E('v198GuideText').dataset.whatsapp=wa;if(E('v198PhotographerGuide')){E('v198PhotographerGuide').classList.add('open');E('v198PhotographerGuide').setAttribute('aria-hidden','false')}};
 window.v198ConfirmPayment=async function(row){if(!panelKey||!row)return;try{if(window.toggleL)toggleL(true,'CONFIRMANDO PAGO…');var r=await apiPost({action:'photographerMarkPaid',key:panelKey,row:Number(row)});if(!r||r.success===false)throw new Error((r&&r.msg)||'No se pudo confirmar');var o=(panelData.orders||[]).find(function(x){return Number(x.row)===Number(row)});if(o){o.pago='PAGADO';o.clave=r.clave;o.links=r.links||[];}render();if(window.miniToast)miniToast(r.msg||'Pago confirmado')}catch(e){if(window.luxAlert)luxAlert('ERROR',e.message||String(e))}finally{if(window.toggleL)toggleL(false)}};
 window.v198CopyReport=function(){copy(buildReport(),'Informe copiado')};
@@ -14739,7 +14746,6 @@ document.addEventListener('click',function(){setTimeout(kick,100)},true);
   });
 })();
 </script>
-
 <style id="tomauno-sp-css">
 /* ============ TOMAUNO · GALERÍAS ESPECIALES (módulo único V235) ============ */
 html.sp-lock,html.sp-lock body{overflow:hidden!important}
@@ -15089,6 +15095,68 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
 @media(max-width:900px){.sp-aitem{grid-template-columns:84px minmax(0,1fr)}.sp-aitem img,.sp-aitem .nocov{width:84px;height:106px}}
 
 #spAdmin{z-index:2147483100}#spConfig,#spUpload{z-index:2147483120}
+
+/* ================= V240 ================= */
+.sp-aitem.off{opacity:.5;filter:grayscale(.9)}
+.sp-aitem.off:hover{opacity:.85}
+.sp-offtag{display:inline-block;background:#333;color:#ddd;border-radius:6px;padding:1px 7px;font:800 9px Montserrat,Arial;margin-left:6px;letter-spacing:.05em}
+.sp-btn.busy{opacity:.6;pointer-events:none}
+.sp-btn.pressed{background:#12301f;border-color:#2ecc71;color:#c9ffe0}
+.sp-tagb{pointer-events:auto;cursor:help}
+#spTip{position:fixed;z-index:2147483646;display:none;max-width:260px;background:rgba(10,10,12,.97);color:#fff;border:1px solid #444;border-top:2px solid var(--rojo,#ff0000);border-radius:10px;padding:8px 10px;font:600 11px/1.5 Montserrat,Arial,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.6);pointer-events:none}
+.sp-over{pointer-events:none}
+.sp-over a,.sp-over span{pointer-events:auto;text-decoration:none}
+.sp-over a{background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:3px 9px;font:700 11px Montserrat,Arial;text-shadow:0 1px 3px #000}
+.sp-tchip a{color:#fff;text-decoration:none;border-bottom:1px dotted #ff6b6b}
+.sp-tchip.fix{border-style:dashed;opacity:.92}
+.sp-tchip.fix i.fx{color:#777;font-size:9px}
+#spVStage{cursor:pointer}
+#spVStage.zoomed{cursor:grab}
+#spVImg{will-change:transform;transition:transform .18s ease;touch-action:none}
+#spVStage.dragging #spVImg{transition:none}
+.sp-pendtag{position:absolute;left:8px;top:8px;z-index:3;background:#6b5a1c;border:1px solid #f1c40f;color:#fff0b3;border-radius:8px;padding:3px 8px;font:800 10px Montserrat,Arial}
+.sp-apr{position:absolute;right:7px;top:7px;z-index:4;display:flex;gap:4px}
+.sp-apr button{border:1px solid #2a7a4b;background:rgba(0,20,8,.92);color:#7dffb0;border-radius:8px;height:30px;padding:0 9px;font:800 10px Montserrat,Arial;cursor:pointer}
+.sp-apr button.no{border-color:#7a1f26;background:rgba(20,0,0,.92);color:#ff5050}
+.sp-card.is-pend .ph img{opacity:.7}
+.sp-rgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:10px}
+.sp-rcard{border:1px solid #232326;border-radius:12px;background:#0d0d0f;overflow:hidden;position:relative}
+.sp-rcard.top{border-color:#b8860b;box-shadow:0 0 0 1px #b8860b}
+.sp-rcard .ph{position:relative;aspect-ratio:2/3;background:#111}
+.sp-rcard .ph img{width:100%;height:100%;object-fit:cover;object-position:50% 28%;display:block;cursor:pointer}
+.sp-rcard .ph img.wide{object-fit:contain;background:#050505}
+.sp-rcard .rk{position:absolute;left:7px;top:7px;background:rgba(0,0,0,.75);border:1px solid #444;border-radius:8px;padding:2px 8px;font:900 12px Montserrat,Arial;color:#f1c40f}
+.sp-rcard .info{padding:7px 8px 8px;display:flex;flex-direction:column;gap:5px;font-size:10px}
+.sp-rcard .who{font-weight:800;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-rcard .nums{display:flex;flex-wrap:wrap;gap:5px;color:#cfcfd6}
+.sp-rcard .nums span{background:#16161a;border:1px solid #2b2b30;border-radius:999px;padding:2px 7px;font-weight:700}
+.sp-rcard .acts{display:flex;gap:4px;flex-wrap:wrap}
+.sp-rcard .acts .sp-btn{min-height:28px;padding:4px 7px;font-size:10px}
+.sp-igrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px;grid-column:1/-1}
+.sp-igrid img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;background:#151517;cursor:pointer}
+.sp-irow.open{border-color:var(--rojo,#ff0000)}
+.sp-irow.clk{cursor:pointer}
+.sp-share-grid{display:grid;grid-template-columns:1fr 300px;gap:14px;margin-top:10px}
+.sp-share-grid textarea{width:100%;background:#030303;color:#ddd;border:1px solid #333;border-radius:10px;padding:10px;font:500 12px/1.5 Montserrat,Arial!important;min-height:200px!important;resize:vertical;box-sizing:border-box}
+.sp-qrbox{display:flex;flex-direction:column;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:14px;color:#111}
+.sp-qrbox canvas{width:100%;max-width:260px;height:auto;image-rendering:pixelated}
+.sp-qrbox .sp-muted{color:#555}
+#spShare{z-index:2147483116}
+#spNotify{position:fixed;right:14px;top:70px;z-index:2147483647;display:none;max-width:min(360px,92vw);background:rgba(10,10,12,.98);border:1px solid #444;border-left:4px solid var(--rojo,#ff0000);border-radius:12px;padding:12px 14px;color:#fff;font:600 12px/1.45 Montserrat,Arial,sans-serif;cursor:pointer;box-shadow:0 14px 40px rgba(0,0,0,.65)}
+#spNotify.on{display:block;animation:spIn .25s ease}
+@keyframes spIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+#spNotify b{color:#ff5a5a}#spNotify small{display:block;color:#9a9aa0;margin-top:3px;font-weight:600}
+#spNotify .x{position:absolute;right:6px;top:4px;background:none;border:0;color:#999;font-size:15px;cursor:pointer}
+.sp-pubhd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.sp-minbtn{flex:0 0 auto;width:34px;height:34px;border-radius:10px;border:1px solid #3a3a3d;background:#151517;color:#fff;font:900 18px/1 Arial;cursor:pointer}
+.sp-minbtn:hover{border-color:var(--rojo,#ff0000)}
+.sp-mini-row{display:none;align-items:center;gap:12px;margin:14px 0 18px;padding:12px 16px;border:1px solid #3a3a3d;border-radius:14px;background:linear-gradient(135deg,#150808,#0d0d0f);cursor:pointer;color:#fff}
+.sp-mini-row.on{display:flex}
+.sp-mini-row:hover{border-color:var(--rojo,#ff0000)}
+.sp-mini-row .ico{font-size:22px}.sp-mini-row b{font-size:13px;letter-spacing:.03em}.sp-mini-row span{margin-left:auto;color:#999;font-size:11px}
+.sp-gcard .cp i em{font-style:normal;color:#9a9aa0;font-weight:700}
+@media(max-width:900px){.sp-rgrid,.sp-igrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.sp-share-grid{grid-template-columns:1fr}.sp-rgrid,.sp-igrid{grid-template-columns:repeat(2,minmax(0,1fr))}#spNotify{right:8px;left:8px;max-width:none;top:60px}}
 </style>
 <!-- ============ TOMAUNO V235 · GALERÍAS ESPECIALES (módulo único) ============ -->
 <div id="spWait" aria-live="polite"><div class="box"><span class="sp-hg">⌛</span><span id="spWaitTxt">ABRIENDO GALERÍA…</span></div></div>
@@ -15138,6 +15206,7 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
     <label title="Las etiquetas nuevas quedan pendientes hasta que las apruebes"><input id="spcTagApr" type="checkbox" checked> Aprobar etiquetas</label>
     <label title="Muestra las etiquetas como texto flotante sobre la foto grande"><input id="spcTagShow" type="checkbox"> Etiquetas sobre la foto</label>
     <label title="Botón “¡Soy yo!”: la persona te deja su contacto. Solo lo ves vos."><input id="spcLeads" type="checkbox"> Botón “Soy yo!”</label>
+    <label title="Las fotos que suben otras personas quedan ocultas hasta que vos las apruebes (lo que subís vos se publica directo)"><input id="spcPhotoApr" type="checkbox" checked> Aprobar fotos antes de publicar</label>
   </div>
   <label class="sp-field" id="spcPassWrap" style="display:none">Contraseña de la galería privada<input id="spcPass" type="text" autocomplete="off" placeholder="Contraseña"></label>
   <div class="sp-grid2" id="spcDates">
@@ -15223,10 +15292,7 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
     <label class="sp-field">¿Qué sos en esta foto?<select id="splRole"></select></label>
     <label class="sp-field">Instagram<input id="splIg" maxlength="60" placeholder="@usuario"></label>
   </div>
-  <div class="sp-grid2">
-    <label class="sp-field">WhatsApp<input id="splWa" inputmode="tel" maxlength="24" placeholder="3764…"></label>
-    <label class="sp-field">Email<input id="splEm" type="email" maxlength="80" placeholder="nombre@correo.com"></label>
-  </div>
+  <label class="sp-field">WhatsApp (opcional si dejás Instagram)<input id="splWa" inputmode="tel" maxlength="24" placeholder="3764…"></label>
   <label class="sp-field">Mensaje (opcional)<input id="splMsg" maxlength="200" placeholder="Ej: me interesa participar en próximos desfiles"></label>
   <label class="sp-checkline"><input id="splOk" type="checkbox"> Acepto que Tomauno use estos datos para contactarme. Puedo pedir que los borren.</label>
   <div class="sp-row" style="margin-top:8px"><button type="button" class="sp-btn red" id="splSend" data-act="lsend">ENVIAR MIS DATOS</button><button type="button" class="sp-btn" data-act="lclose">CANCELAR</button></div>
@@ -15236,7 +15302,7 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
 <!-- Bandeja del ADM: etiquetas y contactos -->
 <div id="spInbox" class="sp-layer sp-modal" aria-hidden="true"><div class="sp-box">
   <div class="sp-hd"><div class="sp-title" id="spInTitle">ETIQUETAS Y CONTACTOS</div><button type="button" class="sp-btn sm" data-act="iclose">✕ CERRAR</button></div>
-  <div class="sp-row" style="margin:10px 0"><button type="button" class="sp-btn sm" id="spTabTags" data-itab="tags">🏷 ETIQUETAS</button><button type="button" class="sp-btn sm" id="spTabLeads" data-itab="leads">🙋 CONTACTOS (SOY YO)</button></div>
+  <div class="sp-row" style="margin:10px 0"><button type="button" class="sp-btn sm" id="spTabTags" data-itab="tags">🏷 ETIQUETAS</button><button type="button" class="sp-btn sm" id="spTabLeads" data-itab="leads">🙋 SOY YO</button><button type="button" class="sp-btn sm" id="spTabPh" data-itab="ph">📷 FOTÓGRAFOS</button><button type="button" class="sp-btn sm" id="spTabPend" data-itab="pend">⏳ FOTOS POR APROBAR</button></div>
   <div id="spInBody"></div>
 </div></div>
 
@@ -15244,31 +15310,45 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
 <div id="spStory" class="sp-layer sp-modal" aria-hidden="true"><div class="sp-box narrow" style="width:min(520px,96vw)">
   <div class="sp-hd"><div class="sp-title">🖼 TU HISTORIA</div><button type="button" class="sp-btn sm" data-act="sclose">✕</button></div>
   <div class="sp-story-prev"><canvas id="spStoryCv" width="1080" height="1920"></canvas><div id="spStoryWait">⌛ Preparando la imagen…</div></div>
-  <div class="sp-muted" id="spStoryLbl" style="margin:8px 0 4px">Tocá las etiquetas que querés sumar al diseño (hasta 6):</div>
+  <label class="sp-checkline" id="spStoryTagsLine" style="margin:8px 0 2px"><input id="spStoryTagsOn" type="checkbox" checked> Incluir las etiquetas escritas dentro de la imagen <small style="color:#888">(si no, copiá el texto y pegalo en Instagram para que queden cliqueables)</small></label>
+  <div class="sp-muted" id="spStoryLbl" style="margin:6px 0 4px">Tocá las etiquetas que querés sumar al diseño (hasta 6):</div>
   <div id="spStoryChips" class="sp-flt"></div>
-  <div class="sp-row" style="margin-top:8px"><button type="button" class="sp-btn red" id="spStoryGo" data-act="sgo">📲 COMPARTIR / DESCARGAR</button><button type="button" class="sp-btn" data-act="scopy">📋 COPIAR ETIQUETAS</button><button type="button" class="sp-btn" id="spStoryIg" data-act="sig" style="display:none">📷 ABRIR INSTAGRAM</button></div>
+  <div class="sp-row" style="margin-top:8px"><button type="button" class="sp-btn red" id="spStoryShare" data-act="sshare">📲 COMPARTIR</button><button type="button" class="sp-btn" id="spStoryDl" data-act="sdl">⬇ DESCARGAR IMAGEN</button><button type="button" class="sp-btn" id="spStoryImg" data-act="simg">🖼 COPIAR IMAGEN</button><button type="button" class="sp-btn" data-act="scopy">📋 COPIAR ETIQUETAS</button><button type="button" class="sp-btn" id="spStoryIg" data-act="sig" style="display:none">📷 ABRIR INSTAGRAM</button></div>
   <div id="spStoryHint" class="sp-muted" style="display:none;margin-top:8px;line-height:1.5;color:#f1d98a"></div>
   <p class="sp-muted" style="margin:8px 0 0;line-height:1.5">En el celular se abre el menú para elegir Instagram. En la compu se descarga la imagen. Pegá las etiquetas copiadas como texto en tu historia para que queden cliqueables.</p>
 </div></div>
 
+<!-- Invitar / compartir galería (con QR) -->
+<div id="spShare" class="sp-layer sp-modal" aria-hidden="true"><div class="sp-box narrow" style="width:min(560px,96vw)">
+  <div class="sp-hd"><div class="sp-title" id="spShTitle">🔗 INVITAR A LA GALERÍA</div><button type="button" class="sp-btn sm" data-act="shclose">✕</button></div>
+  <div class="sp-share-grid">
+    <div><div class="sp-muted" style="margin-bottom:4px">Mensaje listo para WhatsApp:</div><textarea id="spShMsg" readonly rows="9"></textarea>
+      <div class="sp-row" style="margin-top:8px"><button type="button" class="sp-btn red sm" data-act="shcopy">📋 COPIAR MENSAJE</button><button type="button" class="sp-btn sm" data-act="shwa">💬 WHATSAPP</button><button type="button" class="sp-btn sm" data-act="shlink">🔗 COPIAR SOLO EL LINK</button></div></div>
+    <div class="sp-qrbox"><canvas id="spQr" width="300" height="300"></canvas><button type="button" class="sp-btn sm" data-act="shqr">⬇ DESCARGAR QR</button><div class="sp-muted" style="text-align:center;margin-top:4px">Para pegar en afiches, pantallas o historias</div></div>
+  </div>
+</div></div>
+
+<!-- Aviso al ADM -->
+<div id="spNotify" role="status" aria-live="polite"></div>
 
 <script id="tomauno-sp-js">
 (function(){
 'use strict';
 if(window.__tomaunoSP)return;window.__tomaunoSP=true;
 
-var PIN='3233',LS_VOTE='TOMAUNO_VOTER_TOKEN_V189',LS_REACT='TOMAUNO_SPECIAL_REACTION_V189',VERSION='TOMAUNO FOTOS · V239';
+var PIN='3233',LS_VOTE='TOMAUNO_VOTER_TOKEN_V189',LS_REACT='TOMAUNO_SPECIAL_REACTION_V189',VERSION='TOMAUNO FOTOS · V240';
 var REACTS=[['heart','❤️'],['clap','👏'],['like','👍']];
 var SORTS={name:'Orden: nombre de archivo',recent:'Orden: más recientes',votes:'Orden: más votadas',reacts:'Orden: más reacciones'};
-var S={gallery:null,photos:[],view:[],idx:0,admin:false,asPublic:false,filter:'',flt:'',seq:0,play:null,pod:null,fromAdmin:false,q:'',
+var S={gallery:null,photos:[],view:[],idx:0,admin:false,asPublic:false,filter:'',flt:'',seq:0,play:null,pod:null,fromAdmin:false,q:'',ov:false,
   sort:(function(){try{var v=localStorage.getItem('TOMAUNO_SP_SORT');return SORTS[v]?v:'name'}catch(e){return 'name'}})()};
 var CACHE={};
-var SRV_MIN=239,SRV={v:null,warned:false};
-var ROLES=[['modelo','Modelo'],['maquillaje','Make up'],['estilismo','Estilismo'],['diseno','Diseño'],['accesorios','Accesorios'],['peinado','Peinado'],['fotografia','Fotografía'],['produccion','Producción'],['baile','Baile'],['musica','Música'],['actuacion','Actuación'],['otro','Otro']];
-var ROLE_MAP={};ROLES.forEach(function(r){ROLE_MAP[r[0]]=r[1]});
+var SRV_MIN=240,SRV={v:null,warned:false};
+var ROLES=[['modelo','Modelo'],['maquillaje','Make up'],['estilismo','Estilismo'],['diseno','Diseño'],['accesorios','Accesorios'],['peinado','Peinado'],['fotografia','Fotografía'],['produccion','Producción'],['lugar','Lugar / Estudio'],['instituto','Instituto'],['profesor','Profesor'],['asistente','Asistente'],['otro','Otro']];
+var LEAD_ROLES=[['modelo','Modelo'],['baile','Bailarín/a'],['musica','Músico/a'],['actuacion','Actor / Actriz'],['maquillaje','Make up'],['estilismo','Estilismo'],['diseno','Diseño'],['accesorios','Accesorios'],['peinado','Peinado'],['fotografia','Fotografía'],['produccion','Producción'],['otro','Otro']];
+var ROLE_MAP={baile:'Baile',musica:'Música',actuacion:'Actuación'};ROLES.concat(LEAD_ROLES).forEach(function(r){ROLE_MAP[r[0]]=r[1]});
 var BRAND={host:'tomaunofotografias.vercel.app',ig:'@tomaunomodels',wa:'+54 9 376 435-4522',slogan:' Está con Vos!!',title:'Galería Fotográfica de Tomauno'};
 var ST={mode:'photo',p:null,im:null,ents:null,sel:[],chips:[],blob:null,file:null,seq:0,fseq:0,caption:''};
-var TP={rng:false},LD={p:null},IN={g:null,tab:'tags',tags:null,leads:null};
+var TP={rng:false,busy:'',pressed:null},Z={z:1,tx:0,ty:0,last:0,lx:0,ly:0,timer:0,drag:null,moved:false,hint:false},LD={p:null},IN={g:null,tab:'tags',tags:null,leads:null,ph:null,photos:null,open:{}};
 var A={list:[],sel:'',res:null,shown:10,editing:null,upl:{g:null,prepared:[],busy:false}};
 var H={list:null};
 var mem={},layers=[],busy={};
@@ -15283,10 +15363,10 @@ function voterToken(){return tok(LS_VOTE)}
 function reactToken(){return tok(LS_REACT)}
 function fingerprint(){try{return [navigator.userAgent,navigator.language,screen.width+'x'+screen.height].join('|')}catch(e){return ''}}
 function withTimeout(pr,ms){return new Promise(function(res,rej){var t=setTimeout(function(){rej(new Error('El servidor tardó demasiado en responder. Probá de nuevo.'))},ms);pr.then(function(v){clearTimeout(t);res(v)},function(e){clearTimeout(t);rej(e)})})}
-async function get(params,retries){
+async function get(params,retries,tmo){
   var n=retries==null?2:retries,p=Object.assign({},params,{t:Date.now()});
   for(var i=0;;i++){
-    try{var res=await withTimeout(apiGet(p),50000);noteServer(p.action,res);return res}
+    try{var res=await withTimeout(apiGet(p),tmo||50000);noteServer(p.action,res);return res}
     catch(e){var m=String(e&&e.message||e);if(i<n&&/failed to fetch|networkerror|load failed|network request|respuesta inv/i.test(m)){await sleep(500*(i+1));continue}throw e}
   }
 }
@@ -15328,11 +15408,49 @@ function tagText(t){return roleLabel(t.role)+' '+(t.instagram?'@'+t.instagram:t.
 function pubTags(p){return (p.tags||[]).filter(function(t){return t.status!=='PENDIENTE'})}
 function visTags(p){return (p.tags||[]).filter(function(t){return t.status!=='PENDIENTE'||t.mine||admView()})}
 function canTag(){var g=S.gallery;return !!(g&&(g.tagsEnabled||admView()))}
-function tagsCopy(p){return pubTags(p).map(tagText).join(' · ')}
+function tagKey(t){return String(t.role||'otro')+'|'+String(t.instagram||t.name||'').toLowerCase()}
+/* Etiquetas fijas: salen de los créditos de la galería (los @usuarios) y del autor de la foto. */
+function guessRole(seg){
+  var s=String(seg||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[@()]/g,' ');
+  if(/\bmodelos?\b/.test(s))return 'modelo';
+  if(/make ?up|maquill/.test(s))return 'maquillaje';
+  if(/\bfoto|camara|fotograf/.test(s))return 'fotografia';
+  if(/estilis/.test(s))return 'estilismo';
+  if(/diseno|disenad/.test(s))return 'diseno';
+  if(/accesori/.test(s))return 'accesorios';
+  if(/peinad|hair/.test(s))return 'peinado';
+  if(/produc/.test(s))return 'produccion';
+  if(/lugar|estudio|ubicaci|salon|auditorio|sede|local\b/.test(s))return 'lugar';
+  if(/instituto|academia|escuela/.test(s))return 'instituto';
+  if(/profesor|profe\b|docente|director/.test(s))return 'profesor';
+  if(/asistente|ayudante/.test(s))return 'asistente';
+  return 'otro';
+}
+function parseCredits(txt){
+  var out=[],seen={};
+  String(txt||'').split(/[\n;|·•]+/).forEach(function(line){
+    var hs=line.match(/@[A-Za-z0-9._]{2,30}/g);if(!hs)return;
+    var role=guessRole(line.replace(/@[A-Za-z0-9._]{2,30}/g,' '));
+    hs.forEach(function(h){var t={id:'cr_'+h.slice(1).toLowerCase()+'_'+role,role:role,name:'',instagram:h.slice(1).toLowerCase(),status:'PUBLICADA',fixed:true,src:'créditos'},k=tagKey(t);if(!seen[k]){seen[k]=1;out.push(t)}});
+  });
+  return out;
+}
+var CT={src:null,list:[]};
+function creditTags(){var g=S.gallery,src=String(g&&g.credits||'');if(CT.src!==src){CT.src=src;CT.list=parseCredits(src)}return CT.list}
+function authorTag(p){
+  if(!authorsVisible())return null;var ig=igOf(p.instagram),nm=String(p.author||'').trim();if(!ig&&!nm)return null;
+  return {id:'au_'+p.id,role:'fotografia',name:nm,instagram:ig?ig.toLowerCase():'',status:'PUBLICADA',fixed:true,src:'autor'};
+}
+function shownTags(p){
+  var out=[],seen={};function add(t){var k=tagKey(t);if(seen[k])return;seen[k]=1;out.push(t)}
+  creditTags().forEach(add);var a=authorTag(p);if(a)add(a);visTags(p).forEach(add);return out;
+}
+function copyTags(p){return shownTags(p).filter(function(t){return t.status!=='PENDIENTE'}).map(tagText).join(' · ')}
+function tagsCopy(p){return copyTags(p)}
 function norm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[@()]/g,' ').replace(/\s+/g,' ').trim()}
 function personHay(p){
   if(p.__hay!=null)return p.__hay;var a=[p.author,p.instagram];
-  (p.tags||[]).forEach(function(t){a.push(t.name,t.instagram,roleLabel(t.role))});
+  shownTags(p).forEach(function(t){a.push(t.name,t.instagram,roleLabel(t.role))});
   (p.leads||[]).forEach(function(l){a.push(l.name,l.instagram)});
   return p.__hay=norm(a.join(' '));
 }
@@ -15405,37 +15523,47 @@ async function askPassword(g){
 
 /* ---------- portada ---------- */
 function isSaleLink(){try{var q=new URLSearchParams(location.search);return !!(q.get('album')||q.get('parent')||q.get('estudiantina'))}catch(e){return false}}
+function collapsed(){try{return localStorage.getItem('TOMAUNO_SP_COLLAPSED')==='1'}catch(e){return false}}
+function setCollapsed(v){try{localStorage.setItem('TOMAUNO_SP_COLLAPSED',v?'1':'0')}catch(e){}renderHome()}
+function syncHomeVis(){var h=$('spHome');if(h)h.style.display=document.getElementById('v91Back')?'none':''}
 function ensureHome(){
   if(isSaleLink())return false;
   var list=$('eventList');if(!list||!list.parentNode)return false;
   if($('spHome')&&$('spHome').parentNode)return true;
   var w=document.createElement('section');w.id='spHome';
-  w.innerHTML='<div class="sp-entry" id="spEntry"><span class="ico">📸</span><div class="txt"><b>GALERÍAS ESPECIALES</b><span>Crear, configurar y administrar galerías colectivas y concursos.</span></div><button class="gear" type="button" data-act="admin" title="Abrir Galerías Especiales" aria-label="Abrir Galerías Especiales">⚙</button></div>'
-   +'<div class="sp-public" id="spPublic" style="display:none"><div class="ttl">Galerías especiales</div><p class="sub">Eventos, encuentros y galerías colectivas de Tomauno.</p><div class="sp-cards" id="spCards"></div></div>';
+  w.innerHTML='<div class="sp-entry" id="spEntry"><span class="ico">📸</span><div class="txt"><b>GALERÍAS ESPECIALES</b><span id="spEntrySub">Crear, configurar y administrar galerías colectivas y concursos.</span></div><button class="gear" type="button" data-act="admin" title="Abrir Galerías Especiales" aria-label="Abrir Galerías Especiales">⚙</button></div>'
+   +'<div class="sp-public" id="spPublic" style="display:none"><div class="sp-pubhd"><div><div class="ttl">Galerías especiales</div><p class="sub">Eventos, encuentros y galerías colectivas de Tomauno.</p></div><button class="sp-minbtn" type="button" data-act="pmin" title="Minimizar" aria-label="Minimizar">−</button></div><div class="sp-cards" id="spCards"></div></div>'
+   +'<div class="sp-mini-row" id="spMini" data-act="pexp" role="button" tabindex="0"><span class="ico">📸</span><b>GALERÍAS ESPECIALES</b><span id="spMiniN"></span></div>';
   list.parentNode.insertBefore(w,list);
   w.addEventListener('click',function(e){
     if(e.target.closest('[data-act="admin"]')){openAdmin();return}
+    if(e.target.closest('[data-act="pmin"]')){setCollapsed(true);return}
+    if(e.target.closest('[data-act="pexp"]')){setCollapsed(false);return}
     var c=e.target.closest('[data-gid]');if(c)openGallery(c.dataset.gid);
   });
   w.addEventListener('error',function(e){var im=e.target;if(im&&im.tagName==='IMG'){var d=document.createElement('div');d.className='cov';d.textContent='📸';im.replaceWith(d)}},true);
+  if(window.MutationObserver)new MutationObserver(syncHomeVis).observe(list,{childList:true});
+  if(!H.list){try{var c=JSON.parse(localStorage.getItem('TOMAUNO_SP_HOME')||'null');if(c&&c.list&&Date.now()-c.t<7*864e5)H.list=c.list}catch(e){}}
   if(H.list)renderHome();
-  syncEntry();return true;
+  syncEntry();syncHomeVis();return true;
 }
-function syncEntry(){var e=$('spEntry');if(e)e.style.display=isAdm()?'flex':'none'}
+function syncEntry(){var e=$('spEntry');if(e)e.style.display=isAdm()?'flex':'none';if(isAdm())startAlerts()}
 async function refreshHome(){
   if(!ensureHome())return;
-  try{var r=await get({action:'specialGalleries',public:'1'});H.list=r.galleries||[]}catch(e){return}
+  try{var r=await get({action:'specialGalleries',public:'1'});H.list=r.galleries||[];try{localStorage.setItem('TOMAUNO_SP_HOME',JSON.stringify({t:Date.now(),list:H.list}))}catch(e){}}catch(e){return}
   renderHome();
 }
 function renderHome(){
-  var box=$('spPublic'),cards=$('spCards');if(!box||!cards)return;var gs=H.list||[];
-  if(!gs.length){box.style.display='none';return}
+  var box=$('spPublic'),cards=$('spCards'),mini=$('spMini');if(!box||!cards)return;var gs=H.list||[];
+  if(!gs.length){box.style.display='none';if(mini)mini.classList.remove('on');return}
+  if(collapsed()){box.style.display='none';if(mini){mini.classList.add('on');$('spMiniN').textContent=gs.length+' galería'+(gs.length===1?'':'s')+' · tocá para abrir ▸'}return}
+  if(mini)mini.classList.remove('on');
   box.style.display='';
   cards.innerHTML=gs.map(function(g){
-    var cv=cover(g,600);
+    var cv=cover(g,600),v=Number(g.views||0);
     return '<article class="sp-gcard" data-gid="'+esc(g.id)+'"><div class="im">'+(cv?'<img loading="lazy" alt="" src="'+esc(cv)+'">':'<div class="cov">📸</div>')
       +(g.contest?'<span class="tag">🗳️ CONCURSO</span>':(g.passwordRequired?'<span class="tag">🔒 PRIVADA</span>':''))+'</div>'
-      +'<div class="cp"><b>'+esc(g.name||'Galería especial')+'</b><small>'+esc(g.description||'Galería especial')+'</small><i>'+Number(g.photoCount||0)+' fotografías</i></div></article>';
+      +'<div class="cp"><b>'+esc(g.name||'Galería especial')+'</b><small>'+esc(g.description||'Galería especial')+'</small><i>'+Number(g.photoCount||0)+' fotografías'+(v?' <em>· 👁 '+v+' visita'+(v===1?'':'s')+'</em>':'')+'</i></div></article>';
   }).join('');
 }
 function injectPin(){
@@ -15467,7 +15595,7 @@ async function openGallery(id,opts){
       S.gallery=c.g;S.admin=adm;S.asPublic=false;S.photos=c.photos;S.view=[];S.filter='';S.flt='';S.idx=0;
       showShell(c.g);renderAll();
       if(opts.photoId)openViewer(opts.photoId);
-      loadPhotos({silent:true}).catch(function(){});
+      loadPhotos({silent:true,view:true}).catch(function(){});
       return;
     }
     wait(true,'ABRIENDO GALERÍA…');
@@ -15480,7 +15608,7 @@ async function openGallery(id,opts){
     }
     S.gallery=g;S.admin=adm;S.asPublic=false;S.photos=[];S.view=[];S.filter='';S.flt='';S.idx=0;
     showShell(g);wait(false);
-    var ok=await loadPhotos();
+    var ok=await loadPhotos({view:true});
     if(ok&&opts.photoId&&seq===S.seq){if(!S.view.some(function(p){return String(p.id)===String(opts.photoId)})){S.filter='';S.flt='';renderFilters();renderFlt();renderGrid()}openViewer(opts.photoId)}
   }catch(e){wait(false);toast(e.message||e);if(seq===S.seq&&!S.photos.length)closeGallery()}
 }
@@ -15497,6 +15625,7 @@ async function loadPhotos(o){
   o=o||{};var g=S.gallery;if(!g)return false;var gid=g.id;
   var q={action:'specialGalleryPhotos',id:gid,voterToken:voterToken(),fingerprint:fingerprint(),reactionToken:reactToken()};
   if(o.force)q.refresh='1';
+  if(o.view)q.view='1';
   if(admView())q.pin=PIN;else if(g.__password)q.password=g.__password;
   var slow=0;
   if(!o.silent)slow=setTimeout(function(){var el=$('spGrid').querySelector('.sp-wait2');if(el)el.textContent='Las galerías grandes pueden demorar unos segundos la primera vez…'},6000);
@@ -15533,8 +15662,9 @@ function renderTools(){
   if(g.uploadEnabled!==false)t.push(tb('upload','＋ SUBIR FOTOGRAFÍAS','red'));
   else if(admView())t.push(tb('upload','＋ SUBIR (SOLO ADM)',''));
   t.push(tb('play','▶ PLAY'));
+  t.push(tb('share','🔗 COMPARTIR / QR'));
   t.push('<select id="spSort" class="sp-sort" title="Orden de las fotos">'+Object.keys(SORTS).map(function(k){return '<option value="'+k+'"'+(S.sort===k?' selected':'')+'>'+SORTS[k]+'</option>'}).join('')+'</select>');
-  t.push(tb('reload','🔄 ACTUALIZAR'));
+  t.push(tb('greload','🔄 ACTUALIZAR'));
   if(g.contest&&(admView()||g.resultsRevealed))t.push(tb('podium','🏆 VER PREMIADOS'));
   if(S.admin&&!g.passwordRequired)t.push(tb('mode',S.asPublic?'🛠 VOLVER A VISTA ADM':'👁 VER COMO PÚBLICO'));
   $('spTools').innerHTML=t.join('');
@@ -15563,6 +15693,7 @@ function fchip(v,l,n){return '<button type="button" class="sp-chip'+(S.flt===v?'
 function nameList(){
   var m={};
   function add(nm,ig){var l=nm&&ig?nm+' (@'+ig+')':(ig?'@'+ig:nm);if(!l)return;var k=norm(l);if(!m[k])m[k]=l}
+  creditTags().forEach(function(t){add(t.name,t.instagram)});
   S.photos.forEach(function(p){
     if(authorsVisible()&&p.author)add(String(p.author).trim(),'');
     (p.tags||[]).forEach(function(t){add(t.name,t.instagram)});
@@ -15613,10 +15744,12 @@ function cardHTML(p){
   if(g.contest)vote='<button type="button" class="sp-vote'+(p.voted?' voted':'')+'" data-act="vote">'+(p.voted?'✓ VOTADO':'♥ VOTAR')+(votesVisible()?' · '+p.voteCount:'')+'</button>';
   var award=(p.award&&(g.resultsRevealed||adm))?'<span class="sp-award">'+esc(awardLabel(p.award))+'</span>':'';
   var tl=visTags(p),pend=adm&&tl.some(function(t){return t.status==='PENDIENTE'});
-  var marks=(tl.length?'<span class="sp-tagb'+(pend?' pend':'')+'">🏷 '+tl.length+(pend?' ⏳':'')+'</span>':'')+((adm&&p.leads&&p.leads.length)?'<span class="sp-leadb">🙋 '+p.leads.length+'</span>':'');
+  var tipTxt=shownTags(p).map(function(t){return tagText(t)+(t.status==='PENDIENTE'?' ⏳':'')}).join('\n');
+  var marks=(tl.length?'<span class="sp-tagb'+(pend?' pend':'')+'" data-tip="'+esc(tipTxt)+'">🏷 '+tl.length+(pend?' ⏳':'')+'</span>':'')+((adm&&p.leads&&p.leads.length)?'<span class="sp-leadb">🙋 '+p.leads.length+'</span>':'');
   var mod='';
-  if(adm)mod=p.hidden?'<button type="button" class="sp-mod" data-act="show" title="Volver a mostrar esta fotografía">👁 MOSTRAR</button>':'<button type="button" class="sp-mod" data-act="hide" title="Ocultar esta fotografía al público">🙈</button>';
-  return '<figure class="sp-card'+(p.hidden?' is-hidden':'')+(p.voted?' voted':'')+'" data-pid="'+esc(p.id)+'"><div class="ph"'+(adm&&p.fileName?' title="'+esc(p.fileName)+'"':'')+'><img loading="lazy" decoding="async" alt="" src="'+esc(thumb(p,500))+'">'+award+(p.hidden?'<span class="sp-hidtag">OCULTA</span>':'')+mod+marks+'</div>'
+  if(adm&&p.pending)mod='<span class="sp-pendtag">⏳ POR APROBAR</span><div class="sp-apr"><button type="button" data-act="aprv" title="Aprobar y publicar">✓ APROBAR</button><button type="button" class="no" data-act="rejt" title="Rechazar (queda oculta)">✕</button></div>';
+  else if(adm)mod=p.hidden?'<button type="button" class="sp-mod" data-act="show" title="Volver a mostrar esta fotografía">👁 MOSTRAR</button>':'<button type="button" class="sp-mod" data-act="hide" title="Ocultar esta fotografía al público">🙈</button>';
+  return '<figure class="sp-card'+(p.hidden?' is-hidden':'')+(p.pending?' is-pend':'')+(p.voted?' voted':'')+'" data-pid="'+esc(p.id)+'"><div class="ph"'+(adm&&p.fileName?' title="'+esc(p.fileName)+'"':'')+'><img loading="lazy" decoding="async" alt="" src="'+esc(thumb(p,500))+'">'+award+(p.hidden?'<span class="sp-hidtag">OCULTA</span>':'')+mod+marks+'</div>'
     +'<div class="info">'+au+rx+((dl||vote)?'<div class="fr">'+vote+dl+'</div>':'')+'</div></figure>';
 }
 function renderGrid(){
@@ -15645,7 +15778,7 @@ function paintIfCurrent(p){if(isOpen('spViewer')&&S.view[S.idx]===p){paintWho(p)
 var hold={t:0,raf:0,dir:0,start:0,last:0,did:false};
 function updateScroll(){
   var sc=$('spGallery'),box=$('spScroll'),back=$('spBack');if(!sc||!box)return;
-  var blocked=layers.some(function(i){return ['spViewer','spPodium','spConfig','spUpload','spAdmin','spDialog','spLead','spInbox','spStory'].indexOf(i)>=0});
+  var blocked=layers.some(function(i){return ['spViewer','spPodium','spConfig','spUpload','spAdmin','spDialog','spLead','spInbox','spStory','spShare'].indexOf(i)>=0});
   var show=isOpen('spGallery')&&!blocked;
   if(!show){box.classList.remove('on');return}
   var max=sc.scrollHeight-sc.clientHeight,step=tandaPx();
@@ -15751,19 +15884,21 @@ function paintBar(){
   if(canDownload(p))r1+='<button type="button" class="sp-btn" data-vact="dl">⬇ DESCARGAR FOTO</button>';
   r1+='<button type="button" class="sp-btn" data-vact="share">↗ COMPARTIR</button>';
   if(g.reactions)r2=REACTS.map(function(x){var on=!!p.mine[x[0]];return '<button type="button" class="sp-btn sp-react'+(on?' on':'')+'" data-react="'+x[0]+'" aria-pressed="'+on+'">'+x[1]+' <span>'+Number(p.reactions[x[0]]||0)+'</span></button>'}).join('');
-  var tlv=visTags(p),extra='';
+  var tlv=shownPub(p),extra='';
   if(canTag()||tlv.length)extra+='<button type="button" class="sp-btn sm'+(tagPanelOpen()?' on':'')+'" data-vact="tags">🏷 ETIQUETAS'+(tlv.length?' ('+tlv.length+')':'')+((admView()&&p.leads&&p.leads.length)?' · 🙋 '+p.leads.length:'')+'</button>';
   if(g.leadsEnabled&&!admView())extra+='<button type="button" class="sp-btn sm" data-vact="lead">🙋 ¡SOY YO!</button>';
   r2+=extra;
   if(admView()){
     r3=(p.hidden?'<button type="button" class="sp-btn sm" data-vact="show">👁 MOSTRAR AL PÚBLICO</button>':'<button type="button" class="sp-btn sm danger" data-vact="hide">🙈 OCULTAR FOTO</button>');
     if(p.photographerId)r3+='<button type="button" class="sp-btn sm danger" data-vact="hideauthor">🚫 OCULTAR TODAS DE '+esc(String(p.author||'ESTE FOTÓGRAFO').toUpperCase())+'</button>';
+    if(p.pending)r3='<button type="button" class="sp-btn sm red" data-vact="aprv">✓ APROBAR Y PUBLICAR</button><button type="button" class="sp-btn sm danger" data-vact="rejt">✕ RECHAZAR</button>'+r3;
+    r3+='<button type="button" class="sp-btn sm" data-vact="cover" title="Usar esta foto como portada de la galería">📌 PORTADA</button>';
     r3+='<span class="sp-vadm">ADM · '+p.voteCount+' votos · '+Number(p.downloadCount||0)+' descargas</span>';
   }
   bar.innerHTML='<div class="r1">'+r1+'</div>'+(r2?'<div class="r2">'+r2+'</div>':'')+(r3?'<div class="r2">'+r3+'</div>':'');
 }
 function paintViewer(){
-  var p=S.view[S.idx];if(!p)return;
+  var p=S.view[S.idx];if(!p)return;zoomReset();
   var im=$('spVImg');im.dataset.fb='0';im.style.opacity='.4';im.onload=function(){im.style.opacity='1'};
   im.src=thumb(p,1800)||p.imageUrl||'';
   paintWho(p);$('spVCnt').textContent=counterText(p);paintBar();renderOverlay(p);if(tagPanelOpen())renderTagPanel(p);
@@ -15771,22 +15906,34 @@ function paintViewer(){
 }
 function move(d){var n=S.view.length;if(!n)return;S.idx=(S.idx+d+n)%n;paintViewer()}
 function tagPanelOpen(){var e=$('spTagP');return !!(e&&e.classList.contains('open'))}
-function openTagPanel(){var p=S.view[S.idx];if(!p)return;TP.rng=false;$('spTagP').classList.add('open');$('spTagP').setAttribute('aria-hidden','false');renderTagPanel(p);paintBar()}
-function closeTagPanel(){var e=$('spTagP');if(e&&e.classList.contains('open')){e.classList.remove('open');e.setAttribute('aria-hidden','true');e.innerHTML='';TP.rng=false;if(isOpen('spViewer'))paintBar()}}
-function renderOverlay(p){
-  var el=$('spOver');if(!el)return;var g=S.gallery,list=pubTags(p).slice(0,6);
-  el.innerHTML=(g.tagsOverlay&&list.length)?list.map(function(t){return '<span>'+esc(tagText(t))+'</span>'}).join(''):'';
+function openTagPanel(){var p=S.view[S.idx];if(!p)return;TP.rng=false;TP.busy='';$('spTagP').classList.add('open');$('spTagP').setAttribute('aria-hidden','false');renderTagPanel(p,{clear:true});paintBar()}
+function closeTagPanel(){var e=$('spTagP');if(e&&e.classList.contains('open')){e.classList.remove('open');e.setAttribute('aria-hidden','true');e.innerHTML='';TP.rng=false;TP.busy='';if(isOpen('spViewer'))paintBar()}}
+function shownPub(p){return shownTags(p).filter(function(t){return t.status!=='PENDIENTE'})}
+function toggleOverlay(){
+  var p=S.view[S.idx];if(!p)return;var g=S.gallery;
+  if(!(g.tagsOverlay||admView())){return}
+  if(!shownPub(p).length){toast('Esta foto todavía no tiene etiquetas.');return}
+  S.ov=!S.ov;renderOverlay(p);
 }
-function renderTagPanel(p){
-  var el=$('spTagP');if(!el)return;var g=S.gallery,list=visTags(p),can=canTag(),adm=admView(),h='';
-  h+='<div class="tph"><b>🏷 ETIQUETAS <small>'+list.length+' / 12</small></b><button type="button" class="sp-btn sm" data-tp="close">✕</button></div>';
+function renderOverlay(p){
+  var el=$('spOver');if(!el)return;var g=S.gallery,list=shownPub(p).slice(0,10),can=(g.tagsOverlay||admView())&&list.length&&S.ov;
+  el.classList.toggle('on',!!can);
+  el.innerHTML=can?list.map(function(t){return t.instagram?'<a href="'+igLink(t.instagram)+'" target="_blank" rel="noopener">'+esc(tagText(t))+'</a>':'<span>'+esc(tagText(t))+'</span>'}).join(''):'';
+}
+function renderTagPanel(p,opt){
+  var el=$('spTagP');if(!el)return;opt=opt||{};
+  var keepIn=opt.clear?'':(($('spTagIn')||{}).value||''),keepRole=($('spTagRole')||{}).value||'modelo',keepTo=($('spTagTo')||{}).value||'';
+  var g=S.gallery,stored=visTags(p),list=shownTags(p),can=canTag(),adm=admView(),B=TP.busy,h='';
+  var pressedPrev=!!(TP.pressed&&TP.pressed.pid===p.id&&TP.pressed.kind==='prev');
+  h+='<div class="tph"><b>🏷 ETIQUETAS <small>'+stored.length+' / 12 en esta foto</small></b><button type="button" class="sp-btn sm" data-tp="close">✕</button></div>';
   if(list.length)h+='<div class="chips">'+list.map(function(t){
-    var del=(adm||t.mine)?'<button type="button" data-tp="del" data-id="'+esc(t.id)+'" title="Quitar esta etiqueta">✕</button>':'';
-    return '<span class="sp-tchip'+(t.status==='PENDIENTE'?' pend':'')+'"><i>'+esc(roleLabel(t.role))+'</i> <b>'+esc(t.instagram?'@'+t.instagram:t.name)+'</b>'+(t.instagram&&t.name?' <i>'+esc(t.name)+'</i>':'')+(t.status==='PENDIENTE'?' <i>⏳ pendiente</i>':'')+del+'</span>';
+    var del=(!t.fixed&&(adm||t.mine))?'<button type="button" data-tp="del" data-id="'+esc(t.id)+'" title="Quitar esta etiqueta">✕</button>':'';
+    var who=t.instagram?'<a href="'+igLink(t.instagram)+'" target="_blank" rel="noopener" title="Abrir Instagram">@'+esc(t.instagram)+'</a>':esc(t.name);
+    return '<span class="sp-tchip'+(t.status==='PENDIENTE'?' pend':'')+(t.fixed?' fix':'')+'"><i>'+esc(roleLabel(t.role))+'</i> <b>'+who+'</b>'+(t.instagram&&t.name?' <i>'+esc(t.name)+'</i>':'')+(t.fixed?' <i class="fx">· '+esc(t.src)+'</i>':'')+(t.status==='PENDIENTE'?' <i>⏳ pendiente</i>':'')+del+'</span>';
   }).join('')+'</div>';
   else h+='<div class="note" style="margin:0 0 10px">'+(can?'Todavía nadie etiquetó esta foto. ¡Sumá a quienes participaron!':'Esta foto todavía no tiene etiquetas.')+'</div>';
-  h+='<div class="tacts"><button type="button" class="sp-btn sm" data-tp="copy"'+(pubTags(p).length?'':' disabled')+'>📋 COPIAR ETIQUETAS</button>';
-  if(can)h+='<button type="button" class="sp-btn sm" data-tp="prev">↺ MISMAS QUE LA ANTERIOR</button><button type="button" class="sp-btn sm'+(TP.rng?' on':'')+'" data-tp="rng"'+(list.length?'':' disabled')+'>📤 APLICAR A OTRAS FOTOS…</button>';
+  h+='<div class="tacts"><button type="button" class="sp-btn sm" data-tp="copy"'+(copyTags(p)?'':' disabled')+'>📋 COPIAR ETIQUETAS</button>';
+  if(can)h+='<button type="button" class="sp-btn sm'+(B==='prev'?' busy':'')+(pressedPrev?' pressed':'')+'" data-tp="prev">'+(B==='prev'?'⏳ GUARDANDO ETIQUETAS…':(pressedPrev?'✓ MISMAS QUE LA ANTERIOR':'↺ MISMAS QUE LA ANTERIOR'))+'</button><button type="button" class="sp-btn sm'+(TP.rng?' on':'')+(B==='rng'?' busy':'')+'" data-tp="rng"'+(stored.length?'':' disabled')+'>'+(B==='rng'?'⏳ APLICANDO…':'📤 APLICAR A OTRAS FOTOS…')+'</button>';
   h+='</div>';
   if(can&&TP.rng){
     var left=S.view.length-S.idx-1;
@@ -15795,12 +15942,13 @@ function renderTagPanel(p){
       +'<div class="note">Quedan '+left+' fotos después de esta. Si alguna no corresponde, podés quitarle la etiqueta después.</div></div>';
   }
   if(can){
-    h+='<div class="tadd"><select id="spTagRole">'+ROLES.map(function(r){return '<option value="'+r[0]+'">'+r[1]+'</option>'}).join('')+'</select><input id="spTagIn" maxlength="70" autocomplete="off" placeholder="Nombre o @usuario de Instagram"><button type="button" class="sp-btn red sm" data-tp="add">＋ AGREGAR</button></div>';
+    h+='<div class="tadd"><select id="spTagRole">'+ROLES.map(function(r){return '<option value="'+r[0]+'">'+r[1]+'</option>'}).join('')+'</select><input id="spTagIn" maxlength="70" autocomplete="off" placeholder="Nombre o @usuario de Instagram"><button type="button" class="sp-btn red sm'+(B==='add'?' busy':'')+'" data-tp="add">'+(B==='add'?'⏳ GUARDANDO ETIQUETAS…':'＋ AGREGAR')+'</button></div>';
     if(g.tagApproval&&!adm)h+='<div class="note">Las etiquetas nuevas las revisa el administrador antes de publicarse.</div>';
   }
   if(adm&&p.leads&&p.leads.length)h+='<div class="leads"><b>🙋 PERSONAS QUE DICEN “SOY YO” ('+p.leads.length+')</b>'+p.leads.map(function(l){
-    return '<div class="ld"><b>'+esc(l.name)+'</b> · '+esc(roleLabel(l.role))+(l.instagram?' · <a href="'+igLink(l.instagram)+'" target="_blank" rel="noopener">@'+esc(l.instagram)+'</a>':'')+(l.whatsapp?' · <a href="https://wa.me/'+esc(String(l.whatsapp).replace(/\D/g,''))+'" target="_blank" rel="noopener">WhatsApp</a>':'')+(l.email?' · '+esc(l.email):'')+'</div>';}).join('')+'</div>';
+    return '<div class="ld"><b>'+esc(l.name)+'</b> · '+esc(roleLabel(l.role))+(l.instagram?' · <a href="'+igLink(l.instagram)+'" target="_blank" rel="noopener">@'+esc(l.instagram)+'</a>':'')+(l.whatsapp?' · <a href="https://wa.me/'+esc(String(l.whatsapp).replace(/\D/g,''))+'" target="_blank" rel="noopener">WhatsApp</a>':'')+'</div>';}).join('')+'</div>';
   el.innerHTML=h;
+  var ni=$('spTagIn');if(ni){ni.value=keepIn;hardenField(ni)}var nr=$('spTagRole');if(nr)nr.value=keepRole;var nt=$('spTagTo');if(nt){nt.value=keepTo;hardenField(nt)}
 }
 function parseWho(v){
   v=String(v||'').trim();if(!v)return null;
@@ -15824,23 +15972,31 @@ function tagsMsg(r){
   return (r.status==='PENDIENTE'?'⏳ Enviado: queda pendiente de aprobación ('+n+')':'✓ '+n+(n===1?' etiqueta agregada':' etiquetas agregadas'))+(r.skipped?' · '+r.skipped+' ya estaban':'');
 }
 async function addTagFromInput(p){
-  var inp=$('spTagIn'),w=parseWho(inp&&inp.value);if(!w){toast('Escribí un nombre o un @usuario.');return}
-  try{var r=await addTagsReq([p.id],[{role:$('spTagRole').value,name:w.name,instagram:w.instagram}]);toast(tagsMsg(r));var i2=$('spTagIn');if(i2){i2.value='';i2.focus()}}
+  if(TP.busy)return;var inp=$('spTagIn'),w=parseWho(inp&&inp.value);if(!w){toast('Escribí un nombre o un @usuario.');return}
+  var role=$('spTagRole').value;TP.busy='add';renderTagPanel(p);
+  try{var r=await addTagsReq([p.id],[{role:role,name:w.name,instagram:w.instagram}]);TP.pressed=null;toast(tagsMsg(r));TP.busy='';renderTagPanel(p,{clear:true});var i2=$('spTagIn');if(i2)i2.focus();return}
   catch(e){toast(e.message||e)}
+  TP.busy='';if(tagPanelOpen())renderTagPanel(p);
 }
 function tagsToCopy(p){return visTags(p).map(function(t){return {role:t.role,name:t.name,instagram:t.instagram}})}
 async function tagsFromPrev(p){
+  if(TP.busy)return;
   var src=null;for(var i=S.idx-1;i>=0;i--){if(visTags(S.view[i]).length){src=S.view[i];break}}
   if(!src){toast('Las fotos anteriores todavía no tienen etiquetas.');return}
-  try{var r=await addTagsReq([p.id],tagsToCopy(src));toast(tagsMsg(r))}catch(e){toast(e.message||e)}
+  TP.busy='prev';renderTagPanel(p);
+  try{var r=await addTagsReq([p.id],tagsToCopy(src));TP.pressed={pid:p.id,kind:'prev'};toast(tagsMsg(r))}catch(e){toast(e.message||e)}
+  TP.busy='';if(tagPanelOpen())renderTagPanel(p);
 }
 async function tagsToNext(p,n){
+  if(TP.busy)return;
   var ids=S.view.slice(S.idx+1,S.idx+1+n).map(function(x){return x.id});
   if(!ids.length){toast('No hay fotos siguientes.');return}
   var tags=tagsToCopy(p);if(!tags.length){toast('Esta foto no tiene etiquetas para copiar.');return}
   var ok=await confirmDlg('APLICAR ETIQUETAS','Vas a copiar <b>'+tags.length+'</b> etiqueta'+(tags.length===1?'':'s')+' a las <b>próximas '+ids.length+' fotos</b>.<br><small style="color:#aaa">Si alguna foto no corresponde, después le podés quitar la etiqueta.</small>','SÍ, APLICAR');
   if(!ok)return;
-  try{var r=await addTagsReq(ids,tags);TP.rng=false;if(tagPanelOpen())renderTagPanel(p);toast(tagsMsg(r),4000)}catch(e){toast(e.message||e)}
+  TP.busy='rng';renderTagPanel(p);
+  try{var r=await addTagsReq(ids,tags);TP.rng=false;toast(tagsMsg(r),4000)}catch(e){toast(e.message||e)}
+  TP.busy='';if(tagPanelOpen())renderTagPanel(p);
 }
 async function delTag(p,id){
   var t=(p.tags||[]).filter(function(x){return x.id===id})[0];if(!t)return;
@@ -15855,13 +16011,13 @@ async function delTag(p,id){
     if(all)await post({action:'deleteSpecialTag',galleryId:g.id,scope:'person',role:t.role,instagram:t.instagram,name:t.name,pin:PIN});
     else await post({action:'deleteSpecialTag',galleryId:g.id,tagId:id,reactionToken:reactToken(),pin:admView()?PIN:''});
     S.photos.forEach(function(x){if(all?(x.tags||[]).some(function(y){return key(y)===k}):x===p){x.tags=(x.tags||[]).filter(function(y){return all?key(y)!==k:y.id!==id});delete x.__hay;refreshCard(x)}});
-    renderFlt();paintBar();renderOverlay(p);if(tagPanelOpen())renderTagPanel(p);toast(all?'Etiqueta quitada de todas las fotos.':'Etiqueta quitada.');
+    TP.pressed=null;renderFlt();paintBar();renderOverlay(p);if(tagPanelOpen())renderTagPanel(p);toast(all?'Etiqueta quitada de todas las fotos.':'Etiqueta quitada.');
   }catch(e){toast(e.message||e)}
 }
 function tagPanelClick(e){
   var b=e.target.closest('[data-tp]');if(!b)return;var p=S.view[S.idx];if(!p)return;var a=b.dataset.tp;
   if(a==='close')return closeTagPanel();
-  if(a==='copy'){copyText(tagsCopy(p)).then(function(){toast('Etiquetas copiadas. Pegalas en tu publicación.')});return}
+  if(a==='copy'){var ct=copyTags(p);if(!ct){toast('Esta foto no tiene etiquetas para copiar.');return}copyText(ct).then(function(){toast('Etiquetas copiadas. Pegalas en tu publicación.')});return}
   if(a==='del')return delTag(p,b.dataset.id);
   if(a==='add')return addTagFromInput(p);
   if(a==='prev')return tagsFromPrev(p);
@@ -15870,11 +16026,21 @@ function tagPanelClick(e){
   if(a==='rngTo'){var to=Number(($('spTagTo')||{}).value);if(!to||to<=S.idx+1||to>S.view.length){toast('Poné un número de foto entre '+(S.idx+2)+' y '+S.view.length+'.');return}return tagsToNext(p,to-(S.idx+1))}
 }
 
+function zoomApply(){var im=$('spVImg'),st=$('spVStage');if(!im)return;im.style.transform=Z.z>1?'translate('+Z.tx+'px,'+Z.ty+'px) scale('+Z.z+')':'';st.classList.toggle('zoomed',Z.z>1)}
+function zoomReset(){Z.z=1;Z.tx=0;Z.ty=0;zoomApply()}
+function zoomClamp(){
+  var im=$('spVImg'),st=$('spVStage'),r=st.getBoundingClientRect(),mx=Math.max(0,(im.offsetWidth*Z.z-r.width)/2),my=Math.max(0,(im.offsetHeight*Z.z-r.height)/2);
+  Z.tx=Math.max(-mx,Math.min(mx,Z.tx));Z.ty=Math.max(-my,Math.min(my,Z.ty));
+}
+function zoomIn(cx,cy){
+  var st=$('spVStage'),r=st.getBoundingClientRect();Z.z=2.6;
+  Z.tx=-(cx-(r.left+r.width/2))*(Z.z-1);Z.ty=-(cy-(r.top+r.height/2))*(Z.z-1);zoomClamp();zoomApply();
+}
 function enterFS(){try{var el=$('spViewer'),f=el.requestFullscreen||el.webkitRequestFullscreen;if(f){var r=f.call(el);if(r&&r.catch)r.catch(function(){})}}catch(e){}}
 function exitFS(){try{if(document.fullscreenElement||document.webkitFullscreenElement){var f=document.exitFullscreen||document.webkitExitFullscreen,r=f.call(document);if(r&&r.catch)r.catch(function(){})}}catch(e){}}
 var uiT=0;
 function showUI(){var v=$('spViewer');if(!v)return;v.classList.add('show-ui');clearTimeout(uiT);uiT=setTimeout(function(){v.classList.remove('show-ui')},2600)}
-function closeViewer(){stopPlay();closeTagPanel();closeLayer('spViewer')}
+function closeViewer(){stopPlay();closeTagPanel();zoomReset();closeLayer('spViewer')}
 function stopPlay(){
   if(S.play){clearInterval(S.play);S.play=null}
   var v=$('spViewer');if(v)v.classList.remove('playing','show-ui');
@@ -15923,36 +16089,41 @@ function brand(ctx,x,y,size,align){
   ctx.textAlign='left';ctx.fillStyle='#fff';ctx.fillText('Toma',sx,y);ctx.fillStyle='#ff0000';ctx.fillText('uno',sx+w1,y);
 }
 function medal(ctx,cx,cy,r,label,color){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();T(ctx,label,cx,cy+r*0.36,r*1.6,Math.round(r*1.1),12,'900','#111','center')}
-function tagLines(x,items,left,y,maxW){
-  var sz=30,lines=[];
+function tagLines(x,items,left,bottom,maxW,fontMax){
+  var sz=fontMax||30,lines=[];
   for(;sz>=20;sz-=2){
     x.font='700 '+sz+'px Arial, sans-serif';lines=[];var cur='';
     items.forEach(function(it){var t=cur?cur+'   ·   '+it:it;if(!cur||x.measureText(t).width<=maxW)cur=t;else{lines.push(cur);cur=it}});
     if(cur)lines.push(cur);
     if(lines.length<=2||(sz<=22&&lines.length<=3))break;
   }
-  x.fillStyle='#ececec';x.textAlign='left';
-  lines.forEach(function(l,i){x.fillText(l,left,y+i*(sz+12))});
-  return y+lines.length*(sz+12);
+  var lh=sz+10,h=lines.length*lh+22,top=bottom-h;
+  var gr=x.createLinearGradient(0,top-36,0,bottom+10);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(.4,'rgba(0,0,0,.78)');gr.addColorStop(1,'rgba(0,0,0,.9)');
+  x.fillStyle=gr;x.fillRect(left-24,top-36,maxW+48,h+46);
+  x.fillStyle='#fff';x.textAlign='left';x.font='700 '+sz+'px Arial, sans-serif';
+  lines.forEach(function(l,i){x.fillText(l,left,top+10+sz+i*lh)});
 }
 function toneLine(x,cx,y,size,rest){
   x.font='italic 900 '+size+'px Arial, sans-serif';var a=x.measureText('Toma').width,b=x.measureText('uno').width,c=x.measureText(rest).width,sx=cx-(a+b+c)/2;
   x.textAlign='left';x.fillStyle='#fff';x.fillText('Toma',sx,y);x.fillStyle='#ff0000';x.fillText('uno',sx+a,y);x.fillStyle='#fff';x.fillText(rest,sx+a+b,y);
 }
-function renderStory(cv,p,im,sel){
+function renderStory(cv,p,im,sel,withTags){
   var g=S.gallery,x=cv.getContext('2d');cv.width=1080;cv.height=1920;
-  x.fillStyle='#050505';x.fillRect(0,0,1080,1920);x.fillStyle='#ff0000';x.fillRect(0,0,1080,16);
-  brand(x,65,122,78);T(x,BRAND.title.toUpperCase(),65,166,950,26,16,'800','#bdbdbd');T(x,String(g.name||'').toUpperCase(),65,206,950,34,18,'900','#fff');
-  var fy=240,fh=1000;x.fillStyle='#0b0b0b';x.fillRect(55,fy,970,fh);contain(x,im,65,fy+10,950,fh-20);x.strokeStyle='#ff0000';x.lineWidth=6;x.strokeRect(55,fy,970,fh);
-  var name=authorsVisible()?String(p.author||'').trim():'',ig=igOf(p.instagram),y=fy+fh+70;
-  if(name){T(x,'📷 '+name,65,y,950,50,28,'900','#fff');y+=56}
-  if(ig){T(x,'@'+ig,65,y,950,40,24,'800','#ff4a4a');y+=50}
-  if(sel&&sel.length)tagLines(x,sel,65,y+8,950);
-  x.fillStyle='#222';x.fillRect(65,1650,950,2);
-  T(x,'Web Tomauno Fotografías',65,1698,950,30,18,'800','#fff');
-  T(x,BRAND.host,65,1744,950,38,20,'900','#ff0000');
-  T(x,BRAND.ig+'  ·  '+BRAND.wa,65,1788,950,26,16,'700','#9a9a9a');
-  toneLine(x,540,1866,40,BRAND.slogan);
+  x.fillStyle='#050505';x.fillRect(0,0,1080,1920);x.fillStyle='#ff0000';x.fillRect(0,0,1080,14);
+  brand(x,44,96,68);T(x,String(g.name||'').toUpperCase(),44,144,992,30,18,'900','#fff');
+  var fx=30,fy=172,fw=1020,fh=1468;
+  x.fillStyle='#0b0b0b';x.fillRect(fx,fy,fw,fh);contain(x,im,fx+8,fy+8,fw-16,fh-16);
+  if(withTags&&sel&&sel.length)tagLines(x,sel,fx+34,fy+fh-22,fw-68,30);
+  x.strokeStyle='#ff0000';x.lineWidth=6;x.strokeRect(fx,fy,fw,fh);
+  var name=authorsVisible()?String(p.author||'').trim():'',ig=igOf(p.instagram),y=fy+fh+64;
+  if(name||ig){
+    var a=name?'📷 '+name:'',b=ig?(name?'  ':'')+'@'+ig:'',sz=40;
+    for(;sz>=22;sz-=2){x.font='900 '+sz+'px Arial, sans-serif';if(x.measureText(a+b).width<=992)break}
+    x.textAlign='left';x.fillStyle='#fff';x.fillText(a,44,y);var wa=x.measureText(a).width;x.fillStyle='#ff4a4a';x.fillText(b,44+wa,y);
+  }
+  T(x,'Web Tomauno Fotografías',44,1774,992,26,16,'800','#fff');
+  T(x,BRAND.host,44,1816,992,34,18,'900','#ff0000');
+  toneLine(x,540,1884,34,BRAND.slogan);
 }
 function renderPodium(cv,ents,sv,gname){
   var x=cv.getContext('2d');cv.width=1080;cv.height=1920;
@@ -15976,76 +16147,79 @@ function renderPodium(cv,ents,sv,gname){
   }
   T(x,'¡Gracias a todos los fotógrafos que participaron!',540,1812,950,28,16,'700','#bbb','center');
   T(x,'Web Tomauno Fotografías · '+BRAND.host,540,1856,950,26,14,'800','#ff0000','center');
-  T(x,BRAND.ig,540,1896,950,24,14,'700','#9a9a9a','center');
 }
 /* --- vista previa: la imagen se arma ANTES y el botón la comparte en el mismo toque (los celulares lo exigen) --- */
 function isInApp(){return /FBAN|FBAV|Instagram|WhatsApp|Messenger|Line\/|MicroMessenger|TikTok/i.test(navigator.userAgent)}
 function isMobileUA(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform))}
-function storyChips(p){
-  var out=[],seen={};
-  pubTags(p).forEach(function(t){var tx=tagText(t);if(!seen[tx]){seen[tx]=1;out.push(tx)}});
-  (String(S.gallery.credits||'').match(/@[A-Za-z0-9._]{2,30}/g)||[]).forEach(function(h){if(!out.some(function(o){return o.toLowerCase().indexOf(h.toLowerCase())>=0})){out.push(h)}});
-  return out;
-}
+function storyChips(p){var out=[],seen={};shownPub(p).forEach(function(t){var tx=tagText(t);if(!seen[tx]){seen[tx]=1;out.push(tx)}});return out}
 function renderStoryChips(){
-  var el=$('spStoryChips'),lb=$('spStoryLbl'),on=ST.mode==='photo'&&ST.chips.length;
-  el.style.display=on?'':'none';lb.style.display=ST.mode==='photo'?'':'none';
-  lb.textContent=ST.chips.length?'Tocá las etiquetas que querés sumar al diseño (hasta 6):':'Esta foto todavía no tiene etiquetas. Podés agregarlas desde 🏷 en el visor.';
+  var el=$('spStoryChips'),lb=$('spStoryLbl'),tl=$('spStoryTagsLine'),has=ST.mode==='photo'&&ST.chips.length>0,on=has&&ST.withTags;
+  tl.style.display=has?'':'none';lb.style.display=on?'':'none';el.style.display=on?'':'none';$('spStoryTagsOn').checked=!!ST.withTags;
   el.innerHTML=ST.chips.map(function(c,i){return '<button type="button" class="sp-chip'+(ST.sel.indexOf(c)>=0?' on':'')+'" data-sc="'+i+'">'+esc(c)+'</button>'}).join('');
 }
+function setStoryBtns(on){['spStoryShare','spStoryDl','spStoryImg'].forEach(function(id){var b=$(id);if(b)b.disabled=!on})}
 function drawStory(){
   var cv=$('spStoryCv');
-  if(ST.mode==='podium')renderPodium(cv,ST.ents,votesVisible(),S.gallery.name);else renderStory(cv,ST.p,ST.im,ST.sel);
-  var seq=++ST.fseq;ST.blob=null;ST.file=null;$('spStoryGo').disabled=true;
+  if(ST.mode==='podium')renderPodium(cv,ST.ents,votesVisible(),S.gallery.name);else renderStory(cv,ST.p,ST.im,ST.sel,ST.withTags);
+  var seq=++ST.fseq;ST.blob=null;ST.file=null;setStoryBtns(false);
   cv.toBlob(function(b){
     if(seq!==ST.fseq||!b)return;ST.blob=b;
     try{ST.file=new File([b],ST.mode==='podium'?'tomauno-premiados.png':'tomauno-historia.png',{type:'image/png'})}catch(e){ST.file=null}
-    $('spStoryGo').disabled=false;
+    setStoryBtns(true);storyHint();
   },'image/png');
 }
 function storyHint(){
-  var h=$('spStoryHint'),ig=$('spStoryIg'),can=false;
+  var h=$('spStoryHint'),ig=$('spStoryIg'),sh=$('spStoryShare'),im=$('spStoryImg'),can=false,mob=isMobileUA();
   try{can=!!(ST.file&&navigator.canShare&&navigator.canShare({files:[ST.file]}))}catch(e){}
+  var clip=!!(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write);
+  sh.style.display=(mob&&can&&!isInApp())?'':'none';im.style.display=clip?'':'none';
   var msg='';
   if(isInApp())msg='⚠️ Estás en el navegador interno de otra app (Instagram, WhatsApp…). Para compartir directo, abrí este enlace en <b>Chrome</b> o <b>Safari</b>. Por ahora se descargará la imagen.';
-  else if(!can)msg=isMobileUA()?'Este navegador no permite compartir directo. Se descargará la imagen: después abrí Instagram, creá una historia y elegila de tu galería.':'En la computadora se descarga la imagen; después subila a Instagram desde el celular o desde la web.';
-  h.innerHTML=msg;h.style.display=msg?'':'none';ig.style.display=(isMobileUA()&&!can)||isInApp()?'':'none';
+  else if(mob&&!can)msg='Este navegador no permite compartir directo. Descargá la imagen: después abrí Instagram, creá una historia y elegila de tu galería.';
+  else if(!mob)msg='En la computadora: descargá la imagen'+(clip?' o copiala con 🖼 y pegala con Ctrl+V en WhatsApp Web':'')+'. Pegá las etiquetas copiadas como texto para que queden cliqueables.';
+  h.innerHTML=msg;h.style.display=msg?'':'none';ig.style.display=(mob&&(!can||isInApp()))?'':'none';
 }
 async function openStory(p,mode,ents){
   var seq=++ST.seq;ST.mode=mode||'photo';ST.p=p||null;ST.ents=ents||null;ST.im=null;ST.blob=null;ST.file=null;
-  ST.chips=ST.mode==='photo'?storyChips(p):[];ST.sel=ST.chips.slice(0,3);ST.caption='';
-  $('spStoryWait').style.display='flex';$('spStoryGo').disabled=true;$('spStoryHint').style.display='none';$('spStoryIg').style.display='none';
+  ST.chips=ST.mode==='photo'?storyChips(p):[];ST.sel=ST.chips.slice(0,6);ST.withTags=ST.chips.length>0;ST.caption='';
+  $('spStoryWait').style.display='flex';setStoryBtns(false);$('spStoryHint').style.display='none';
   renderStoryChips();openLayer('spStory');
   if(ST.mode==='photo'){
     try{ST.im=await imageForCanvas(p)}catch(e){if(seq===ST.seq){closeLayer('spStory');toast(e.message||e)}return}
     if(seq!==ST.seq)return;
   }
-  drawStory();$('spStoryWait').style.display='none';
-  setTimeout(storyHint,300);
+  drawStory();$('spStoryWait').style.display='none';storyHint();
 }
+function storyTagText(){return (ST.withTags&&ST.sel.length?ST.sel:ST.chips).join(' · ')}
 function storyCaption(){
-  var g=S.gallery;
-  if(ST.mode==='podium')return podiumText(S.pod);
+  var g=S.gallery;if(ST.mode==='podium')return podiumText(S.pod);
   var p=ST.p,name=authorsVisible()?String(p.author||'').trim():'',ig=igOf(p.instagram);
-  return '📸 '+g.name+(name?'\n📷 '+name+(ig?' @'+ig:''):'')+(ST.sel.length?'\n'+ST.sel.join(' · '):'')+'\n'+linkFor(g,p);
+  return '📸 '+g.name+(name?'\n📷 '+name+(ig?' @'+ig:''):'')+(storyTagText()?'\n'+storyTagText():'')+'\n'+linkFor(g,p);
 }
-function storyGo(){
+function storyName(){return ST.mode==='podium'?'tomauno-premiados.png':'tomauno-historia.png'}
+/* Importante: share() y clipboard.write() se llaman acá mismo, sin esperas, para conservar el permiso del toque. */
+function storyShare(){
   var blob=ST.blob,file=ST.file;if(!blob)return;
-  var name=ST.mode==='podium'?'tomauno-premiados.png':'tomauno-historia.png';
-  /* IMPORTANTE: se llama a share() acá mismo, sin esperas, para conservar el permiso del toque */
   try{
     if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
       navigator.share({files:[file],title:(S.gallery.name||'Tomauno'),text:storyCaption()}).then(function(){toast('✓ Listo')}).catch(function(e){
         if(e&&e.name==='AbortError')return;
-        saveBlob(blob,name);toast('No se pudo abrir el menú de compartir. Se descargó la imagen.',4500);storyHint();
+        saveBlob(blob,storyName());toast('No se pudo abrir el menú de compartir. Se descargó la imagen.',4500);storyHint();
       });
       return;
     }
   }catch(e){}
-  saveBlob(blob,name);toast('Imagen descargada. Ya podés subirla a tus historias.',4500);storyHint();
+  saveBlob(blob,storyName());toast('Imagen descargada. Ya podés subirla a tus historias.',4500);storyHint();
+}
+function storyDownload(){if(!ST.blob)return;saveBlob(ST.blob,storyName());toast('✓ Imagen descargada',3500)}
+function storyCopyImg(){
+  if(!ST.blob)return;
+  try{
+    navigator.clipboard.write([new ClipboardItem({'image/png':ST.blob})]).then(function(){toast('✓ Imagen copiada. Pegala con Ctrl+V en WhatsApp Web o donde quieras.',4500)}).catch(function(){saveBlob(ST.blob,storyName());toast('Tu navegador no dejó copiar la imagen: se descargó.',4500)});
+  }catch(e){saveBlob(ST.blob,storyName());toast('No se pudo copiar la imagen: se descargó.',4500)}
 }
 function storyCopy(){
-  var t=ST.mode==='podium'?podiumText(S.pod):(ST.sel.length?ST.sel:ST.chips).join(' · ');
+  var t=ST.mode==='podium'?podiumText(S.pod):storyTagText();
   if(!t){toast('No hay etiquetas para copiar.');return}
   copyText(t).then(function(){toast('Copiado. Pegalo como texto en tu historia para que queden cliqueables.',4000)});
 }
@@ -16097,46 +16271,48 @@ async function podiumStory(){
 
 /* ---------- ¡Soy yo! (contactos privados para el ADM) ---------- */
 function openLead(p){
-  LD.p=p;['splName','splIg','splWa','splEm','splMsg'].forEach(function(id){$(id).value=''});
+  LD.p=p;['splName','splIg','splWa','splMsg'].forEach(function(id){$(id).value=''});
   $('splOk').checked=false;$('splStatus').textContent='';$('splSend').disabled=false;
   openLayer('spLead');setTimeout(function(){$('splName').focus()},80);
 }
 async function sendLead(){
   var p=LD.p,g=S.gallery,st=$('splStatus');if(!p||!g)return;
-  var name=$('splName').value.trim(),ig=$('splIg').value.trim(),wa=$('splWa').value.trim(),em=$('splEm').value.trim();
+  var name=$('splName').value.trim(),ig=$('splIg').value.trim(),wa=$('splWa').value.trim();
   if(name.length<2){st.textContent='Escribí tu nombre.';return}
-  if(!ig&&!wa&&!em){st.textContent='Dejá al menos un dato de contacto: Instagram, WhatsApp o email.';return}
+  if(!ig&&!wa){st.textContent='Dejá al menos un dato de contacto: Instagram o WhatsApp.';return}
   if(!$('splOk').checked){st.textContent='Marcá la casilla para aceptar.';return}
   var btn=$('splSend');btn.disabled=true;st.textContent='Enviando…';
   try{
-    await post({action:'addSpecialLead',galleryId:g.id,photoId:p.id,role:$('splRole').value,name:name,instagram:ig,whatsapp:wa,email:em,message:$('splMsg').value.trim(),consent:true,reactionToken:reactToken(),password:g.__password||''});
+    await post({action:'addSpecialLead',galleryId:g.id,photoId:p.id,role:$('splRole').value,name:name,instagram:ig,whatsapp:wa,message:$('splMsg').value.trim(),consent:true,reactionToken:reactToken(),password:g.__password||''});
     closeLayer('spLead');toast('¡Gracias! Tomauno ya tiene tus datos.',4000);
   }catch(e){st.textContent=e.message||String(e)}finally{btn.disabled=false}
 }
 var BANDEJA_TXT='';
 function fileMap(){
-  var m={},src=(A.res&&A.res.g&&IN.g&&A.res.g.id===IN.g.id)?A.res.photos:((S.gallery&&IN.g&&S.gallery.id===IN.g.id)?S.photos:[]);
+  var m={},src=IN.photos||((A.res&&A.res.g&&IN.g&&A.res.g.id===IN.g.id)?A.res.photos:((S.gallery&&IN.g&&S.gallery.id===IN.g.id)?S.photos:[]));
   src.forEach(function(p){m[p.id]=p.fileId});return m;
 }
 function groupLeads(list){
   var m={},order=[];
   list.forEach(function(l){
     var k=String(l.instagram||l.whatsapp||l.email||l.name).toLowerCase(),g=m[k];
-    if(!g){g=m[k]={key:k,name:l.name,roles:{},instagram:'',whatsapp:'',email:'',msg:'',photoIds:[],fresh:0};order.push(k)}
+    if(!g){g=m[k]={key:k,name:l.name,roles:{},instagram:'',whatsapp:'',msg:'',photoIds:[],fresh:0};order.push(k)}
     g.roles[l.role]=1;g.photoIds.push(l.photoId);if(l.status==='NUEVO')g.fresh++;
-    if(l.instagram)g.instagram=l.instagram;if(l.whatsapp)g.whatsapp=l.whatsapp;if(l.email)g.email=l.email;if(l.message)g.msg=l.message;
+    if(l.instagram)g.instagram=l.instagram;if(l.whatsapp)g.whatsapp=l.whatsapp;if(l.message)g.msg=l.message;
   });
   return order.map(function(k){return m[k]});
 }
+function uniq(ids){var seen={};return ids.filter(function(i){if(seen[i])return false;seen[i]=1;return true})}
 function thumbsHTML(ids,fm){
-  var seen={},u=ids.filter(function(i){if(seen[i])return false;seen[i]=1;return true}),h='';
+  var u=uniq(ids),h='';
   u.slice(0,6).forEach(function(id){if(fm[id])h+='<img alt="" src="'+esc(thumb({fileId:fm[id]},120))+'">'});
   return h?'<div class="thumbs">'+h+(u.length>6?'<small style="align-self:center;color:#888">+'+(u.length-6)+'</small>':'')+'</div>':'';
 }
+function waLink(n){return 'https://wa.me/'+String(n||'').replace(/\D/g,'')}
 function renderInbox(){
-  $('spTabTags').classList.toggle('on',IN.tab==='tags');$('spTabLeads').classList.toggle('on',IN.tab==='leads');
+  ['tags','leads','ph','pend'].forEach(function(k){var b=$({tags:'spTabTags',leads:'spTabLeads',ph:'spTabPh',pend:'spTabPend'}[k]);if(b)b.classList.toggle('on',IN.tab===k)});
   var body=$('spInBody'),fm=fileMap(),h='';
-  if(!IN.tags||!IN.leads){return}
+  if(!IN.tags||!IN.leads)return;
   if(IN.tab==='tags'){
     var pend=IN.tags.reduce(function(n,g){return n+g.pending},0);
     h+='<div class="sp-row" style="margin-bottom:6px;justify-content:space-between"><span class="sp-muted">'+IN.tags.length+' etiquetas distintas · '+pend+' pendientes de aprobar</span>'+(pend?'<button type="button" class="sp-btn sm red" data-ia="approveAll">✓ APROBAR TODAS LAS PENDIENTES ('+pend+')</button>':'')+'</div>';
@@ -16148,38 +16324,75 @@ function renderInbox(){
         +'<div class="acts">'+(t.pending?'<button type="button" class="sp-btn sm red" data-ia="approve" data-i="'+i+'">✓ APROBAR</button><button type="button" class="sp-btn sm" data-ia="reject" data-i="'+i+'">✕ RECHAZAR</button>':'')
         +'<button type="button" class="sp-btn sm danger" data-ia="delall" data-i="'+i+'">🗑 QUITAR DE TODAS</button></div></div>';
     });
-  }else{
+  }else if(IN.tab==='leads'){
     var gl=groupLeads(IN.leads),fresh=IN.leads.filter(function(l){return l.status==='NUEVO'}).length;
-    BANDEJA_TXT=gl.map(function(g){return g.name+' — '+Object.keys(g.roles).map(roleLabel).join('/')+(g.instagram?' — @'+g.instagram:'')+(g.whatsapp?' — '+g.whatsapp:'')+(g.email?' — '+g.email:'')+' — '+g.photoIds.length+' foto'+(g.photoIds.length===1?'':'s')}).join('\n');
-    h+='<div class="sp-row" style="margin-bottom:6px;justify-content:space-between"><span class="sp-muted">'+gl.length+' persona'+(gl.length===1?'':'s')+' · '+fresh+' nuevo'+(fresh===1?'':'s')+'</span><span class="sp-row">'+(gl.length?'<button type="button" class="sp-btn sm" data-ia="lcopy">📋 COPIAR LISTA</button>':'')+(fresh?'<button type="button" class="sp-btn sm red" data-ia="lseen">✓ MARCAR TODOS COMO VISTOS</button>':'')+'</span></div>';
+    BANDEJA_TXT=gl.map(function(g){return g.name+' — '+Object.keys(g.roles).map(roleLabel).join('/')+(g.instagram?' — @'+g.instagram:'')+(g.whatsapp?' — '+g.whatsapp:'')+' — '+uniq(g.photoIds).length+' foto'+(uniq(g.photoIds).length===1?'':'s')}).join('\n');
+    h+='<div class="sp-row" style="margin-bottom:6px;justify-content:space-between"><span class="sp-muted">'+gl.length+' persona'+(gl.length===1?'':'s')+' · '+fresh+' nuevo'+(fresh===1?'':'s')+' · tocá una persona para ver sus fotos</span><span class="sp-row">'+(gl.length?'<button type="button" class="sp-btn sm" data-ia="lcopy">📋 COPIAR LISTA</button>':'')+(fresh?'<button type="button" class="sp-btn sm red" data-ia="lseen">✓ MARCAR TODOS COMO VISTOS</button>':'')+'</span></div>';
     if(!gl.length)h+='<div class="sp-state"><span class="big">🙋</span>Todavía nadie dijo “soy yo”. Activá el botón en ⚙ CONFIG. de la galería.</div>';
-    gl.forEach(function(g,i){
-      var wa=g.whatsapp?'<a href="https://wa.me/'+esc(String(g.whatsapp).replace(/\D/g,''))+'" target="_blank" rel="noopener">💬 '+esc(g.whatsapp)+'</a>':'';
-      h+='<div class="sp-irow"><div class="who"><b>'+esc(g.name)+'</b>'+(g.fresh?' <span class="sp-badge">NUEVO</span>':'')+' · '+esc(Object.keys(g.roles).map(roleLabel).join(' / '))
-        +'<small>'+[g.instagram?'<a href="'+igLink(g.instagram)+'" target="_blank" rel="noopener">@'+esc(g.instagram)+'</a>':'',wa,g.email?esc(g.email):''].filter(Boolean).join(' · ')+'</small>'
-        +(g.msg?'<small>“'+esc(g.msg)+'”</small>':'')+'<small>'+g.photoIds.length+' foto'+(g.photoIds.length===1?'':'s')+'</small>'+thumbsHTML(g.photoIds,fm)+'</div>'
-        +'<div class="acts"><button type="button" class="sp-btn sm danger" data-ia="ldel" data-key="'+esc(g.key)+'">🗑 BORRAR</button></div></div>';
+    gl.forEach(function(g){
+      var open=!!IN.open[g.key],ids=uniq(g.photoIds);
+      h+='<div class="sp-irow clk'+(open?' open':'')+'" data-ia="ltoggle" data-key="'+esc(g.key)+'"><div class="who"><b>'+esc(g.name)+'</b>'+(g.fresh?' <span class="sp-badge">NUEVO</span>':'')+' · '+esc(Object.keys(g.roles).map(roleLabel).join(' / '))
+        +'<small>'+[g.instagram?'<a href="'+igLink(g.instagram)+'" target="_blank" rel="noopener">@'+esc(g.instagram)+'</a>':'',g.whatsapp?'<a href="'+waLink(g.whatsapp)+'" target="_blank" rel="noopener">💬 '+esc(g.whatsapp)+'</a>':''].filter(Boolean).join(' · ')+'</small>'
+        +(g.msg?'<small>“'+esc(g.msg)+'”</small>':'')+'<small>'+ids.length+' foto'+(ids.length===1?'':'s')+' · '+(open?'▴ ocultar':'▾ ver fotos')+'</small>'+(open?'':thumbsHTML(ids,fm))+'</div>'
+        +'<div class="acts"><button type="button" class="sp-btn sm danger" data-ia="ldel" data-key="'+esc(g.key)+'">🗑 BORRAR</button></div>'
+        +(open?'<div class="sp-igrid">'+ids.map(function(id){return fm[id]?'<img alt="" data-ia="lphoto" data-pid="'+esc(id)+'" src="'+esc(thumb({fileId:fm[id]},360))+'">':''}).join('')+'</div>':'')+'</div>';
     });
+  }else if(IN.tab==='ph'){
+    if(!IN.ph){h='<div class="sp-state"><span class="sp-hg">⌛</span><br>Cargando fotógrafos…</div>'}
+    else{
+      BANDEJA_TXT=IN.ph.map(function(p){return p.name+(p.instagram?' — @'+String(p.instagram).replace(/^@/,''):'')+(p.whatsapp?' — '+p.whatsapp:'')+' — '+p.photos+' foto'+(p.photos===1?'':'s')}).join('\n');
+      h+='<div class="sp-row" style="margin-bottom:6px;justify-content:space-between"><span class="sp-muted">'+IN.ph.length+' fotógrafo'+(IN.ph.length===1?'':'s')+' que subieron fotos a esta galería</span>'+(IN.ph.length?'<button type="button" class="sp-btn sm" data-ia="lcopy">📋 COPIAR LISTA</button>':'')+'</div>';
+      if(!IN.ph.length)h+='<div class="sp-state"><span class="big">📷</span>Todavía nadie subió fotos desde el formulario.</div>';
+      IN.ph.forEach(function(p){var ig=String(p.instagram||'').replace(/^@/,'');
+        h+='<div class="sp-irow"><div class="who"><b>'+esc(p.name||'Sin nombre')+'</b><small>'+[ig?'<a href="'+igLink(ig)+'" target="_blank" rel="noopener">@'+esc(ig)+'</a>':'',p.whatsapp?'<a href="'+waLink(p.whatsapp)+'" target="_blank" rel="noopener">💬 '+esc(p.whatsapp)+'</a>':'<span style="color:#777">sin WhatsApp</span>'].filter(Boolean).join(' · ')+'</small><small>'+p.photos+' foto'+(p.photos===1?'':'s')+' subida'+(p.photos===1?'':'s')+'</small></div></div>';});
+    }
+  }else{
+    if(!IN.photos){h='<div class="sp-state"><span class="sp-hg">⌛</span><br>Cargando fotos…</div>'}
+    else{
+      var pl=IN.photos.filter(function(p){return p.pending});
+      h+='<div class="sp-row" style="margin-bottom:6px;justify-content:space-between"><span class="sp-muted">'+pl.length+' foto'+(pl.length===1?'':'s')+' esperando tu aprobación (el público no las ve hasta que las aprobés)</span>'+(pl.length?'<button type="button" class="sp-btn sm red" data-ia="aprvAll">✓ APROBAR TODAS ('+pl.length+')</button>':'')+'</div>';
+      if(!pl.length)h+='<div class="sp-state"><span class="big">✅</span>No hay fotos por aprobar.</div>';
+      else h+='<div class="sp-rgrid">'+pl.map(function(p){var n=String(p.author||'').trim()||'Sin autor',ig=igOf(p.instagram);
+        return '<div class="sp-rcard" data-pid="'+esc(p.id)+'"><div class="ph"><img data-ia="lphoto" data-pid="'+esc(p.id)+'" loading="lazy" alt="" src="'+esc(thumb(p,360))+'"></div><div class="info"><div class="who">📷 '+esc(n)+(ig?' · @'+esc(ig):'')+'</div><div class="acts"><button type="button" class="sp-btn sm red" data-ia="aprv" data-pid="'+esc(p.id)+'">✓ APROBAR</button><button type="button" class="sp-btn sm danger" data-ia="rejt" data-pid="'+esc(p.id)+'">✕</button></div></div></div>';}).join('')+'</div>';
+    }
   }
-  body.innerHTML=h;
+  body.innerHTML=h;body.querySelectorAll('img').forEach(markWide);
 }
 function syncInboxCounts(){
   var g=findAdm(IN.g&&IN.g.id);if(!g||!IN.tags||!IN.leads)return;
-  g.pendingTags=IN.tags.reduce(function(n,x){return n+x.pending},0);g.newLeads=IN.leads.filter(function(l){return l.status==='NUEVO'}).length;renderAdminList();
+  g.pendingTags=IN.tags.reduce(function(n,x){return n+x.pending},0);g.newLeads=IN.leads.filter(function(l){return l.status==='NUEVO'}).length;
+  if(IN.photos)g.pendingPhotos=IN.photos.filter(function(p){return p.pending}).length;
+  renderAdminList();
 }
+async function ensureInboxPhotos(){
+  if(IN.photos||!IN.g)return;
+  try{var r=await get({action:'specialGalleryPhotos',id:IN.g.id,pin:PIN},1,90000);IN.photos=(r.photos||[]).map(normalize)}catch(e){IN.photos=[];toast(e.message||e)}
+  renderInbox();syncInboxCounts();
+}
+async function ensureInboxPh(){
+  if(IN.ph||!IN.g)return;
+  try{var r=await get({action:'specialPhotographers',id:IN.g.id,pin:PIN});IN.ph=r.photographers||[]}catch(e){IN.ph=[];toast(e.message||e)}
+  renderInbox();
+}
+function inboxTab(t){IN.tab=t;renderInbox();if(t==='leads'||t==='pend')ensureInboxPhotos();if(t==='ph')ensureInboxPh()}
 async function loadInbox(){
   var g=IN.g;$('spInBody').innerHTML='<div class="sp-state"><span class="sp-hg">⌛</span><br>Cargando…</div>';
   try{
     var r=await Promise.all([get({action:'specialTagInbox',id:g.id,pin:PIN}),get({action:'specialLeads',id:g.id,pin:PIN})]);
     IN.tags=r[0].groups||[];IN.leads=r[1].leads||[];
   }catch(e){$('spInBody').innerHTML='<div class="sp-state">'+esc(e.message||e)+'</div>';return}
-  renderInbox();syncInboxCounts();
+  renderInbox();syncInboxCounts();inboxTab(IN.tab);
 }
-function openInbox(g,tab){IN.g=g;IN.tab=tab||'tags';IN.tags=null;IN.leads=null;$('spInTitle').textContent='🏷 '+(g.name||'');openLayer('spInbox');return loadInbox()}
+function openInbox(g,tab){IN.g=g;IN.tab=tab||'tags';IN.tags=null;IN.leads=null;IN.ph=null;IN.photos=null;IN.open={};$('spInTitle').textContent='📥 '+(g.name||'');openLayer('spInbox');markSeenFor(g.id);return loadInbox()}
 function dropGalleryCache(){Object.keys(CACHE).forEach(function(k){if(IN.g&&k.indexOf(IN.g.id+'|')===0)delete CACHE[k]})}
 async function inboxClick(e){
   var b=e.target.closest('[data-ia]');if(!b||!IN.g)return;var a=b.dataset.ia,gid=IN.g.id,t=IN.tags&&IN.tags[Number(b.dataset.i)];
+  if(e.target.closest('a'))return;
   try{
+    if(a==='ltoggle'){var k=b.dataset.key;IN.open[k]=!IN.open[k];renderInbox();if(IN.open[k])ensureInboxPhotos();return}
+    if(a==='lphoto'){closeLayer('spInbox');closeLayer('spAdmin');openGallery(gid,{photoId:b.dataset.pid,fromAdmin:true});return}
+    if(a==='aprv'||a==='rejt'){await approvePhotos([b.dataset.pid],a==='aprv'?'approve':'reject',gid);return}
+    if(a==='aprvAll'&&IN.tab==='pend'){var ids=(IN.photos||[]).filter(function(p){return p.pending}).map(function(p){return p.id});await approvePhotos(ids,'approve',gid);return}
     if(a==='approve'||a==='reject'){await post({action:'reviewSpecialTags',pin:PIN,galleryId:gid,decision:a,key:t.key});toast(a==='approve'?'Etiqueta aprobada.':'Etiqueta rechazada.')}
     else if(a==='approveAll'){await post({action:'reviewSpecialTags',pin:PIN,galleryId:gid,decision:'approve',all:true});toast('Todas las pendientes quedaron aprobadas.')}
     else if(a==='delall'){
@@ -16189,9 +16402,152 @@ async function inboxClick(e){
     else if(a==='lseen'){await post({action:'markSpecialLeadsSeen',pin:PIN,galleryId:gid})}
     else if(a==='ldel'){var ok2=await confirmDlg('BORRAR CONTACTO','Se borran los datos de esta persona en <b>todas</b> las fotos.','SÍ, BORRAR');if(!ok2)return;await post({action:'deleteSpecialLead',pin:PIN,galleryId:gid,person:b.dataset.key});toast('Contacto borrado.')}
     else if(a==='lcopy'){await copyText(BANDEJA_TXT);toast('Lista copiada.');return}
-    dropGalleryCache();await loadInbox();
+    dropGalleryCache();var keepTab=IN.tab,keepPh=IN.photos,keepPhs=IN.ph;await loadInbox();IN.photos=keepPh;IN.ph=keepPhs;IN.tab=keepTab;renderInbox();
   }catch(x){toast(x.message||x)}
 }
+
+/* ---------- aprobar fotos / elegir portada ---------- */
+async function approvePhotos(ids,decision,gid){
+  gid=gid||(S.gallery&&S.gallery.id)||(IN.g&&IN.g.id);if(!gid||!ids.length)return;
+  try{
+    await post({action:'approveSpecialPhotos',pin:PIN,galleryId:gid,decision:decision,ids:ids});
+    var lists=[S.photos,A.res&&A.res.photos,IN.photos];
+    ids.forEach(function(id){lists.forEach(function(L){(L||[]).forEach(function(p){if(String(p.id)===String(id)){p.pending=false;if(decision==='reject')p.hidden=true}})});var p=byId(id);if(p)afterChange(p)});
+    Object.keys(CACHE).forEach(function(k){if(k.indexOf(gid+'|')===0)delete CACHE[k]});
+    toast(decision==='approve'?'✓ '+(ids.length>1?ids.length+' fotos publicadas':'Foto publicada'):(ids.length>1?ids.length+' fotos rechazadas (quedan ocultas)':'Foto rechazada (queda oculta)'));
+    var g=findAdm(gid);if(g){g.pendingPhotos=Math.max(0,Number(g.pendingPhotos||0)-ids.length);renderAdminList()}
+    if(A.res&&A.res.g.id===gid)renderResults();if(isOpen('spInbox')&&IN.g&&IN.g.id===gid)renderInbox();
+    var cur=S.view[S.idx];if(isOpen('spViewer')&&cur){paintBar()}
+  }catch(e){toast(e.message||e)}
+}
+async function setCover(p){
+  var g=S.gallery;if(!g)return;
+  try{var r=await post({action:'setSpecialCover',pin:PIN,galleryId:g.id,photoId:p.id});g.coverFileId=r.coverFileId;g.coverUrl=r.coverUrl;var a=findAdm(g.id);if(a){a.coverUrl=r.coverUrl;a.coverFileId=r.coverFileId}refreshHome();toast('📌 Listo: esta foto es la portada de la galería')}
+  catch(e){toast(e.message||e)}
+}
+/* ---------- QR (modo byte, corrección L, versiones 1-10) ---------- */
+function makeQR(text){
+  var data=unescape(encodeURIComponent(String(text))),bytes=[];for(var i=0;i<data.length;i++)bytes.push(data.charCodeAt(i));
+  var T=[null,[19,7,1],[34,10,1],[55,15,1],[80,20,1],[108,26,1],[136,18,2],[156,20,2],[194,24,2],[232,30,2],[274,18,4]];
+  var ALIGN=[null,[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50]];
+  var ver=0;for(var v=1;v<=10;v++){var cap=T[v][0]-(v<=9?2:3);if(bytes.length<=cap){ver=v;break}}
+  if(!ver)throw new Error('El enlace es demasiado largo para el QR.');
+  var dataCw=T[ver][0],ecPer=T[ver][1],nb=T[ver][2],size=17+4*ver;
+  var bits=[];function put(val,len){for(var i=len-1;i>=0;i--)bits.push((val>>i)&1)}
+  put(4,4);put(bytes.length,ver<=9?8:16);bytes.forEach(function(b){put(b,8)});
+  var tot=dataCw*8;for(var k=0;k<4&&bits.length<tot;k++)bits.push(0);while(bits.length%8)bits.push(0);
+  var cw=[];for(var i=0;i<bits.length;i+=8){var x=0;for(var j=0;j<8;j++)x=(x<<1)|bits[i+j];cw.push(x)}
+  for(var pad=0xEC;cw.length<dataCw;pad^=0xEC^0x11)cw.push(pad);
+  var EXP=[],LOG=[];(function(){var x=1;for(var i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&256)x^=0x11d}for(var i=255;i<512;i++)EXP[i]=EXP[i-255]})();
+  function mul(a,b){return a&&b?EXP[LOG[a]+LOG[b]]:0}
+  function gen(n){var g=[1];for(var i=0;i<n;i++){var ng=new Array(g.length+1).fill(0);for(var j=0;j<g.length;j++){ng[j]^=g[j];ng[j+1]^=mul(g[j],EXP[i])}g=ng}return g}
+  function ecc(d,n){var g=gen(n),r=new Array(n).fill(0);d.forEach(function(b){var f=b^r[0];r.shift();r.push(0);for(var i=0;i<n;i++)r[i]^=mul(g[i+1],f)});return r}
+  var blocks=[],per=Math.floor(dataCw/nb),extra=dataCw%nb,pos=0;
+  for(var b=0;b<nb;b++){var len=per+(b>=nb-extra?1:0);blocks.push(cw.slice(pos,pos+len));pos+=len}
+  var ecs=blocks.map(function(d){return ecc(d,ecPer)}),final=[],maxd=Math.max.apply(null,blocks.map(function(b){return b.length}));
+  for(var i=0;i<maxd;i++)blocks.forEach(function(b){if(i<b.length)final.push(b[i])});
+  for(var i=0;i<ecPer;i++)ecs.forEach(function(e){final.push(e[i])});
+  var fb=[];final.forEach(function(b){for(var i=7;i>=0;i--)fb.push((b>>i)&1)});var rem=ver>=2&&ver<=6?7:0;for(var i=0;i<rem;i++)fb.push(0);
+  var M=[],R=[];for(var y=0;y<size;y++){M.push(new Array(size).fill(0));R.push(new Array(size).fill(false))}
+  function set(x,y,v){if(x>=0&&y>=0&&x<size&&y<size){M[y][x]=v?1:0;R[y][x]=true}}
+  function fnd(cx,cy){for(var dy=-4;dy<=4;dy++)for(var dx=-4;dx<=4;dx++){var d=Math.max(Math.abs(dx),Math.abs(dy));set(cx+dx,cy+dy,d===4?false:(d===3||d<=1))}}
+  fnd(3,3);fnd(size-4,3);fnd(3,size-4);
+  for(var i=8;i<size-8;i++){set(i,6,i%2===0);set(6,i,i%2===0)}
+  var A=ALIGN[ver];for(var a=0;a<A.length;a++)for(var c=0;c<A.length;c++){var ax=A[a],ay=A[c];if((a===0&&c===0)||(a===0&&c===A.length-1)||(a===A.length-1&&c===0))continue;for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++){var d=Math.max(Math.abs(dx),Math.abs(dy));set(ax+dx,ay+dy,d!==1)}}
+  set(8,size-8,true);
+  for(var i=0;i<9;i++){R[8][i]=true;R[i][8]=true}for(var i=0;i<8;i++){R[8][size-1-i]=true;R[size-1-i][8]=true}
+  var vinfo=null;if(ver>=7){var vv=ver<<12,rr=vv;for(var i=17;i>=12;i--)if((rr>>i)&1)rr^=0x1f25<<(i-12);vinfo=vv|rr;for(var i=0;i<18;i++){var bit=(vinfo>>i)&1,a1=Math.floor(i/3),b1=i%3+size-11;M[b1][a1]=bit;R[b1][a1]=true;M[a1][b1]=bit;R[a1][b1]=true}}
+  var idx=0,up=true;for(var x=size-1;x>=1;x-=2){if(x===6)x=5;for(var k=0;k<size;k++){var y=up?size-1-k:k;for(var dx=0;dx<2;dx++){var xx=x-dx;if(!R[y][xx]){M[y][xx]=idx<fb.length?fb[idx]:0;idx++}}}up=!up}
+  var masks=[function(x,y){return (x+y)%2===0},function(x,y){return y%2===0},function(x,y){return x%3===0},function(x,y){return (x+y)%3===0},function(x,y){return (Math.floor(y/2)+Math.floor(x/3))%2===0},function(x,y){return (x*y)%2+(x*y)%3===0},function(x,y){return ((x*y)%2+(x*y)%3)%2===0},function(x,y){return ((x+y)%2+(x*y)%3)%2===0}];
+  function build(mk){var B=M.map(function(r){return r.slice()});for(var y=0;y<size;y++)for(var x=0;x<size;x++)if(!R[y][x]&&masks[mk](x,y))B[y][x]^=1;
+    var f=(1<<3)|mk,rr=f<<10;for(var i=14;i>=10;i--)if((rr>>i)&1)rr^=0x537<<(i-10);var fmt=((f<<10)|rr)^0x5412;
+    for(var i=0;i<15;i++){var bit=(fmt>>i)&1;
+      if(i<6)B[i][8]=bit;else if(i<8)B[i+1][8]=bit;else B[size-15+i][8]=bit;
+      if(i<8)B[8][size-1-i]=bit;else if(i<9)B[8][15-i]=bit;else B[8][15-i-1]=bit;}
+    B[size-8][8]=1;
+    if(vinfo!==null)for(var i=0;i<18;i++){var bt=(vinfo>>i)&1,a1=Math.floor(i/3),b1=i%3+size-11;B[b1][a1]=bt;B[a1][b1]=bt}
+    return B}
+  function penalty(B){var p=0;for(var y=0;y<size;y++){var run=1;for(var x=1;x<size;x++){if(B[y][x]===B[y][x-1])run++;else{if(run>=5)p+=run-2;run=1}}if(run>=5)p+=run-2}
+    for(var x=0;x<size;x++){var run=1;for(var y=1;y<size;y++){if(B[y][x]===B[y-1][x])run++;else{if(run>=5)p+=run-2;run=1}}if(run>=5)p+=run-2}
+    for(var y=0;y<size-1;y++)for(var x=0;x<size-1;x++){var s=B[y][x]+B[y][x+1]+B[y+1][x]+B[y+1][x+1];if(s===0||s===4)p+=3}
+    var dark=0;B.forEach(function(r){r.forEach(function(v){dark+=v})});p+=Math.floor(Math.abs(dark*100/(size*size)-50)/5)*10;return p}
+  var best=null,bp=1e9;for(var mk=0;mk<8;mk++){var B=build(mk),pp=penalty(B);if(pp<bp){bp=pp;best=B}}
+  return best.map(function(r){return r.map(function(v){return !!v})});
+}
+function qrToCanvas(cv,text,px){
+  var m=makeQR(text),n=m.length,quiet=3,cell=Math.max(2,Math.floor(px/(n+quiet*2))),size=cell*(n+quiet*2),c=cv.getContext('2d');
+  cv.width=size;cv.height=size;c.fillStyle='#fff';c.fillRect(0,0,size,size);c.fillStyle='#000';
+  for(var yy=0;yy<n;yy++)for(var xx=0;xx<n;xx++)if(m[yy][xx])c.fillRect((xx+quiet)*cell,(yy+quiet)*cell,cell,cell);
+}
+/* ---------- invitar / compartir galería (mensaje + QR) ---------- */
+var SH={g:null,link:'',msg:''};
+function inviteMsg(g){
+  var dsc=String(g.description||'').trim().replace(/\s*\n\s*/g,'\n');
+  return '📸 *'+String(g.name||'Galería')+'*\n'+(dsc?'\n'+dsc+'\n':'')+'\n👀 Mirá todas las fotos de la galería:\n'+shareLink(g)
+    +(isAdm()&&g.passwordRequired&&g.accessPassword?'\n\n🔒 Clave de acceso: *'+g.accessPassword+'*':'')
+    +'\n\n✨ _Tomauno Está con Vos!!_\n📷 Tomauno Estudio  ·  👗 Tomauno Models '+BRAND.ig+'\n— Gentileza Tomauno';
+}
+function openShare(g){
+  SH.g=g;SH.link=shareLink(g);SH.msg=inviteMsg(g);
+  $('spShTitle').textContent='🔗 INVITAR · '+String(g.name||'');$('spShMsg').value=SH.msg;
+  try{qrToCanvas($('spQr'),SH.link,720)}catch(e){}
+  openLayer('spShare');
+}
+function brandDark(ctx,cx,y,size){
+  ctx.font='italic 900 '+size+'px Arial, sans-serif';var w1=ctx.measureText('Toma').width,w2=ctx.measureText('uno').width,sx=cx-(w1+w2)/2;
+  ctx.textAlign='left';ctx.fillStyle='#111';ctx.fillText('Toma',sx,y);ctx.fillStyle='#ff0000';ctx.fillText('uno',sx+w1,y);
+}
+function downloadQr(){
+  try{
+    var g=SH.g,qc=document.createElement('canvas');qrToCanvas(qc,SH.link,900);
+    var W=1080,H=1480,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
+    x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#ff0000';x.fillRect(0,0,W,16);
+    brandDark(x,W/2,150,84);
+    T(x,String(g.name||'').toUpperCase(),W/2,236,960,52,26,'900','#111','center');
+    x.drawImage(qc,90,290,900,900);
+    T(x,'Escaneá y mirá todas las fotos',W/2,1270,960,46,24,'900','#111','center');
+    T(x,BRAND.host,W/2,1330,960,34,18,'800','#ff0000','center');
+    c.toBlob(function(b){if(b){saveBlob(b,'qr-galeria-tomauno.png');toast('✓ QR descargado')}},'image/png');
+  }catch(e){toast(e.message||e)}
+}
+/* ---------- avisos para el ADM ---------- */
+var AL={timer:0,busy:false,cur:null};
+function loadSeen(){try{return JSON.parse(localStorage.getItem('TOMAUNO_SP_SEEN')||'{}')||{}}catch(e){return {}}}
+function saveSeen(m){try{localStorage.setItem('TOMAUNO_SP_SEEN',JSON.stringify(m))}catch(e){}}
+function hideNotify(){var n=$('spNotify');if(n){n.classList.remove('on');n.innerHTML=''}}
+function markSeenFor(gid){var c=AL.cur&&AL.cur[gid];if(!c)return;var m=loadSeen();m[gid]={l:c.newLeads,t:c.pendingTags,p:c.pendingPhotos};saveSeen(m);hideNotify()}
+function setEntryBadge(tot){var e=$('spEntrySub');if(!e)return;e.innerHTML=tot>0?'<b style="color:#ff5a5a">🔔 '+tot+' novedad'+(tot===1?'':'es')+' por revisar</b> · Crear, configurar y administrar galerías':'Crear, configurar y administrar galerías colectivas y concursos.'}
+function showNotify(pick){
+  var g=pick.g,n=$('spNotify');if(!n)return;
+  var head=pick.kind==='leads'?'🙋 <b>¡Nueva persona dijo “Soy yo”!</b>':(pick.kind==='pend'?'⏳ <b>'+g.pendingPhotos+' foto'+(g.pendingPhotos===1?'':'s')+' por aprobar</b>':'🏷 <b>Etiquetas nuevas por revisar</b>');
+  var sub='Galería «'+esc(g.name)+'»'+(pick.kind==='leads'&&g.lastLead&&g.lastLead.name?' · '+esc(g.lastLead.name):'');
+  n.innerHTML='<button class="x" type="button" data-nx="1" aria-label="Cerrar">✕</button>'+head+'<small>'+sub+' · tocá para verlo</small>';
+  n.dataset.gid=g.id;n.dataset.tab=pick.kind==='leads'?'leads':(pick.kind==='pend'?'pend':'tags');n.dataset.name=g.name;n.classList.add('on');
+  var m=loadSeen();m[g.id]={l:g.newLeads,t:g.pendingTags,p:g.pendingPhotos};saveSeen(m);
+  clearTimeout(AL.hideT);AL.hideT=setTimeout(function(){n.classList.remove('on')},14000);
+}
+async function pollAlerts(){
+  if(!isAdm()||document.hidden||AL.busy)return;AL.busy=true;
+  try{
+    var r=await get({action:'specialAlerts',pin:PIN},0,30000),cur={},tot=0,gs=r.galleries||[];
+    gs.forEach(function(g){cur[g.id]=g;tot+=g.newLeads+g.pendingTags+g.pendingPhotos});AL.cur=cur;setEntryBadge(tot);
+    var seen=loadSeen(),pick=null;
+    gs.forEach(function(g){var s=seen[g.id]||{l:0,t:0,p:0};if(!pick&&g.newLeads>s.l)pick={kind:'leads',g:g}});
+    if(!pick)gs.forEach(function(g){var s=seen[g.id]||{l:0,t:0,p:0};if(!pick&&g.pendingPhotos>s.p)pick={kind:'pend',g:g}});
+    if(!pick)gs.forEach(function(g){var s=seen[g.id]||{l:0,t:0,p:0};if(!pick&&g.pendingTags>s.t)pick={kind:'tags',g:g}});
+    var ns={};gs.forEach(function(g){var s=seen[g.id]||{l:0,t:0,p:0};ns[g.id]={l:Math.min(s.l,g.newLeads),t:Math.min(s.t,g.pendingTags),p:Math.min(s.p,g.pendingPhotos)}});
+    if(pick){ns[pick.g.id]={l:pick.g.newLeads,t:pick.g.pendingTags,p:pick.g.pendingPhotos}}
+    saveSeen(ns);if(pick)showNotify(pick);
+  }catch(e){}finally{AL.busy=false}
+}
+function startAlerts(){if(AL.timer||!isAdm())return;AL.timer=setInterval(pollAlerts,60000);setTimeout(pollAlerts,3500)}
+/* ---------- campos internos: que el celular no los ofrezca guardar ni autocompletar ---------- */
+function hardenField(i){
+  if(!i||i.__h||!i.setAttribute)return;i.__h=1;var t=String(i.type||'').toLowerCase();if(t==='checkbox'||t==='file'||t==='radio')return;
+  i.setAttribute('autocomplete','off');i.setAttribute('autocorrect','off');i.setAttribute('spellcheck','false');i.setAttribute('data-lpignore','true');i.setAttribute('data-1p-ignore','true');i.setAttribute('data-form-type','other');
+  if(!i.classList.contains('tmn-secret'))i.name='tmn_f_'+Math.random().toString(36).slice(2,8);
+}
+function hardenAll(root){(root||document).querySelectorAll('input,textarea,select').forEach(function(i){if(i.closest&&i.closest('.sp-layer,#spHome,#spGallery'))hardenField(i)})}
 
 /* ---------- panel ADM ---------- */
 async function openAdmin(){
@@ -16199,41 +16555,46 @@ async function openAdmin(){
   openLayer('spAdmin');detectOG();await loadAdminList();checkUnread();
 }
 async function loadAdminList(force){
-  var box=$('spAList');
-  if(!A.list.length)box.innerHTML='<div class="sp-state"><span class="sp-hg">⌛</span><br>Cargando galerías…</div>';
-  try{var q={action:'specialGalleries',admin:'1',pin:PIN};if(force)q.refresh='1';var r=await get(q);A.list=r.galleries||[];renderAdminList()}
-  catch(e){box.innerHTML='<div class="sp-state">'+esc(e.message||e)+'</div>'}
+  var box=$('spAList'),had=A.list.length>0,btn=document.querySelector('#spAdmin [data-act=reload]');
+  if(!had)box.innerHTML='<div class="sp-state"><span class="sp-hg">⌛</span><br>Cargando galerías…<br><small>La primera vez puede tardar un poco</small></div>';
+  if(btn){btn.classList.add('busy');btn.textContent='⏳ ACTUALIZANDO…'}
+  try{var q={action:'specialGalleries',admin:'1',pin:PIN};if(force)q.refresh='1';var r=await get(q,1,95000);A.list=r.galleries||[];renderAdminList();if(force)toast('✓ Lista actualizada')}
+  catch(e){
+    if(had){toast((e.message||e)+' · Se mantiene la lista anterior.',5000)}
+    else box.innerHTML='<div class="sp-state"><span class="big">⚠️</span>'+esc(e.message||e)+'<br><button type="button" class="sp-btn red" data-act="areload">↻ REINTENTAR</button></div>';
+  }finally{if(btn){btn.classList.remove('busy');btn.textContent='↻ ACTUALIZAR'}}
 }
 function renderAdminList(){
   var box=$('spAList');
   if(!A.list.length){box.innerHTML='<div class="sp-state"><span class="big">📸</span>Todavía no hay galerías especiales. Creá la primera con “＋ NUEVA GALERÍA”.</div>';return}
-  box.innerHTML=A.list.map(function(g){
+  var list=A.list.slice().sort(function(a,b){return (a.visible===false?1:0)-(b.visible===false?1:0)});
+  box.innerHTML=list.map(function(g){
     var cv=cover(g,300),keys='';
     if(g.uploadKey)keys+='<button type="button" class="sp-key" data-copy="'+esc(g.uploadKey)+'" title="Tocar para copiar la clave de carga">🔑 Carga: <b>'+esc(g.uploadKey)+'</b></button>';
     if(g.passwordRequired)keys+=g.accessPassword?'<button type="button" class="sp-key" data-copy="'+esc(g.accessPassword)+'" title="Tocar para copiar la clave de acceso">🔒 Acceso: <b>'+esc(g.accessPassword)+'</b></button>':'<span class="sp-key off">🔒 Privada</span>';
+    keys+='<button type="button" class="sp-key" data-a="inbox" title="Etiquetas, contactos, fotógrafos y fotos por aprobar">📥 Bandeja</button>';
+    if(g.pendingPhotos)keys+='<button type="button" class="sp-key" data-a="inbox-pend" title="Fotos que esperan tu aprobación">⏳ <b>'+g.pendingPhotos+' foto'+(g.pendingPhotos===1?'':'s')+' por aprobar</b></button>';
     if(g.tagsEnabled||g.pendingTags)keys+='<button type="button" class="sp-key" data-a="inbox-tags" title="Revisar etiquetas">🏷 Etiquetas'+(g.pendingTags?' · <b>'+g.pendingTags+' pendientes</b>':'')+'</button>';
-    if(g.leadsEnabled||g.newLeads)keys+='<button type="button" class="sp-key" data-a="inbox-leads" title="Ver contactos">🙋 Contactos'+(g.newLeads?' · <b>'+g.newLeads+' nuevos</b>':'')+'</button>';
-    return '<div class="sp-aitem'+(A.sel===g.id?' sel':'')+'" data-gid="'+esc(g.id)+'">'+(cv?'<img alt="" src="'+esc(cv)+'">':'<div class="nocov">📸</div>')
-      +'<div class="inf"><b>'+esc(g.name||'')+'</b><div class="meta">'+Number(g.photoCount||0)+' fotos · '+esc(g.storageText||'')+'</div>'
-      +'<div class="meta">'+(g.isPublic?'PÚBLICA':'PRIVADA')+' · '+(g.visible?'VISIBLE':'OCULTA')+(g.contest?' · CONCURSO'+(g.resultsRevealed?' (REVELADO)':''):'')+' · '+(g.uploadEnabled===false?'Subidas cerradas':'Subidas habilitadas')+'</div>'
-      +(keys?'<div class="keys">'+keys+'</div>':'')+'</div>'
-      +'<div class="acts"><button type="button" class="sp-btn sm" data-a="view">👁 VER</button><button type="button" class="sp-btn sm" data-a="upload">⬆ SUBIR</button><button type="button" class="sp-btn sm" data-a="drive">📁 DRIVE</button><button type="button" class="sp-btn sm" data-a="copy">📋 INVITAR</button>'
+    if(g.leadsEnabled||g.newLeads)keys+='<button type="button" class="sp-key" data-a="inbox-leads" title="Ver contactos">🙋 Soy yo'+(g.newLeads?' · <b>'+g.newLeads+' nuevos</b>':'')+'</button>';
+    var v=Number(g.views||0);
+    return '<div class="sp-aitem'+(A.sel===g.id?' sel':'')+(g.visible?'':' off')+'" data-gid="'+esc(g.id)+'">'+(cv?'<img alt="" src="'+esc(cv)+'">':'<div class="nocov">📸</div>')
+      +'<div class="inf"><b>'+esc(g.name||'')+'</b>'+(g.visible?'':'<span class="sp-offtag">OCULTA</span>')+'<div class="meta">'+Number(g.photoCount||0)+' fotos · '+esc(g.storageText||'')+' · 👁 '+v+' visita'+(v===1?'':'s')+'</div>'
+      +'<div class="meta">'+(g.isPublic?'PÚBLICA':'PRIVADA')+' · '+(g.visible?'VISIBLE':'OCULTA')+(g.contest?' · CONCURSO'+(g.resultsRevealed?' (REVELADO)':''):'')+' · '+(g.uploadEnabled===false?'Subidas cerradas':'Subidas habilitadas'+(g.photoApproval?' (con aprobación)':''))+'</div>'
+      +'<div class="keys">'+keys+'</div></div>'
+      +'<div class="acts"><button type="button" class="sp-btn sm" data-a="view">👁 VER</button><button type="button" class="sp-btn sm" data-a="upload">⬆ SUBIR</button><button type="button" class="sp-btn sm" data-a="drive">📁 DRIVE</button><button type="button" class="sp-btn sm" data-a="copy">🔗 INVITAR / QR</button>'
       +'<button type="button" class="sp-btn sm" data-a="vis">'+(g.visible?'🙈 OCULTAR':'👁 MOSTRAR')+'</button><button type="button" class="sp-btn sm" data-a="cfg">⚙ CONFIG.</button><button type="button" class="sp-btn sm danger" data-a="del" title="Eliminar galería">🗑</button></div></div>';
   }).join('');
 }
 function findAdm(id){return A.list.filter(function(g){return String(g.id)===String(id)})[0]||null}
 async function adminAction(a,g){
+  if(a==='inbox')return openInbox(g,'tags');
+  if(a==='inbox-pend')return openInbox(g,'pend');
   if(a==='inbox-tags')return openInbox(g,'tags');
   if(a==='inbox-leads')return openInbox(g,'leads');
   if(a==='view'){closeLayer('spAdmin');openGallery(g.id,{fromAdmin:true})}
   else if(a==='upload'){openUpload(g)}
   else if(a==='drive'){var id=g.externalDriveFolderId||g.folderId;if(id)window.open('https://drive.google.com/drive/folders/'+encodeURIComponent(id),'_blank','noopener');else toast('Esta galería no tiene carpeta de Drive asociada.')}
-  else if(a==='copy'){
-    var dsc=String(g.description||'').trim().replace(/\s*\n\s*/g,'\n');
-    var msg='📸 *'+String(g.name||'Galería')+'*\n'+(dsc?'\n'+dsc+'\n':'')+'\n👀 Mirá todas las fotos de la galería:\n'+shareLink(g)
-      +(g.passwordRequired&&g.accessPassword?'\n\n🔒 Clave de acceso: *'+g.accessPassword+'*':'')
-      +'\n\n✨ _Tomauno Está con Vos!!_\n📷 Tomauno Estudio  ·  👗 Tomauno Models '+BRAND.ig+'\n— Gentileza Tomauno';
-    await copyText(msg);toast('Invitación copiada.')}
+  else if(a==='copy'){openShare(g)}
   else if(a==='vis'){try{await post({action:'setSpecialGalleryVisibility',pin:PIN,id:g.id,visible:!g.visible});g.visible=!g.visible;renderAdminList();refreshHome();toast(g.visible?'Galería visible.':'Galería oculta.')}catch(e){toast(e.message||e)}}
   else if(a==='cfg'){openConfig(g)}
   else if(a==='del'){
@@ -16261,18 +16622,24 @@ function renderResults(){
   var head='<div class="sp-hd"><div><div class="sp-title" style="font-size:16px">📊 '+esc(g.name||'')+'</div><div class="sp-muted">'+ph.length+' fotografías'+(contest?' · '+tv+' votos · votación: '+st+(g.resultsRevealed?' · RESULTADOS REVELADOS':''):'')+'</div></div><div class="sp-row">'
     +'<button type="button" class="sp-btn sm" data-r="open">👁 ABRIR GALERÍA</button>'
     +(contest?'<button type="button" class="sp-btn sm" data-r="podium">🏆 VER PREMIADOS</button><button type="button" class="sp-btn sm '+(g.resultsRevealed?'':'red')+'" data-r="reveal">'+(g.resultsRevealed?'OCULTAR RESULTADOS':'REVELAR RESULTADOS')+'</button>':'')+'</div></div>';
-  var rows=ph.slice(0,A.shown).map(function(p,i){
-    var n=String(p.author||'').trim(),ig=igOf(p.instagram),ra=p.reactions;
-    return '<div class="sp-rrow'+(i<3&&(p.voteCount>0||!contest)?' top':'')+'" data-pid="'+esc(p.id)+'"><div class="rk">#'+(i+1)+'</div><img alt="" src="'+esc(thumb(p,240))+'" data-r="view">'
-      +'<div><div class="who">'+esc(n||'Sin autor')+(ig?' · @'+esc(ig):'')+(p.award?'<span class="sp-badge gold">'+esc(awardLabel(p.award))+'</span>':'')+(p.hidden?'<span class="sp-badge">OCULTA</span>':'')+'</div>'
-      +'<div class="nums">'+(contest?'🗳 <b>'+p.voteCount+'</b> votos · ':'')+'❤️ '+Number(ra.heart||0)+' · 👏 '+Number(ra.clap||0)+' · 👍 '+Number(ra.like||0)+' · ⬇ '+Number(p.downloadCount||0)+'</div></div>'
-      +(contest&&!p.hidden?'<div class="acts"><button type="button" class="sp-btn sm" data-r="a1">🥇 1º</button><button type="button" class="sp-btn sm" data-r="a2">🥈 2º</button><button type="button" class="sp-btn sm" data-r="a3">🥉 3º</button>'+(p.award?'<button type="button" class="sp-btn sm danger" data-r="a0">✖ QUITAR PREMIO</button>':'')+'</div>':'')+'</div>';
+  var cards=ph.slice(0,A.shown).map(function(p,i){
+    var n=String(p.author||'').trim()||'Sin autor',ig=igOf(p.instagram),ra=p.reactions;
+    return '<div class="sp-rcard'+(i<3&&(p.voteCount>0||!contest)?' top':'')+'" data-pid="'+esc(p.id)+'"><div class="ph"><img data-r="view" loading="lazy" alt="" src="'+esc(thumb(p,360))+'"><span class="rk">#'+(i+1)+'</span>'
+      +(p.award?'<span class="sp-award" style="left:auto;right:7px">'+esc(awardLabel(p.award))+'</span>':'')+(p.hidden?'<span class="sp-hidtag">OCULTA</span>':'')+(p.pending?'<span class="sp-pendtag" style="top:auto;bottom:7px">⏳ POR APROBAR</span>':'')+'</div>'
+      +'<div class="info"><div class="who" title="'+esc(n)+'">📷 '+esc(n)+(ig?' · @'+esc(ig):'')+'</div>'
+      +'<div class="nums">'+(contest?'<span>🗳 '+p.voteCount+'</span>':'')+'<span>❤️ '+Number(ra.heart||0)+'</span><span>👏 '+Number(ra.clap||0)+'</span><span>👍 '+Number(ra.like||0)+'</span><span>⬇ '+Number(p.downloadCount||0)+'</span></div>'
+      +'<div class="acts">'+(contest&&!p.hidden&&!p.pending?'<button type="button" class="sp-btn sm" data-r="a1" title="Premio 1º">🥇</button><button type="button" class="sp-btn sm" data-r="a2" title="Premio 2º">🥈</button><button type="button" class="sp-btn sm" data-r="a3" title="Premio 3º">🥉</button>'+(p.award?'<button type="button" class="sp-btn sm danger" data-r="a0" title="Quitar premio">✖</button>':''):'')
+      +(p.pending?'<button type="button" class="sp-btn sm red" data-r="aprv">✓ APROBAR</button><button type="button" class="sp-btn sm danger" data-r="rejt">✕</button>':'')
+      +'<button type="button" class="sp-btn sm" data-r="cover" title="Usar como portada de la galería">📌</button></div></div></div>';
   }).join('');
-  var more=ph.length>A.shown?'<div style="text-align:center;margin-top:10px"><button type="button" class="sp-btn sm" data-r="more">MOSTRAR MÁS ('+(ph.length-A.shown)+')</button></div>':'';
-  $('spResults').innerHTML=head+(rows||'<div class="sp-state">Todavía no hay fotografías.</div>')+more;
+  var more=ph.length>A.shown?'<div style="text-align:center;margin-top:12px"><button type="button" class="sp-btn sm" data-r="more">MOSTRAR MÁS ('+(ph.length-A.shown)+')</button></div>':'';
+  $('spResults').innerHTML=head+(cards?'<div class="sp-rgrid">'+cards+'</div>':'<div class="sp-state">Todavía no hay fotografías.</div>')+more;
+  $('spResults').querySelectorAll('.ph img').forEach(markWide);
 }
 async function resultsAction(a,pid){
   var R=A.res;if(!R)return;var g=R.g;
+  if(a==='cover'){try{var rc=await post({action:'setSpecialCover',pin:PIN,galleryId:g.id,photoId:pid});g.coverFileId=rc.coverFileId;g.coverUrl=rc.coverUrl;var ad=findAdm(g.id);if(ad){ad.coverUrl=rc.coverUrl;ad.coverFileId=rc.coverFileId;renderAdminList()}refreshHome();toast('📌 Listo: esa foto es ahora la portada de la galería')}catch(x){toast(x.message||x)}return}
+  if(a==='aprv'||a==='rejt'){return approvePhotos([pid],a==='aprv'?'approve':'reject',g.id)}
   if(a==='open'){closeLayer('spAdmin');return openGallery(g.id,{fromAdmin:true})}
   if(a==='view'){closeLayer('spAdmin');return openGallery(g.id,{photoId:pid,fromAdmin:true})}
   if(a==='more'){A.shown+=20;return renderResults()}
@@ -16304,8 +16671,8 @@ function cfgRules(){
   var pub=$('spcPub').checked,con=$('spcContest').checked;
   $('spcPassWrap').style.display=pub?'none':'block';
   var tg=$('spcTags').checked;$('spcTagApr').disabled=!tg;$('spcTagShow').disabled=!tg;
-  $('spcHide').disabled=!con;$('spcShow').disabled=!con||!pub;
-  if(!con){$('spcHide').checked=false;$('spcShow').checked=false}if(!pub)$('spcShow').checked=false;
+  $('spcHide').disabled=!con;$('spcShow').disabled=!con;
+  if(!con){$('spcHide').checked=false;$('spcShow').checked=false}
   $('spcStart').disabled=!con;$('spcEnd').disabled=!con;$('spcDates').style.opacity=con?'1':'.45';
 }
 function openConfig(g){
@@ -16316,14 +16683,14 @@ function openConfig(g){
   var isNew=!A.editing;
   c('spcPub',isNew?true:g.isPublic);c('spcReact',isNew?true:g.reactions);c('spcContest',g.contest);c('spcHide',g.hideAuthor);c('spcShow',g.showVotes);
   c('spcDl',g.allowDownload);c('spcUp',isNew?true:g.uploadEnabled!==false);c('spcComp',isNew?true:g.compressOnUpload!==false);
-  c('spcTags',g.tagsEnabled);c('spcTagApr',isNew?true:g.tagApproval!==false);c('spcTagShow',g.tagsOverlay);c('spcLeads',g.leadsEnabled);
+  c('spcTags',g.tagsEnabled);c('spcTagApr',isNew?true:g.tagApproval!==false);c('spcTagShow',g.tagsOverlay);c('spcLeads',g.leadsEnabled);c('spcPhotoApr',isNew?true:g.photoApproval);
   $('spcStatus').textContent='';cfgRules();openLayer('spConfig');
 }
 function readCfg(){
   var v=function(id){return String($(id).value||'').trim()},c=function(id){return !!$(id).checked};
   return {pin:PIN,name:v('spcName'),description:v('spcDesc'),credits:v('spcCredits'),uploadKey:v('spcKey'),storageLimitGB:Number(v('spcLimit')||0),isPublic:c('spcPub'),password:v('spcPass'),allowVideos:false,
     reactions:c('spcReact'),contest:c('spcContest'),hideAuthor:c('spcHide'),showVotes:c('spcShow'),voteStart:v('spcStart'),voteEnd:v('spcEnd'),compressOnUpload:c('spcComp'),
-    externalDriveFolder:v('spcDrive'),maxFileMB:Number(v('spcMax')||25),allowDownload:c('spcDl'),uploadEnabled:c('spcUp'),tagsEnabled:c('spcTags'),tagApproval:c('spcTagApr'),tagsOverlay:c('spcTagShow'),leadsEnabled:c('spcLeads')};
+    externalDriveFolder:v('spcDrive'),maxFileMB:Number(v('spcMax')||25),allowDownload:c('spcDl'),uploadEnabled:c('spcUp'),tagsEnabled:c('spcTags'),tagApproval:c('spcTagApr'),tagsOverlay:c('spcTagShow'),leadsEnabled:c('spcLeads'),photoApproval:c('spcPhotoApr')};
 }
 async function saveConfig(){
   var st=$('spcStatus'),p=readCfg(),edit=A.editing;
@@ -16331,7 +16698,6 @@ async function saveConfig(){
   if(!(p.storageLimitGB>0)){st.textContent='El límite de almacenamiento debe ser mayor que 0.';return}
   if(!(p.maxFileMB>=5&&p.maxFileMB<=25)){st.textContent='El tamaño máximo por archivo debe estar entre 5 y 25 MB.';return}
   if(!p.isPublic&&!edit&&!p.password){st.textContent='Una galería privada necesita contraseña.';return}
-  if(!p.isPublic)p.showVotes=false;
   if(edit&&p.password==='')p.password='__KEEP__';
   var btn=$('spcSave');btn.disabled=true;st.innerHTML='<span class="sp-hg" style="font-size:14px">⌛</span> '+(edit?'Guardando cambios…':'Creando carpeta y configuración…');
   try{
@@ -16409,7 +16775,7 @@ async function startUpload(){
 function bind(){
   document.addEventListener('click',function(e){
     var t=e.target.closest?e.target.closest('[data-act]'):null;
-    if(t&&t.closest('#spAdmin,#spConfig,#spUpload,#spGallery,#spViewer,#spPodium,#spScroll,#spBack,#spLead,#spInbox,#spStory')){handleAct(t.dataset.act,t,e);return}
+    if(t&&t.closest('#spAdmin,#spConfig,#spUpload,#spGallery,#spViewer,#spPodium,#spScroll,#spBack,#spLead,#spInbox,#spStory,#spShare')){handleAct(t.dataset.act,t,e);return}
     setTimeout(function(){syncEntry();injectPin()},60);
   });
   $('spAList').addEventListener('click',function(e){
@@ -16417,6 +16783,7 @@ function bind(){
     var item=e.target.closest('.sp-aitem');if(!item)return;var g=findAdm(item.dataset.gid);if(!g)return;
     var b=e.target.closest('[data-a]');if(b){e.stopPropagation();adminAction(b.dataset.a,g)}else selectGallery(g);
   });
+  $('spResults').addEventListener('load',function(e){if(e.target&&e.target.tagName==='IMG')markWide(e.target)},true);
   $('spResults').addEventListener('click',function(e){var b=e.target.closest('[data-r]');if(!b)return;var row=b.closest('[data-pid]');resultsAction(b.dataset.r,row?row.dataset.pid:'')});
   $('spGrid').addEventListener('click',function(e){
     var card=e.target.closest('.sp-card');if(!card)return;var p=byId(card.dataset.pid);if(!p)return;
@@ -16424,7 +16791,8 @@ function bind(){
     var b=e.target.closest('[data-act],[data-react]');
     if(b){e.stopPropagation();
       if(b.dataset.react){toggleReaction(p,b.dataset.react);return}
-      var a=b.dataset.act;if(a==='vote')toggleVote(p);else if(a==='hide')hidePhoto(p);else if(a==='show')showPhoto(p);else if(a==='dl')downloadPhoto(p,b);return}
+      var a=b.dataset.act;if(a==='vote')toggleVote(p);else if(a==='hide')hidePhoto(p);else if(a==='show')showPhoto(p);else if(a==='dl')downloadPhoto(p,b);else if(a==='aprv')approvePhotos([p.id],'approve');else if(a==='rejt')approvePhotos([p.id],'reject');return}
+    if(e.target.closest('.sp-tagb'))return;
     if(e.target.closest('.ph'))openViewer(card.dataset.pid);
   });
   $('spGrid').addEventListener('load',function(e){if(e.target&&e.target.tagName==='IMG')markWide(e.target)},true);
@@ -16448,19 +16816,39 @@ function bind(){
     var b=e.target.closest('[data-vact]');if(!b)return;e.stopPropagation();var a=b.dataset.vact;
     if(a==='vote')toggleVote(p);else if(a==='dl')downloadPhoto(p,b);else if(a==='share')shareSheet(p);
     else if(a==='hide')hidePhoto(p);else if(a==='show')showPhoto(p);else if(a==='hideauthor')hideAuthorAll(p);
-    else if(a==='tags'){if(tagPanelOpen())closeTagPanel();else openTagPanel()}else if(a==='lead')openLead(p);
+    else if(a==='tags'){if(tagPanelOpen())closeTagPanel();else openTagPanel()}else if(a==='lead')openLead(p);else if(a==='cover')setCover(p);else if(a==='aprv')approvePhotos([p.id],'approve');else if(a==='rejt')approvePhotos([p.id],'reject');
   });
   $('spTagP').addEventListener('click',tagPanelClick);
+  var vst=$('spVStage');
+  vst.addEventListener('click',function(e){
+    if(e.target.closest('button,a'))return;
+    if(Z.moved){Z.moved=false;return}
+    var now=Date.now(),near=Math.hypot(e.clientX-Z.lx,e.clientY-Z.ly)<44;
+    if(now-Z.last<340&&near){clearTimeout(Z.timer);Z.last=0;if(Z.z>1)zoomReset();else zoomIn(e.clientX,e.clientY);return}
+    Z.last=now;Z.lx=e.clientX;Z.ly=e.clientY;clearTimeout(Z.timer);
+    Z.timer=setTimeout(function(){Z.last=0;if(S.play){showUI();return}toggleOverlay()},340);
+  });
+  vst.addEventListener('pointerdown',function(e){if(Z.z>1&&!e.target.closest('button,a')){Z.drag={x:e.clientX,y:e.clientY,tx:Z.tx,ty:Z.ty};Z.moved=false;try{vst.setPointerCapture(e.pointerId)}catch(x){}vst.classList.add('dragging')}});
+  vst.addEventListener('pointermove',function(e){if(!Z.drag)return;var dx=e.clientX-Z.drag.x,dy=e.clientY-Z.drag.y;if(Math.abs(dx)+Math.abs(dy)>5)Z.moved=true;Z.tx=Z.drag.tx+dx;Z.ty=Z.drag.ty+dy;zoomClamp();zoomApply()});
+  ['pointerup','pointercancel'].forEach(function(ev){vst.addEventListener(ev,function(){Z.drag=null;vst.classList.remove('dragging')})});
+  var tip=document.createElement('div');tip.id='spTip';document.body.appendChild(tip);
+  function showTip(el){var t=String(el.getAttribute('data-tip')||'');if(!t)return;tip.innerHTML=t.split('\n').map(function(l){return '<div>'+esc(l)+'</div>'}).join('');tip.style.display='block';var r=el.getBoundingClientRect(),tw=tip.offsetWidth,th=tip.offsetHeight,x=Math.min(window.innerWidth-tw-8,Math.max(8,r.left)),y=r.top-th-8;if(y<8)y=r.bottom+8;tip.style.left=x+'px';tip.style.top=y+'px'}
+  function hideTip(){tip.style.display='none'}
+  $('spGrid').addEventListener('mouseover',function(e){var b=e.target.closest('.sp-tagb');if(b)showTip(b)});
+  $('spGrid').addEventListener('mouseout',function(e){if(e.target.closest('.sp-tagb'))hideTip()});
+  $('spGrid').addEventListener('click',function(e){var b=e.target.closest('.sp-tagb');if(b){showTip(b);setTimeout(hideTip,3500)}},true);
+  $('spGallery').addEventListener('scroll',hideTip,{passive:true});
   $('spTagP').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target&&e.target.id==='spTagIn'){e.preventDefault();var p=S.view[S.idx];if(p)addTagFromInput(p)}});
   var qT=0;$('spSearch').addEventListener('input',function(){clearTimeout(qT);var v=this.value;qT=setTimeout(function(){S.q=v.trim();renderGrid();var sc=$('spGallery'),top=$('spGrid').offsetTop-$('spTop').offsetHeight-$('spFilters').offsetHeight;if(sc.scrollTop>top)sc.scrollTop=Math.max(0,top)},160)});
   $('spInBody').addEventListener('click',inboxClick);
-  $('spTabTags').addEventListener('click',function(){IN.tab='tags';renderInbox()});$('spTabLeads').addEventListener('click',function(){IN.tab='leads';renderInbox()});
+  $('spTabTags').addEventListener('click',function(){inboxTab('tags')});$('spTabLeads').addEventListener('click',function(){inboxTab('leads')});$('spTabPh').addEventListener('click',function(){inboxTab('ph')});$('spTabPend').addEventListener('click',function(){inboxTab('pend')});
+  $('spStoryTagsOn').addEventListener('change',function(){ST.withTags=this.checked;renderStoryChips();drawStory()});
   $('spStoryChips').addEventListener('click',function(e){var c=e.target.closest('[data-sc]');if(!c)return;var t=ST.chips[Number(c.dataset.sc)],i=ST.sel.indexOf(t);if(i>=0)ST.sel.splice(i,1);else{if(ST.sel.length>=6){toast('Máximo 6 etiquetas en el diseño.');return}ST.sel.push(t)}renderStoryChips();drawStory()});
   var sc=$('spGallery'),raf=0;sc.addEventListener('scroll',function(){if(raf)return;raf=requestAnimationFrame(function(){raf=0;updateScroll()})},{passive:true});
   window.addEventListener('resize',function(){fitSticky();updateScroll()});
   var st=$('spVStage'),x0=null;
   st.addEventListener('touchstart',function(e){x0=e.touches.length===1?e.touches[0].clientX:null},{passive:true});
-  st.addEventListener('touchend',function(e){if(x0==null)return;var dx=(e.changedTouches[0].clientX-x0);x0=null;if(Math.abs(dx)>50)move(dx<0?1:-1)},{passive:true});
+  st.addEventListener('touchend',function(e){if(x0==null||Z.z>1){x0=null;return}var dx=(e.changedTouches[0].clientX-x0);x0=null;if(Math.abs(dx)>50)move(dx<0?1:-1)},{passive:true});
   /* flechas del visor: manejador propio (no depende del listener global) */
   [['prev',-1],['next',1]].forEach(function(p){
     var b=document.querySelector('#spViewer [data-act="'+p[0]+'"]');
@@ -16484,7 +16872,7 @@ function bind(){
     if(e.key==='Escape'){
       e.preventDefault();e.stopPropagation();
       if(top==='spDialog'){if(dlgResolve)dlgResolve({v:'cancel'});dlgResolve=null;closeLayer('spDialog')}
-      else if(top==='spLead')closeLayer('spLead');else if(top==='spStory')closeLayer('spStory');else if(top==='spInbox')closeLayer('spInbox');
+      else if(top==='spLead')closeLayer('spLead');else if(top==='spShare')closeLayer('spShare');else if(top==='spStory')closeLayer('spStory');else if(top==='spInbox')closeLayer('spInbox');
       else if(top==='spViewer'){if(tagPanelOpen())closeTagPanel();else closeViewer()}else if(top==='spPodium')closeLayer('spPodium');
       else if(top==='spGallery')closeGallery();else if(top==='spConfig'){A.editing=null;closeLayer('spConfig')}
       else if(top==='spUpload'){if(!A.upl.busy)closeLayer('spUpload')}else if(top==='spAdmin')closeLayer('spAdmin');
@@ -16497,7 +16885,13 @@ function handleAct(a,el,e){
   if(e&&e.preventDefault)e.preventDefault();
   switch(a){
     case 'new':openConfig(null);break;
-    case 'reload':loadAdminList(true);checkUnread();break;
+    case 'share':if(S.gallery)openShare(S.gallery);break;
+    case 'shclose':closeLayer('spShare');break;
+    case 'shcopy':copyText(SH.msg).then(function(){toast('✓ Mensaje copiado. Pegalo en WhatsApp.')});break;
+    case 'shwa':window.open('https://wa.me/?text='+encodeURIComponent(SH.msg),'_blank','noopener');break;
+    case 'shlink':copyText(SH.link).then(function(){toast('✓ Link copiado')});break;
+    case 'shqr':downloadQr();break;
+    case 'reload':case 'areload':loadAdminList(true);checkUnread();break;
     case 'unread':post({action:'markSpecialUploadsSeen',pin:PIN,usuario:'ADM'}).then(function(){$('spUnread').style.display='none'}).catch(function(x){toast(x.message||x)});break;
     case 'close':closeLayer('spAdmin');break;
     case 'cclose':A.editing=null;closeLayer('spConfig');break;
@@ -16515,10 +16909,12 @@ function handleAct(a,el,e){
     case 'lsend':sendLead();break;
     case 'iclose':closeLayer('spInbox');break;
     case 'sclose':closeLayer('spStory');break;
-    case 'sgo':storyGo();break;
+    case 'sshare':storyShare();break;
+    case 'sdl':storyDownload();break;
+    case 'simg':storyCopyImg();break;
     case 'scopy':storyCopy();break;
     case 'sig':storyOpenIg();break;
-    case 'reload':loadPhotos({force:true,silent:true,notify:true});break;
+    case 'greload':loadPhotos({force:true,silent:true,notify:true});break;
     case 'retry':showShell(S.gallery);loadPhotos();break;
     case 'copycred':copyText(String(S.gallery.credits||'')).then(function(){toast('Créditos copiados.')});break;
     case 'sup2':scrollBatch(-1,6);break;
@@ -16535,14 +16931,17 @@ function handleAct(a,el,e){
 }
 function stamp(){var n=$('v110Version');if(n)n.textContent=VERSION}
 function init(){
+  hardenAll();['spGallery','spAdmin','spConfig','spUpload','spLead','spInbox','spShare','spDialog','spStory'].forEach(function(id){var el=$(id);if(el&&window.MutationObserver)new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){if(n.matches&&n.matches('input,textarea,select'))hardenField(n);else hardenAll(n)}})})}).observe(el,{childList:true,subtree:true})});
+  $('spNotify').addEventListener('click',function(e){var n=this;if(e.target.closest('[data-nx]')){n.classList.remove('on');return}var id=n.dataset.gid;if(!id)return;n.classList.remove('on');openInbox(findAdm(id)||{id:id,name:n.dataset.name||''},n.dataset.tab||'tags')});
   secretField($('spuKey'),true);var pw=$('spcPass');if(pw){secretField(pw,false);pw.setAttribute('autocomplete','off');pw.setAttribute('data-lpignore','true');pw.setAttribute('data-1p-ignore','true');pw.setAttribute('data-form-type','other');pw.name='tomauno_code_'+Math.random().toString(36).slice(2)}
-  $('splRole').innerHTML=ROLES.map(function(r){return '<option value="'+r[0]+'">'+r[1]+'</option>'}).join('');
+  $('splRole').innerHTML=LEAD_ROLES.map(function(r){return '<option value="'+r[0]+'">'+r[1]+'</option>'}).join('');
   ensureHome();syncEntry();injectPin();bind();stamp();refreshHome();
   var qs=new URLSearchParams(location.search),id=qs.get('especial');
   if(id)setTimeout(function(){openGallery(id,{photoId:qs.get('foto')||''})},400);
   window.addEventListener('load',function(){stamp();ensureHome();injectPin()});
 }
-window.tomaunoSpecial={openGallery:openGallery,openAdmin:openAdmin,state:S,admin:A};
+window.tomaunoSpecial={openGallery:openGallery,openAdmin:openAdmin,state:S,admin:A,pollAlerts:pollAlerts};
+document.addEventListener('visibilitychange',function(){if(!document.hidden)pollAlerts()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
