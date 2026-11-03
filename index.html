@@ -13911,7 +13911,7 @@ if(typeof api23==='function'&&!api23.__v109fix23){
 #eventList .v109-public-meta a:hover{color:#fff!important;background:transparent!important;box-shadow:none!important;text-shadow:0 0 11px currentColor!important;transform:translateY(-1px)}
 @media(max-width:700px){.v110-welcome{margin-top:10px;padding:23px 13px 20px;border-radius:18px}.v110-welcome h1{letter-spacing:-.7px}.v110-trust{gap:6px}.v110-trust span,.v110-more{padding:0 9px;font-size:8px}#v110Version{font-size:7px;right:5px;bottom:3px}}
 </style>
-<div id="v110Version">TOMAUNO FOTOS · V241</div>
+<div id="v110Version">TOMAUNO FOTOS · V242</div>
 <script id="tomauno-v110-js">
 (function(){
 'use strict';
@@ -15174,6 +15174,25 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
 .sp-sellist .srow img{width:38px;height:52px;object-fit:cover;border-radius:6px;background:#151517}
 .sp-sellist .srow .nm{flex:1;min-width:0;font:700 12px Montserrat,Arial;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #spHome.albsearch #spPublic,#spHome.albsearch #spMini{display:none!important}
+
+/* ================= V242 ================= */
+.sp-wa{display:inline-block;text-decoration:none;font-size:13px;margin-left:2px}
+.sp-wa.off{filter:grayscale(1);opacity:.35;cursor:default}
+a.sp-wa:hover{transform:scale(1.2)}
+.sp-prof{font:600 10px/1.4 Montserrat,Arial;color:#9bd4ff;margin:2px 0 4px;word-break:break-word}
+.sp-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sp-grid2.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sp-bigbtn{width:100%;min-height:68px;font-size:17px;margin-top:10px;display:flex;align-items:center;justify-content:center}
+#spuModel .sp-field,#spuModel select{width:100%}
+#spUpload select,#spModF select{width:100%;min-height:48px;background:#030303;color:#fff;border:1px solid #333;border-radius:10px;padding:10px;font:600 14px Montserrat,Arial;box-sizing:border-box}
+.sp-plist{max-height:58vh;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.sp-prow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 10px;background:#0f0f12;border:1px solid #232326;border-radius:10px;padding:10px 12px;color:#fff;cursor:pointer;text-align:left;font:600 13px Montserrat,Arial}
+.sp-prow:hover{border-color:var(--rojo,#ff0000)}.sp-prow.on{border-color:var(--rojo,#ff0000);background:#1a0a0a}
+.sp-prow small{color:#9a9aa0}.sp-prow em{flex-basis:100%;font:600 10px Montserrat,Arial;color:#9bd4ff;font-style:normal}
+.sp-mfgrid{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;margin-top:8px}
+.sp-mfgrid span{font:700 12px Montserrat,Arial;color:#bbb}
+.sp-mfgrid input,#spModF input{background:#030303;color:#fff;border:1px solid #333;border-radius:10px;padding:10px;font:600 14px Montserrat,Arial;min-height:44px;box-sizing:border-box;width:100%}
+#spPeople,#spModF{z-index:2147483117}
 </style>
 <!-- ============ TOMAUNO V235 · GALERÍAS ESPECIALES (módulo único) ============ -->
 <div id="spWait" aria-live="polite"><div class="box"><span class="sp-hg">⌛</span><span id="spWaitTxt">ABRIENDO GALERÍA…</span></div></div>
@@ -15224,6 +15243,8 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
     <label title="Muestra las etiquetas como texto flotante sobre la foto grande"><input id="spcTagShow" type="checkbox"> Etiquetas sobre la foto</label>
     <label title="Botón “¡Soy yo!”: la persona te deja su contacto. Solo lo ves vos."><input id="spcLeads" type="checkbox"> Botón “Soy yo!”</label>
     <label title="Las fotos que suben otras personas quedan ocultas hasta que vos las apruebes (lo que subís vos se publica directo)"><input id="spcPhotoApr" type="checkbox" checked> Aprobar fotos antes de publicar</label>
+    <label title="Subida rápida: la persona solo escribe su nombre y toca SUBIR FOTOS (o saca una foto). No se piden Instagram, teléfono ni logo."><input id="spcQuick" type="checkbox"> Subida rápida (solo nombre)</label>
+    <label title="Galería para modelos: en vez de fotógrafos, las modelos cargan sus datos (edad, altura, medidas, localidad, agencia, experiencia) y sus fotos. Solo vos ves esos datos y podés filtrar."><input id="spcModels" type="checkbox"> Galería para modelos</label>
   </div>
   <label class="sp-field" id="spcPassWrap" style="display:none">Contraseña de la galería privada<input id="spcPass" type="text" autocomplete="off" placeholder="Contraseña"></label>
   <div class="sp-grid2" id="spcDates">
@@ -15241,18 +15262,26 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
 
 <!-- Subir fotografías -->
 <div id="spUpload" class="sp-layer sp-modal" aria-hidden="true"><div class="sp-box narrow">
-  <div class="sp-hd"><div class="sp-title">SUBIR FOTOGRAFÍAS</div><button type="button" class="sp-btn sm" data-act="uclose">✕</button></div>
+  <div class="sp-hd"><div class="sp-title" id="spuTitle">SUBIR FOTOGRAFÍAS</div><button type="button" class="sp-btn sm" data-act="uclose">✕</button></div>
   <p class="sp-muted" id="spuGallery" style="margin:6px 0 12px"></p>
-  <div class="sp-grid2">
+  <div class="sp-grid2" id="spuRow1">
     <label class="sp-field">Tu nombre<input id="spuName" placeholder="Nombre y apellido" maxlength="80"></label>
-    <label class="sp-field">Instagram<input id="spuIg" placeholder="@usuario" maxlength="60"></label>
+    <label class="sp-field" id="spuLblIg">Instagram<input id="spuIg" placeholder="@usuario" maxlength="60"></label>
   </div>
-  <div class="sp-grid2">
-    <label class="sp-field">WhatsApp (opcional)<input id="spuWa" inputmode="tel" placeholder="3764…"></label>
-    <label class="sp-field">Logo (opcional)<input id="spuLogo" type="file" accept="image/*"></label>
+  <div id="spuModel" style="display:none">
+    <div class="sp-grid2"><label class="sp-field">Edad<input id="spmAge" inputmode="numeric" maxlength="2" placeholder="Ej. 19"></label><label class="sp-field">Altura (cm)<input id="spmHeight" inputmode="decimal" maxlength="6" placeholder="Ej. 172"></label></div>
+    <div class="sp-grid3"><label class="sp-field">Busto (cm)<input id="spmBust" inputmode="decimal" maxlength="5" placeholder="86"></label><label class="sp-field">Cintura (cm)<input id="spmWaist" inputmode="decimal" maxlength="5" placeholder="62"></label><label class="sp-field">Cadera (cm)<input id="spmHip" inputmode="decimal" maxlength="5" placeholder="90"></label></div>
+    <div class="sp-grid2"><label class="sp-field">Localidad<input id="spmLoc" maxlength="60" placeholder="Ej. Posadas"></label><label class="sp-field">Agencia<input id="spmAgency" list="spmAgencies" maxlength="60" placeholder="Nombre o “Sin agencia / Freelance”"><datalist id="spmAgencies"><option value="Sin agencia / Freelance"></option></datalist></label></div>
+    <label class="sp-field">¿Tenés experiencia como modelo?<select id="spmExp"><option value="">Elegí una opción…</option><option value="SI">Sí, ya tengo experiencia</option><option value="NO">No, es mi primera vez</option></select></label>
   </div>
-  <label class="sp-field">Clave de carga<input id="spuKey" type="text" autocomplete="off" placeholder="Si la galería tiene clave, ingresala"></label>
-  <label class="sp-field">Fotografías (JPG, PNG o WebP)<input id="spuFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+  <div class="sp-grid2" id="spuRow2">
+    <label class="sp-field" id="spuLblWa">WhatsApp (opcional)<input id="spuWa" inputmode="tel" placeholder="3764…"></label>
+    <label class="sp-field" id="spuLblLogo">Logo (opcional)<input id="spuLogo" type="file" accept="image/*"></label>
+  </div>
+  <label class="sp-field" id="spuLblKey">Clave de carga<input id="spuKey" type="text" autocomplete="off" placeholder="Si la galería tiene clave, ingresala"></label>
+  <div id="spuQuick" style="display:none"><button type="button" class="sp-btn red sp-bigbtn" data-act="uquick">📷 SUBIR FOTOS</button><button type="button" class="sp-btn sp-bigbtn" data-act="ucam">🤳 TOMAR UNA FOTO</button></div>
+  <label class="sp-field" id="spuLblFiles">Fotografías (JPG, PNG o WebP)<input id="spuFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+  <input id="spuCam" type="file" accept="image/*" capture="environment" style="display:none">
   <div id="spuList" class="sp-muted"></div>
   <div style="height:6px;background:#1a1a1c;border-radius:6px;overflow:hidden;margin:10px 0"><i id="spuProg" style="display:block;height:100%;width:0;background:var(--rojo,#ff0000);transition:width .25s"></i></div>
   <div class="sp-muted" id="spuNote"></div>
@@ -15353,7 +15382,32 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
   <div class="sp-hd"><div><div class="sp-title">⭐ MI SELECCIÓN</div><div class="sp-muted" id="spSelN"></div></div><button type="button" class="sp-btn sm" data-act="selclose">✕</button></div>
   <div class="sp-muted" style="margin:6px 0 8px">Enviale esta lista a Tomauno para que sepa cuáles querés (retoques, impresiones, etc.).</div>
   <div id="spSelList" class="sp-sellist"></div>
-  <div class="sp-row" style="margin-top:10px"><button type="button" class="sp-btn red" data-act="selwa">💬 ENVIAR POR WHATSAPP</button><button type="button" class="sp-btn" data-act="selcopy">📋 COPIAR LISTA</button><button type="button" class="sp-btn danger" data-act="selclear">🗑 VACIAR</button></div>
+  <div class="sp-row" style="margin-top:10px"><button type="button" class="sp-btn red" data-act="selwa">💬 ENVIAR POR WHATSAPP</button><button type="button" class="sp-btn" data-act="selcopy">📋 COPIAR LISTA</button></div>
+  <div class="sp-muted" style="margin:12px 0 4px">Descarga de las fotos elegidas:</div>
+  <div class="sp-row"><button type="button" class="sp-btn red" id="spSelDl" data-act="seldl">⬇ DESCARGAR TODO</button><button type="button" class="sp-btn" id="spSelLinks" data-act="sellinks">🔗 COPIAR LINKS DE DESCARGA</button><button type="button" class="sp-btn" id="spSelWa2" data-act="selwa2">💬 LINKS POR WHATSAPP</button><button type="button" class="sp-btn danger" data-act="selclear">🗑 VACIAR</button></div>
+</div></div>
+
+<!-- Lista de personas -->
+<div id="spPeople" class="sp-layer sp-modal" aria-hidden="true"><div class="sp-box narrow" style="width:min(520px,96vw)">
+  <div class="sp-hd"><div><div class="sp-title">👥 PERSONAS</div><div class="sp-muted" id="spPeopleN"></div></div><button type="button" class="sp-btn sm" data-act="pplclose">✕</button></div>
+  <input id="spPeopleQ" type="search" placeholder="🔎 Buscar por nombre…" style="width:100%;margin:10px 0;min-height:46px;background:#030303;color:#fff;border:1px solid #333;border-radius:10px;padding:10px 12px;font:600 14px Montserrat,Arial;box-sizing:border-box">
+  <div id="spPeopleList" class="sp-plist"></div>
+</div></div>
+
+<!-- Filtrar modelos -->
+<div id="spModF" class="sp-layer sp-modal" aria-hidden="true"><div class="sp-box narrow" style="width:min(560px,96vw)">
+  <div class="sp-hd"><div class="sp-title">🔎 FILTRAR MODELOS</div><button type="button" class="sp-btn sm" data-act="mfclose">✕</button></div>
+  <div class="sp-muted" style="margin:6px 0 10px">Dejá vacío lo que no te importe. Se muestran las fotos de las modelos que cumplen todo lo que completes.</div>
+  <div class="sp-grid2"><label class="sp-field">Localidad<input id="spMfLoc" list="spMfLocs" placeholder="Ej. Posadas"><datalist id="spMfLocs"></datalist></label><label class="sp-field">Agencia<select id="spMfAgency"></select></label></div>
+  <label class="sp-field">Experiencia<select id="spMfExp"><option value="">Todas</option><option value="SI">Con experiencia</option><option value="NO">Sin experiencia</option></select></label>
+  <div class="sp-mfgrid">
+    <span>Edad</span><input id="spMfAgeMin" inputmode="numeric" placeholder="mín"><input id="spMfAgeMax" inputmode="numeric" placeholder="máx">
+    <span>Altura (cm)</span><input id="spMfHMin" inputmode="numeric" placeholder="mín"><input id="spMfHMax" inputmode="numeric" placeholder="máx">
+    <span>Busto (cm)</span><input id="spMfBMin" inputmode="numeric" placeholder="mín"><input id="spMfBMax" inputmode="numeric" placeholder="máx">
+    <span>Cintura (cm)</span><input id="spMfWMin" inputmode="numeric" placeholder="mín"><input id="spMfWMax" inputmode="numeric" placeholder="máx">
+    <span>Cadera (cm)</span><input id="spMfPMin" inputmode="numeric" placeholder="mín"><input id="spMfPMax" inputmode="numeric" placeholder="máx">
+  </div>
+  <div class="sp-row" style="margin-top:12px"><button type="button" class="sp-btn red" data-act="mfapply">🔎 APLICAR FILTRO</button><button type="button" class="sp-btn" data-act="mfclear">QUITAR FILTRO</button></div>
 </div></div>
 
 <script id="tomauno-sp-js">
@@ -15361,13 +15415,13 @@ html.sp-lock .v94-child-check,html.sp-lock .v91-check{display:none!important}
 'use strict';
 if(window.__tomaunoSP)return;window.__tomaunoSP=true;
 
-var PIN='3233',LS_VOTE='TOMAUNO_VOTER_TOKEN_V189',LS_REACT='TOMAUNO_SPECIAL_REACTION_V189',VERSION='TOMAUNO FOTOS · V241';
+var PIN='3233',LS_VOTE='TOMAUNO_VOTER_TOKEN_V189',LS_REACT='TOMAUNO_SPECIAL_REACTION_V189',VERSION='TOMAUNO FOTOS · V242';
 var REACTS=[['heart','❤️'],['clap','👏'],['like','👍']];
 var SORTS={name:'Orden: nombre de archivo',recent:'Orden: más recientes',votes:'Orden: más votadas',reacts:'Orden: más reacciones'};
 var S={gallery:null,photos:[],view:[],idx:0,admin:false,asPublic:false,filter:'',flt:'',seq:0,play:null,pod:null,fromAdmin:false,q:'',ov:false,
   sort:(function(){try{var v=localStorage.getItem('TOMAUNO_SP_SORT');return SORTS[v]?v:'name'}catch(e){return 'name'}})()};
 var CACHE={};
-var SRV_MIN=241,SRV={v:null,warned:false};
+var SRV_MIN=242,SRV={v:null,warned:false};
 var ROLES=[['modelo','Modelo'],['maquillaje','Make up'],['estilismo','Estilismo'],['diseno','Diseño'],['accesorios','Accesorios'],['peinado','Peinado'],['fotografia','Fotografía'],['produccion','Producción'],['lugar','Lugar / Estudio'],['instituto','Instituto'],['profesor','Profesor'],['asistente','Asistente'],['otro','Otro']];
 var LEAD_ROLES=[['modelo','Modelo'],['baile','Bailarín/a'],['musica','Músico/a'],['actuacion','Actor / Actriz'],['maquillaje','Make up'],['estilismo','Estilismo'],['diseno','Diseño'],['accesorios','Accesorios'],['peinado','Peinado'],['fotografia','Fotografía'],['produccion','Producción'],['otro','Otro']];
 var ROLE_MAP={baile:'Baile',musica:'Música',actuacion:'Actuación'};ROLES.concat(LEAD_ROLES).forEach(function(r){ROLE_MAP[r[0]]=r[1]});
@@ -15622,7 +15676,7 @@ async function openGallery(id,opts){
   try{
     if(c&&!opts.fresh){
       /* ya la visitaste: se abre al instante y se actualiza en segundo plano */
-      S.gallery=c.g;S.admin=adm;S.asPublic=false;S.photos=c.photos;S.view=[];S.filter='';S.flt='';S.idx=0;S.q='';var _si=$('spSearch');if(_si)_si.value='';
+      S.gallery=c.g;S.admin=adm;S.asPublic=false;S.photos=c.photos;S.view=[];S.filter='';S.flt='';S.idx=0;S.q='';S.mf=null;var _si=$('spSearch');if(_si)_si.value='';
       showShell(c.g);if(opts.q){S.q=String(opts.q);if(_si)_si.value=S.q}renderAll();
       if(opts.photoId)openViewer(opts.photoId);
       loadPhotos({silent:true,view:true}).catch(function(){});
@@ -15636,7 +15690,7 @@ async function openGallery(id,opts){
     if(r.requiresPassword&&!adm){
       wait(false);var g2=await askPassword(g);if(!g2)return;g=g2;wait(true,'ABRIENDO GALERÍA…');
     }
-    S.gallery=g;S.admin=adm;S.asPublic=false;S.photos=[];S.view=[];S.filter='';S.flt='';S.idx=0;S.q='';var _s2=$('spSearch');if(_s2)_s2.value='';
+    S.gallery=g;S.admin=adm;S.asPublic=false;S.photos=[];S.view=[];S.filter='';S.flt='';S.idx=0;S.q='';S.mf=null;var _s2=$('spSearch');if(_s2)_s2.value='';
     showShell(g);wait(false);
     var ok=await loadPhotos({view:true});
     if(ok&&opts.q&&seq===S.seq){S.q=String(opts.q);if(_s2)_s2.value=S.q;renderGrid()}
@@ -15695,6 +15749,7 @@ function renderTools(){
   t.push(tb('play','▶ PLAY'));
   t.push(tb('share','🔗 COMPARTIR / QR'));
   t.push(tb('selbox','⭐ MI SELECCIÓN ('+selCount()+')'));
+  if(S.gallery.modelsMode&&admView())t.push(tb('mf','🔎 FILTRAR MODELOS'+(S.mf?' ●':''),S.mf?'red':''));
   t.push('<select id="spSort" class="sp-sort" title="Orden de las fotos">'+Object.keys(SORTS).map(function(k){return '<option value="'+k+'"'+(S.sort===k?' selected':'')+'>'+SORTS[k]+'</option>'}).join('')+'</select>');
   t.push(tb('greload','🔄 ACTUALIZAR'));
   if(g.contest&&(admView()||g.resultsRevealed))t.push(tb('podium','🏆 VER PREMIADOS'));
@@ -15712,15 +15767,31 @@ function renderContest(){
   el.innerHTML=txt;el.style.display='';
 }
 function chip(v,l,n){return '<button type="button" class="sp-chip'+(S.filter===v?' on':'')+'" data-filter="'+esc(v)+'">'+esc(l)+'<small>'+n+'</small></button>'}
+function peopleMap(){
+  var names={};
+  if(authorsVisible())S.photos.forEach(function(p){var n=String(p.author||'').trim();if(!n)return;var o=names[n]||(names[n]={n:0,p:p});o.n++});
+  return names;
+}
 function renderFilters(){
-  var bar=$('spFilters'),names={};
-  if(authorsVisible())S.photos.forEach(function(p){var n=String(p.author||'').trim();if(n)names[n]=(names[n]||0)+1});
-  var keys=Object.keys(names).sort(function(a,b){return a.localeCompare(b,'es')});
+  var bar=$('spFilters'),names=peopleMap(),keys=Object.keys(names).sort(function(a,b){return a.localeCompare(b,'es')});
   if(keys.length<2){S.filter='';bar.classList.remove('on');bar.innerHTML='';return}
   if(S.filter&&!names[S.filter])S.filter='';
-  bar.innerHTML='<span class="lb">FOTÓGRAFOS:</span>'+chip('','TODOS',S.photos.length)+keys.map(function(k){return chip(k,k,names[k])}).join('');
+  if(keys.length<=6){
+    bar.innerHTML='<span class="lb">FOTÓGRAFOS:</span>'+chip('','TODOS',S.photos.length)+keys.map(function(k){return chip(k,k,names[k].n)}).join('');
+  }else{
+    bar.innerHTML='<span class="lb">PERSONAS:</span>'+chip('','TODOS',S.photos.length)+(S.filter?chip(S.filter,S.filter,names[S.filter].n):'')+'<button type="button" class="sp-chip" data-act="people" title="Ver la lista completa con buscador">👥 LISTA DE PERSONAS <small>'+keys.length+'</small></button>';
+  }
   bar.classList.add('on');
 }
+function renderPeople(){
+  var names=peopleMap(),q=norm($('spPeopleQ').value||''),adm=admView();
+  var keys=Object.keys(names).sort(function(a,b){return a.localeCompare(b,'es')}).filter(function(k){return !q||norm(k).indexOf(q)>=0||(adm&&names[k].p.model&&norm(modText(names[k].p)).indexOf(q)>=0)});
+  $('spPeopleN').textContent=keys.length+' de '+Object.keys(names).length+' personas';
+  $('spPeopleList').innerHTML=(q?'':'<button type="button" class="sp-prow'+(S.filter===''?' on':'')+'" data-pn=""><b>TODOS</b><small>'+S.photos.length+' fotos</small></button>')+keys.map(function(k){
+    var o=names[k];return '<button type="button" class="sp-prow'+(S.filter===k?' on':'')+'" data-pn="'+esc(k)+'"><b>'+esc(k)+'</b><small>'+o.n+' foto'+(o.n===1?'':'s')+'</small>'+((adm&&o.p.model)?'<em>'+esc(modText(o.p))+'</em>':'')+'</button>'}).join('')||'<div class="sp-state">Nadie coincide con esa búsqueda.</div>';
+}
+function openPeople(){$('spPeopleQ').value='';renderPeople();openLayer('spPeople');setTimeout(function(){$('spPeopleQ').focus()},80)}
+
 function fchip(v,l,n){return '<button type="button" class="sp-chip'+(S.flt===v?' on':'')+'" data-f="'+v+'">'+l+'<small>'+n+'</small></button>'}
 function nameList(){
   var m={};
@@ -15766,7 +15837,7 @@ function renderCredits(){
 function fitSticky(){var f=$('spFilters'),t=$('spTop');if(f&&t)f.style.top=t.offsetHeight+'px'}
 function cardHTML(p){
   var g=S.gallery,adm=admView(),ig=igOf(p.instagram),name=String(p.author||'').trim(),au='';
-  if(authorsVisible()&&name)au='<div class="au">📷 '+(ig?'<a href="'+igLink(ig)+'" target="_blank" rel="noopener" data-stop="1">'+esc(name)+'</a>':esc(name))+(adm&&p.photographerId?' <button type="button" class="sp-pen" data-act="editau" title="Editar nombre / Instagram / WhatsApp de este autor">✏️</button>':'')+'</div>';
+  if(authorsVisible()&&name)au='<div class="au">📷 '+(ig?'<a href="'+igLink(ig)+'" target="_blank" rel="noopener" data-stop="1">'+esc(name)+'</a>':esc(name))+(adm&&p.photographerId?' <button type="button" class="sp-pen" data-act="editau" title="Editar nombre / Instagram / WhatsApp de este autor">✏️</button>':'')+waBtn(p)+'</div>'+modLine(p);
   var rx='';
   if(g.reactions)rx='<div class="rx">'+REACTS.map(function(x){var on=!!p.mine[x[0]],n=Number(p.reactions[x[0]]||0);
     return '<button type="button" class="sp-mini'+(on?' on':'')+'" data-react="'+x[0]+'" aria-pressed="'+on+'" title="Reaccionar">'+x[1]+'<span>'+n+'</span></button>'}).join('')+'</div>';
@@ -15784,9 +15855,34 @@ function cardHTML(p){
   return '<figure class="sp-card'+(p.hidden?' is-hidden':'')+(p.pending?' is-pend':'')+(selHas(p)?' picked':'')+(p.voted?' voted':'')+'" data-pid="'+esc(p.id)+'"><div class="ph"'+(adm&&p.fileName?' title="'+esc(p.fileName)+'"':'')+'><img loading="lazy" decoding="async" alt="" src="'+esc(thumb(p,500))+'">'+award+(p.hidden?'<span class="sp-hidtag">OCULTA</span>':'')+mod+marks+covTag(p)+starBtn(p)+'</div>'
     +'<div class="info">'+au+rx+((dl||vote)?'<div class="fr">'+vote+dl+'</div>':'')+'</div></figure>';
 }
+function numOf(v){var n=Number(String(v==null?'':v).replace(',','.'));return isFinite(n)&&String(v).trim()!==''?n:null}
+function modelOk(p){
+  var f=S.mf;if(!f)return true;var m=p.model;if(!m)return false;
+  function rg(val,mn,mx){if(mn===null&&mx===null)return true;if(val===''||val===undefined)return false;return (mn===null||val>=mn)&&(mx===null||val<=mx)}
+  if(f.loc&&norm(m.locality).indexOf(norm(f.loc))<0)return false;
+  if(f.agency){var a=norm(m.agency),sin=/sin agencia|freelance|libre|independ/.test(a);if(f.agency==='__SIN__'){if(!sin)return false}else if(f.agency==='__CON__'){if(sin||!a)return false}else if(a!==norm(f.agency))return false}
+  if(f.exp&&String(m.experience)!==f.exp)return false;
+  return rg(m.age,f.ageMin,f.ageMax)&&rg(m.height,f.hMin,f.hMax)&&rg(m.bust,f.bMin,f.bMax)&&rg(m.waist,f.wMin,f.wMax)&&rg(m.hip,f.pMin,f.pMax);
+}
+function openModF(){
+  var ag={},lc={};S.photos.forEach(function(p){if(p.model){if(p.model.agency)ag[p.model.agency]=1;if(p.model.locality)lc[p.model.locality]=1}});
+  $('spMfAgency').innerHTML='<option value="">Todas</option><option value="__SIN__">Sin agencia / Freelance</option><option value="__CON__">Con agencia (cualquiera)</option>'+Object.keys(ag).sort().map(function(a){return '<option value="'+esc(a)+'">'+esc(a)+'</option>'}).join('');
+  $('spMfLocs').innerHTML=Object.keys(lc).sort().map(function(a){return '<option value="'+esc(a)+'">'}).join('');
+  var f=S.mf||{};$('spMfLoc').value=f.loc||'';$('spMfAgency').value=f.agency||'';$('spMfExp').value=f.exp||'';
+  [['spMfAgeMin','ageMin'],['spMfAgeMax','ageMax'],['spMfHMin','hMin'],['spMfHMax','hMax'],['spMfBMin','bMin'],['spMfBMax','bMax'],['spMfWMin','wMin'],['spMfWMax','wMax'],['spMfPMin','pMin'],['spMfPMax','pMax']].forEach(function(x){$(x[0]).value=f[x[1]]===null||f[x[1]]===undefined?'':f[x[1]]});
+  openLayer('spModF');
+}
+function applyModF(){
+  var f={loc:$('spMfLoc').value.trim(),agency:$('spMfAgency').value,exp:$('spMfExp').value};
+  [['spMfAgeMin','ageMin'],['spMfAgeMax','ageMax'],['spMfHMin','hMin'],['spMfHMax','hMax'],['spMfBMin','bMin'],['spMfBMax','bMax'],['spMfWMin','wMin'],['spMfWMax','wMax'],['spMfPMin','pMin'],['spMfPMax','pMax']].forEach(function(x){f[x[1]]=numOf($(x[0]).value)});
+  var any=f.loc||f.agency||f.exp||['ageMin','ageMax','hMin','hMax','bMin','bMax','wMin','wMax','pMin','pMax'].some(function(k){return f[k]!==null});
+  S.mf=any?f:null;closeLayer('spModF');renderGrid();renderTools();
+  toast(S.mf?('🔎 '+S.view.length+' foto'+(S.view.length===1?'':'s')+' cumplen el filtro'):'Filtro quitado.',3500);
+}
+function clearModF(){S.mf=null;closeLayer('spModF');renderGrid();renderTools();toast('Filtro quitado.')}
 function renderGrid(){
   var cur=isOpen('spViewer')&&S.view[S.idx]?S.view[S.idx].id:null;
-  S.view=sortPhotos(S.photos.filter(function(p){return (!S.filter||String(p.author||'').trim()===S.filter)&&fltOK(p)&&matchQ(p)}));
+  S.view=sortPhotos(S.photos.filter(function(p){return (!S.filter||String(p.author||'').trim()===S.filter)&&fltOK(p)&&matchQ(p)&&modelOk(p)}));
   var nT=S.photos.length;$('spGCount').textContent=(S.view.length!==nT?S.view.length+' de ':'')+nT+' '+(nT===1?'foto':'fotos');
   var grid=$('spGrid');
   if(!S.view.length){
@@ -15810,7 +15906,7 @@ function paintIfCurrent(p){if(isOpen('spViewer')&&S.view[S.idx]===p){paintWho(p)
 var hold={t:0,raf:0,dir:0,start:0,last:0,did:false};
 function updateScroll(){
   var sc=$('spGallery'),box=$('spScroll'),back=$('spBack');if(!sc||!box)return;
-  var blocked=layers.some(function(i){return ['spViewer','spPodium','spConfig','spUpload','spAdmin','spDialog','spLead','spInbox','spStory','spShare','spSel'].indexOf(i)>=0});
+  var blocked=layers.some(function(i){return ['spViewer','spPodium','spConfig','spUpload','spAdmin','spDialog','spLead','spInbox','spStory','spShare','spSel','spPeople','spModF'].indexOf(i)>=0});
   var show=isOpen('spGallery')&&!blocked;
   if(!show){box.classList.remove('on');return}
   var max=sc.scrollHeight-sc.clientHeight,step=tandaPx();
@@ -15900,6 +15996,7 @@ function paintWho(p){
     if(p.logoUrl)h+='<img class="lg" src="'+esc(p.logoUrl)+'" alt="">';
     h+='<div class="n">📷 '+esc(name)+(ig?(name?' · ':'')+'<a href="'+igLink(ig)+'" target="_blank" rel="noopener">@'+esc(ig)+'</a>':'')+'</div>';
   }else if(!authorsVisible())h='<div class="n" style="color:#aaa">Autor oculto hasta revelar resultados</div>';
+  if(admView()&&p.model)h+='<div class="n" style="color:#bbb;font-size:11px;width:100%">'+esc(modText(p))+'</div>';
   if(isCover(p))h+='<span class="sp-badge gold">📌 PORTADA</span>';
   if(p.hidden)h+='<span class="sp-badge">OCULTA</span>';
   if(p.award&&(g.resultsRevealed||admView()))h+='<span class="sp-badge gold">'+esc(awardLabel(p.award))+'</span>';
@@ -15927,7 +16024,7 @@ function paintBar(){
     if(p.photographerId)r3+='<button type="button" class="sp-btn sm danger" data-vact="hideauthor">🚫 OCULTAR TODAS DE '+esc(String(p.author||'ESTE FOTÓGRAFO').toUpperCase())+'</button>';
     if(p.pending)r3='<button type="button" class="sp-btn sm red" data-vact="aprv">✓ APROBAR Y PUBLICAR</button><button type="button" class="sp-btn sm danger" data-vact="rejt">✕ RECHAZAR</button>'+r3;
     r3+='<button type="button" class="sp-btn sm" data-vact="cover" title="Usar esta foto como portada de la galería">📌 PORTADA</button>';
-    if(p.photographerId)r3+='<button type="button" class="sp-btn sm" data-vact="editau" title="Corregir nombre / Instagram / WhatsApp del autor">✏️ EDITAR AUTOR</button>';
+    if(p.photographerId)r3+='<button type="button" class="sp-btn sm" data-vact="editau" title="Corregir nombre / Instagram / WhatsApp del autor">✏️ EDITAR AUTOR</button>'+waLinkBtn(p);
     r3+='<span class="sp-vadm">ADM · '+p.voteCount+' votos · '+Number(p.downloadCount||0)+' descargas</span>';
   }
   bar.innerHTML='<div class="r1">'+r1+'</div>'+(r2?'<div class="r2">'+r2+'</div>':'')+(r3?'<div class="r2">'+r3+'</div>':'');
@@ -16343,7 +16440,24 @@ function thumbsHTML(ids,fm,attr){
   u.slice(0,6).forEach(function(id){if(fm[id])h+='<img alt="" '+(attr?attr+' data-pid="'+esc(id)+'" style="cursor:pointer" title="Ver esta foto en la galería" ':'')+'src="'+esc(thumb({fileId:fm[id]},120))+'">'});
   return h?'<div class="thumbs">'+h+(u.length>6?'<small style="align-self:center;color:#888">+'+(u.length-6)+'</small>':'')+'</div>':'';
 }
-function waLink(n){return 'https://wa.me/'+String(n||'').replace(/\D/g,'')}
+function waNum(raw){
+  var d=String(raw||'').replace(/\D/g,'').replace(/^00/,'');if(!d)return '';
+  if(/^549\d{10}$/.test(d))return d;if(/^54\d{10}$/.test(d))return '549'+d.slice(2);
+  if(d.length===11&&d.charAt(0)==='0')d=d.slice(1);if(d.length===10)return '549'+d;
+  return d.length>=10?d:'';
+}
+function waLink(n){var d=waNum(n);return 'https://wa.me/'+(d||String(n||'').replace(/\D/g,''))}
+function waBtn(p){
+  if(!(admView()&&p.photographerId))return '';
+  var d=waNum(p.whatsapp);
+  return d?' <a class="sp-wa" href="https://wa.me/'+d+'" target="_blank" rel="noopener" data-stop="1" title="Escribir por WhatsApp a '+esc(p.author||'')+'">📞</a>':' <span class="sp-wa off" title="Esta persona no dejó su WhatsApp">📞</span>';
+}
+function waLinkBtn(p){
+  var d=waNum(p.whatsapp);
+  return d?'<a class="sp-btn sm" href="https://wa.me/'+d+'" target="_blank" rel="noopener" title="Escribirle por WhatsApp">📞 WHATSAPP</a>':'<span class="sp-btn sm" style="opacity:.4;cursor:default" title="Esta persona no dejó su WhatsApp">📞 SIN WHATSAPP</span>';
+}
+function modText(p){var m=p.model;if(!m)return '';var a=[];if(m.age!=='')a.push(m.age+' años');if(m.height!=='')a.push(m.height+' cm');var ms=[m.bust,m.waist,m.hip].filter(function(x){return x!==''});if(ms.length===3)a.push(ms.join('-'));if(m.locality)a.push(m.locality);if(m.agency)a.push(m.agency);a.push(m.experience==='SI'?'con experiencia':(m.experience==='NO'?'sin experiencia':''));return a.filter(Boolean).join(' · ')}
+function modLine(p){return (admView()&&p.model)?'<div class="sp-prof">'+esc(modText(p))+'</div>':''}
 function renderInbox(){
   ['tags','leads','ph','pend'].forEach(function(k){var b=$({tags:'spTabTags',leads:'spTabLeads',ph:'spTabPh',pend:'spTabPend'}[k]);if(b)b.classList.toggle('on',IN.tab===k)});
   var body=$('spInBody'),fm=fileMap(),h='';
@@ -16484,15 +16598,39 @@ function selList(){
 }
 function selText(){
   var g=S.gallery,l=selList();
-  return 'Hola Tomauno! 👋\nElegí estas fotos de «'+g.name+'»:\n\n'+l.map(function(x,i){return (i+1)+') '+x.n}).join('\n')+'\n\nTotal: '+l.length+' foto'+(l.length===1?'':'s')+'\n'+linkFor(g);
+  return 'Hola Tomauno! 👋\nElegí estas fotos de «'+g.name+'»:\n\n'+l.map(function(x){return x.n}).join(', ')+'\n\nTotal: '+l.length+' foto'+(l.length===1?'':'s')+'\n'+linkFor(g);
 }
 function renderSel(){
   var l=selList();$('spSelN').textContent=l.length+' foto'+(l.length===1?'':'s')+' elegida'+(l.length===1?'':'s');
   $('spSelList').innerHTML=l.map(function(x,i){return '<div class="srow"><span class="n">'+(i+1)+'</span>'+(x.f?'<img alt="" loading="lazy" src="'+esc(thumb({fileId:x.f},120))+'">':'')+'<span class="nm">'+esc(x.n)+'</span><button type="button" class="sp-btn sm" data-selrm="'+esc(x.id)+'" title="Quitar">✕</button></div>'}).join('');
 }
+function dlUrl(x){return 'https://drive.google.com/uc?export=download&id='+encodeURIComponent(x.f)}
+function selLinksText(){
+  var g=S.gallery,l=selList().filter(function(x){return x.f});
+  return '📥 Descarga directa de tus fotos de «'+g.name+'»:\n\n'+l.map(function(x){return x.n+'\n'+dlUrl(x)}).join('\n\n')+'\n\n— Gentileza Tomauno';
+}
+function triggerDownload(url){var f=document.createElement('iframe');f.style.display='none';f.setAttribute('data-spdl','1');f.src=url;document.body.appendChild(f);setTimeout(function(){try{f.remove()}catch(e){}},120000)}
+function countDl(ids){try{post({action:'countSpecialDownloads',galleryId:S.gallery.id,photoIds:ids,pin:isAdm()?PIN:''}).catch(function(){})}catch(e){}}
+var SELDL={busy:false};
+async function selDownloadAll(){
+  if(SELDL.busy)return;var l=selList().filter(function(x){return x.f});if(!l.length){toast('No hay fotos para descargar.');return}
+  var ok=l.length===1||await confirmDlg('DESCARGAR SELECCIÓN','Se van a descargar <b>'+l.length+'</b> fotos, una tras otra.<br><small style="color:#aaa">Si el navegador pregunta, permití las descargas múltiples. Si no se descargan, usá “COPIAR LINKS”.</small>','SÍ, DESCARGAR');
+  if(!ok)return;
+  SELDL.busy=true;var b=document.querySelector('#spSel [data-act=seldl]'),t0=b?b.textContent:'';
+  try{
+    for(var i=0;i<l.length;i++){if(b){b.textContent='⏳ Descargando '+(i+1)+' de '+l.length+'…';b.classList.add('busy')}triggerDownload(dlUrl(l[i]));await new Promise(function(r){setTimeout(r,1100)})}
+    countDl(l.map(function(x){return x.id}));toast('✓ Listo: '+l.length+' foto'+(l.length===1?'':'s')+' enviada'+(l.length===1?'':'s')+' a tus descargas.',4500);
+  }finally{SELDL.busy=false;if(b){b.textContent=t0;b.classList.remove('busy')}}
+}
+function selLinksWa(){
+  var t=selLinksText();
+  if(t.length>1700){copyText(t).then(function(){toast('Son muchos links: ya están copiados. Pegalos en el chat de WhatsApp.',6000)});window.open('https://wa.me/','_blank','noopener');return}
+  window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank','noopener');
+}
+function selDlVisible(){var on=!!(S.gallery&&(S.gallery.allowDownload!==false||admView()));['spSelDl','spSelLinks','spSelWa2'].forEach(function(id){var e=$(id);if(e)e.style.display=on?'':'none'})}
 function openSel(){
   selEnsure();if(!selCount()){toast('Tocá la ☆ de las fotos que más te gustan y después enviale la lista al fotógrafo.',5000);return}
-  renderSel();openLayer('spSel');
+  renderSel();selDlVisible();openLayer('spSel');
 }
 function selWhatsApp(){
   var t=selText(),num=String(BRAND.wa).replace(/\D/g,'');
@@ -16504,26 +16642,35 @@ async function selClear(){
   SEL.items={};selSave();closeLayer('spSel');S.photos.forEach(function(p){refreshCard(p)});renderTools();toast('Selección vacía.');
 }
 /* ---------- ✏️ corregir nombre / Instagram / WhatsApp del autor (ADM): se actualiza en todas sus fotos ---------- */
+function modelEditHTML(){
+  return '<div class="sp-grid2" style="margin-top:6px"><label>Edad<input id="spEaAge" maxlength="2" inputmode="numeric"></label><label>Altura (cm)<input id="spEaH" maxlength="6" inputmode="decimal"></label></div>'
+   +'<div class="sp-grid2 g3" style="margin-top:6px"><label>Busto<input id="spEaB" maxlength="5" inputmode="decimal"></label><label>Cintura<input id="spEaW2" maxlength="5" inputmode="decimal"></label><label>Cadera<input id="spEaP" maxlength="5" inputmode="decimal"></label></div>'
+   +'<div class="sp-grid2" style="margin-top:6px"><label>Localidad<input id="spEaL" maxlength="60"></label><label>Agencia<input id="spEaAg" maxlength="60"></label></div>'
+   +'<label style="margin-top:6px">¿Tiene experiencia?<select id="spEaE"><option value="">—</option><option value="SI">Sí</option><option value="NO">No</option></select></label>';
+}
+function fillModelEdit(m){$('spEaAge').value=m.age===''||m.age==null?'':m.age;$('spEaH').value=m.height===''||m.height==null?'':m.height;$('spEaB').value=m.bust===''||m.bust==null?'':m.bust;$('spEaW2').value=m.waist===''||m.waist==null?'':m.waist;$('spEaP').value=m.hip===''||m.hip==null?'':m.hip;$('spEaL').value=m.locality||'';$('spEaAg').value=m.agency||'';$('spEaE').value=m.experience||'';['spEaAge','spEaH','spEaB','spEaW2','spEaP','spEaL','spEaAg'].forEach(function(i){hardenField($(i))})}
+function readModelEdit(){return {age:$('spEaAge').value,height:$('spEaH').value,bust:$('spEaB').value,waist:$('spEaW2').value,hip:$('spEaP').value,locality:$('spEaL').value,agency:$('spEaAg').value,experience:$('spEaE').value}}
 async function editAuthor(p){
   if(!admView())return;
   if(!p.photographerId){toast('Esta foto viene de una carpeta de Drive y no tiene un fotógrafo registrado.',4500);return}
   var g=S.gallery,info=null,n=S.photos.filter(function(x){return x.photographerId===p.photographerId}).length;
   try{var r0=await get({action:'specialPhotographers',id:g.id,pin:PIN});info=(r0.photographers||[]).filter(function(x){return x.id===p.photographerId})[0]||null}catch(e){}
   var pr=dlg({title:'✏️ EDITAR AUTOR',stack:false,
-    html:'<div class="sp-editau"><label>Nombre<input id="spEaN" maxlength="60"></label><label>Instagram<input id="spEaI" maxlength="40" placeholder="@usuario"></label><label>WhatsApp<input id="spEaW" maxlength="24" inputmode="tel" placeholder="3764…"></label><div class="sp-muted">Se corrige en <b>todas las fotos</b> que subió esta persona ('+n+'). Solo vos ves el WhatsApp.</div></div>',
+    html:'<div class="sp-editau"><label>Nombre<input id="spEaN" maxlength="60"></label><label>Instagram<input id="spEaI" maxlength="40" placeholder="@usuario"></label><label>WhatsApp<input id="spEaW" maxlength="24" inputmode="tel" placeholder="3764…"></label>'+(g.modelsMode?modelEditHTML():'')+'<div class="sp-muted">Se corrige en <b>todas las fotos</b> que subió esta persona ('+n+'). Solo vos ves el WhatsApp.</div></div>',
     validate:async function(){
       var name=$('spEaN').value.trim(),ig=$('spEaI').value.trim(),wa=$('spEaW').value.trim();
       if(name.length<2)throw new Error('Escribí el nombre (mínimo 2 letras).');
-      var r=await post({action:'updateSpecialPhotographer',pin:PIN,galleryId:g.id,photographerId:p.photographerId,name:name,instagram:ig,whatsapp:wa});
-      return {name:name,instagram:ig,photos:r.photos};
+      var mdl=g.modelsMode?readModelEdit():undefined;
+      var r=await post({action:'updateSpecialPhotographer',pin:PIN,galleryId:g.id,photographerId:p.photographerId,name:name,instagram:ig,whatsapp:wa,model:mdl});
+      return {name:name,instagram:ig,photos:r.photos,model:mdl};
     },
     buttons:[{t:'CANCELAR',v:'no'},{t:'GUARDAR',v:'ok',cls:'red',submit:true}]});
   var nm=$('spEaN'),ii=$('spEaI'),ww=$('spEaW');
   nm.value=(info&&info.name)||p.author||'';ii.value=(info&&info.instagram)||p.instagram||'';ww.value=(info&&info.whatsapp)||'';
-  [nm,ii,ww].forEach(hardenField);setTimeout(function(){nm.focus()},80);
+  [nm,ii,ww].forEach(hardenField);if(g.modelsMode)fillModelEdit((info&&info.model)||p.model||{});setTimeout(function(){nm.focus()},80);
   var res=await pr;
   if(res.v!=='ok')return;
-  S.photos.forEach(function(x){if(x.photographerId===p.photographerId){x.author=res.value.name;x.instagram=res.value.instagram;delete x.__hay}});
+  S.photos.forEach(function(x){if(x.photographerId===p.photographerId){x.author=res.value.name;x.instagram=res.value.instagram;if(res.value.model)x.model=Object.assign({},x.model||{},{age:numOf(res.value.model.age)===null?'':numOf(res.value.model.age),height:numOf(res.value.model.height)===null?'':numOf(res.value.model.height),bust:numOf(res.value.model.bust)===null?'':numOf(res.value.model.bust),waist:numOf(res.value.model.waist)===null?'':numOf(res.value.model.waist),hip:numOf(res.value.model.hip)===null?'':numOf(res.value.model.hip),locality:res.value.model.locality,agency:res.value.model.agency,experience:res.value.model.experience});delete x.__hay}});
   IN.ph=null;renderAll();paintIfCurrent(p);toast('✓ Autor corregido en '+res.value.photos+' foto'+(res.value.photos===1?'':'s'));
 }
 /* ---------- QR (modo byte, corrección L, versiones 1-10) ---------- */
@@ -16774,6 +16921,7 @@ async function resultsAction(a,pid){
 /* ---------- crear / configurar ---------- */
 function credCnt(){var t=$('spcCredits'),c=$('spcCredCnt');if(c)c.textContent=t.value.length+' / 4000'}
 function cfgRules(){
+  if($('spcModels').checked){$('spcQuick').checked=false;$('spcQuick').disabled=true}else $('spcQuick').disabled=false;
   var pub=$('spcPub').checked,con=$('spcContest').checked;
   $('spcPassWrap').style.display=pub?'none':'block';
   var tg=$('spcTags').checked;$('spcTagApr').disabled=!tg;$('spcTagShow').disabled=!tg;
@@ -16789,14 +16937,14 @@ function openConfig(g){
   var isNew=!A.editing;
   c('spcPub',isNew?true:g.isPublic);c('spcReact',isNew?true:g.reactions);c('spcContest',g.contest);c('spcHide',g.hideAuthor);c('spcShow',g.showVotes);
   c('spcDl',g.allowDownload);c('spcUp',isNew?true:g.uploadEnabled!==false);c('spcComp',isNew?true:g.compressOnUpload!==false);
-  c('spcTags',g.tagsEnabled);c('spcTagApr',isNew?true:g.tagApproval!==false);c('spcTagShow',g.tagsOverlay);c('spcLeads',g.leadsEnabled);c('spcPhotoApr',isNew?true:g.photoApproval);
+  c('spcTags',g.tagsEnabled);c('spcTagApr',isNew?true:g.tagApproval!==false);c('spcTagShow',g.tagsOverlay);c('spcLeads',g.leadsEnabled);c('spcPhotoApr',isNew?true:g.photoApproval);c('spcQuick',g.quickUpload);c('spcModels',g.modelsMode);
   $('spcStatus').textContent='';cfgRules();openLayer('spConfig');
 }
 function readCfg(){
   var v=function(id){return String($(id).value||'').trim()},c=function(id){return !!$(id).checked};
   return {pin:PIN,name:v('spcName'),description:v('spcDesc'),credits:v('spcCredits'),uploadKey:v('spcKey'),storageLimitGB:Number(v('spcLimit')||0),isPublic:c('spcPub'),password:v('spcPass'),allowVideos:false,
     reactions:c('spcReact'),contest:c('spcContest'),hideAuthor:c('spcHide'),showVotes:c('spcShow'),voteStart:v('spcStart'),voteEnd:v('spcEnd'),compressOnUpload:c('spcComp'),
-    externalDriveFolder:v('spcDrive'),maxFileMB:Number(v('spcMax')||25),allowDownload:c('spcDl'),uploadEnabled:c('spcUp'),tagsEnabled:c('spcTags'),tagApproval:c('spcTagApr'),tagsOverlay:c('spcTagShow'),leadsEnabled:c('spcLeads'),photoApproval:c('spcPhotoApr')};
+    externalDriveFolder:v('spcDrive'),maxFileMB:Number(v('spcMax')||25),allowDownload:c('spcDl'),uploadEnabled:c('spcUp'),tagsEnabled:c('spcTags'),tagApproval:c('spcTagApr'),tagsOverlay:c('spcTagShow'),leadsEnabled:c('spcLeads'),photoApproval:c('spcPhotoApr'),quickUpload:c('spcQuick')&&!c('spcModels'),modelsMode:c('spcModels')};
 }
 async function saveConfig(){
   var st=$('spcStatus'),p=readCfg(),edit=A.editing;
@@ -16833,16 +16981,23 @@ function compress(file,maxBytes,force){
   });
 }
 function openUpload(g){
-  var U=A.upl;U.g=g;U.prepared=[];
-  ['spuName','spuIg','spuWa','spuKey'].forEach(function(id){$(id).value=''});$('spuFiles').value='';$('spuLogo').value='';
-  var needKey=isAdm()?!!g.uploadKey:!!g.uploadKeyRequired,kl=$('spuKey').closest('label');
+  var U=A.upl;U.g=g;U.prepared=[];var models=!!g.modelsMode,quick=!!g.quickUpload&&!models;U.quick=quick;
+  ['spuName','spuIg','spuWa','spuKey','spmAge','spmHeight','spmBust','spmWaist','spmHip','spmLoc','spmAgency'].forEach(function(id){var e=$(id);if(e)e.value=''});$('spmExp').value='';$('spuFiles').value='';$('spuLogo').value='';$('spuCam').value='';
+  var needKey=isAdm()?!!g.uploadKey:!!g.uploadKeyRequired,kl=$('spuLblKey');
   if(kl)kl.style.display=needKey?'':'none';
   if(isAdm()&&g.uploadKey)$('spuKey').value=g.uploadKey;
-  $('spuGallery').textContent=g.name||'';$('spuList').innerHTML='';$('spuProg').style.width='0';$('spuStatus').textContent='';$('spuGo').disabled=true;
-  $('spuNote').textContent=(g.compressOnUpload!==false?'Compresión automática activada.':'Compresión desactivada; se conserva el archivo hasta '+Number(g.maxFileMB||25)+' MB.')+((g.uploadEnabled===false&&isAdm())?' Las subidas están cerradas al público: como administrador podés subir igual.':'');
+  $('spuLblIg').style.display=quick?'none':'';$('spuRow2').style.display=quick?'none':'';$('spuLblLogo').style.display=(quick||models)?'none':'';
+  $('spuModel').style.display=models?'':'none';$('spuQuick').style.display=quick?'':'none';$('spuLblFiles').style.display=quick?'none':'';$('spuGo').style.display=quick?'none':'';
+  $('spuTitle').textContent=models?'SUBIR MIS FOTOS · MODELOS':(quick?'SUBIR FOTOS':'SUBIR FOTOGRAFÍAS');
+  $('spuLblWa').firstChild.textContent=models?'WhatsApp (para que Tomauno pueda contactarte) ':'WhatsApp (opcional) ';
+  $('spuGallery').textContent=(g.name||'')+(models?' — completá tus datos y subí tus mejores fotos':(quick?' — escribí tu nombre y tocá “Subir fotos”':''));$('spuList').innerHTML='';$('spuProg').style.width='0';$('spuStatus').textContent='';$('spuGo').disabled=true;
+  $('spuNote').textContent=quick?'':((g.compressOnUpload!==false?'Compresión automática activada.':'Compresión desactivada; se conserva el archivo hasta '+Number(g.maxFileMB||25)+' MB.')+((g.uploadEnabled===false&&isAdm())?' Las subidas están cerradas al público: como administrador podés subir igual.':''));
   openLayer('spUpload');setTimeout(function(){$('spuName').focus()},60);
 }
-async function prepareFiles(){
+function quickPick(cam){
+  var st=$('spuStatus');if($('spuName').value.trim().length<2){st.textContent='Primero escribí tu nombre.';$('spuName').focus();return}
+  st.textContent='';(cam?$('spuCam'):$('spuFiles')).click();
+}async function prepareFiles(){
   var U=A.upl,g=U.g,files=Array.from($('spuFiles').files||[]),list=$('spuList');U.prepared=[];$('spuGo').disabled=true;
   if(!files.length){list.innerHTML='';return}
   var maxBytes=Number(g.maxFileMB||25)*1048576;
@@ -16852,15 +17007,22 @@ async function prepareFiles(){
   }
   list.innerHTML=U.prepared.map(function(x){return '<div>✓ '+esc(x.file.name)+' · '+x.mb.toFixed(2)+' MB listos</div>'}).join('');
   $('spuGo').disabled=false;$('spuStatus').textContent='✓ Archivos listos. Ya podés subirlos.';
+  if(U.quick&&U.prepared.length)startUpload();
 }
 async function startUpload(){
   var U=A.upl,g=U.g,st=$('spuStatus');if(U.busy||!g||!U.prepared.length)return;
   var name=$('spuName').value.trim();if(name.length<2){st.textContent='Falta tu nombre.';$('spuName').focus();return}
+  var model=null;
+  if(g.modelsMode){
+    model={age:$('spmAge').value.trim(),height:$('spmHeight').value.trim(),bust:$('spmBust').value.trim(),waist:$('spmWaist').value.trim(),hip:$('spmHip').value.trim(),locality:$('spmLoc').value.trim(),agency:$('spmAgency').value.trim(),experience:$('spmExp').value};
+    var miss=!model.age?'tu edad':(!model.height?'tu altura':(!model.locality?'tu localidad':(!model.agency?'tu agencia (o “Sin agencia / Freelance”)':(!model.experience?'si tenés experiencia':''))));
+    if(miss){st.textContent='Falta '+miss+'.';return}
+  }
   U.busy=true;$('spuGo').disabled=true;var done=0,fail=[];
   try{
     var lf=$('spuLogo').files[0],logo='';if(lf)logo=(await compress(lf,1400000,true)).data;
     st.textContent='Registrando fotógrafo…';
-    var reg=await post({action:'registerSpecialPhotographer',galleryId:g.id,name:name,instagram:$('spuIg').value.trim(),whatsapp:$('spuWa').value.trim(),logoData:logo,pin:isAdm()?PIN:''});
+    var reg=await post({action:'registerSpecialPhotographer',galleryId:g.id,name:name,instagram:$('spuIg').value.trim(),whatsapp:$('spuWa').value.trim(),logoData:logo,model:model,pin:isAdm()?PIN:''});
     if(!reg||!reg.photographer)throw new Error('No se pudo registrar el fotógrafo.');
     for(var i=0;i<U.prepared.length;i++){
       var x=U.prepared[i];st.textContent='Subiendo '+(i+1)+' de '+U.prepared.length+'…';
@@ -16868,11 +17030,12 @@ async function startUpload(){
       catch(e){fail.push(x.file.name+': '+(e.message||e));if(/clave|límite|permite/i.test(String(e.message)))break}
       $('spuProg').style.width=Math.round((i+1)/U.prepared.length*100)+'%';
     }
-    st.textContent=fail.length?'✓ '+done+' cargadas. No se pudieron cargar: '+fail.join(' · '):'✓ '+done+' fotografías cargadas.';
+    st.textContent=fail.length?'✓ '+done+' cargadas. No se pudieron cargar: '+fail.join(' · '):'✓ '+done+' fotografía'+(done===1?'':'s')+' cargada'+(done===1?'':'s')+(U.quick?'. ¡Gracias! Podés subir más.':'.');
     if(done){
       if(S.gallery&&S.gallery.id===g.id&&isOpen('spGallery'))loadPhotos().catch(function(){});
       loadAdminList(true);refreshHome();delete CACHE[ckey(g.id)];
-      if(!fail.length)setTimeout(function(){closeLayer('spUpload')},900);
+      if(!fail.length&&!U.quick)setTimeout(function(){closeLayer('spUpload')},900);
+      if(U.quick){$('spuFiles').value='';$('spuCam').value='';U.prepared=[];$('spuList').innerHTML=''}
     }
   }catch(e){st.textContent='ERROR: '+(e.message||e)}finally{U.busy=false;$('spuGo').disabled=!U.prepared.length}
 }
@@ -16881,7 +17044,7 @@ async function startUpload(){
 function bind(){
   document.addEventListener('click',function(e){
     var t=e.target.closest?e.target.closest('[data-act]'):null;
-    if(t&&t.closest('#spAdmin,#spConfig,#spUpload,#spGallery,#spViewer,#spPodium,#spScroll,#spBack,#spLead,#spInbox,#spStory,#spShare,#spSel')){handleAct(t.dataset.act,t,e);return}
+    if(t&&t.closest('#spAdmin,#spConfig,#spUpload,#spGallery,#spViewer,#spPodium,#spScroll,#spBack,#spLead,#spInbox,#spStory,#spShare,#spSel,#spPeople,#spModF')){handleAct(t.dataset.act,t,e);return}
     setTimeout(function(){syncEntry();injectPin()},60);
   });
   $('spAList').addEventListener('click',function(e){
@@ -16947,6 +17110,9 @@ function bind(){
   $('spTagP').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target&&e.target.id==='spTagIn'){e.preventDefault();var p=S.view[S.idx];if(p)addTagFromInput(p)}});
   var qT=0;$('spSearch').addEventListener('input',function(){clearTimeout(qT);var v=this.value;qT=setTimeout(function(){S.q=v.trim();renderGrid();var sc=$('spGallery'),top=$('spGrid').offsetTop-$('spTop').offsetHeight-$('spFilters').offsetHeight;if(sc.scrollTop>top)sc.scrollTop=Math.max(0,top)},160)});
   $('spInBody').addEventListener('click',inboxClick);
+  $('spuCam').addEventListener('change',function(){var f=this.files&&this.files[0];if(!f)return;try{var dt=new DataTransfer();Array.from($('spuFiles').files||[]).forEach(function(x){dt.items.add(x)});dt.items.add(f);$('spuFiles').files=dt.files}catch(e){}$('spuFiles').dispatchEvent(new Event('change'))});
+  $('spPeopleQ').addEventListener('input',renderPeople);
+  $('spPeopleList').addEventListener('click',function(e){var b=e.target.closest('[data-pn]');if(!b)return;S.filter=b.dataset.pn;renderFilters();renderGrid();closeLayer('spPeople');var sc=$('spGallery');sc.scrollTop=0});
   $('spTabTags').addEventListener('click',function(){inboxTab('tags')});$('spTabLeads').addEventListener('click',function(){inboxTab('leads')});$('spTabPh').addEventListener('click',function(){inboxTab('ph')});$('spTabPend').addEventListener('click',function(){inboxTab('pend')});
   $('spStoryTagsOn').addEventListener('change',function(){ST.withTags=this.checked;renderStoryChips();drawStory()});
   $('spStoryChips').addEventListener('click',function(e){var c=e.target.closest('[data-sc]');if(!c)return;var t=ST.chips[Number(c.dataset.sc)],i=ST.sel.indexOf(t);if(i>=0)ST.sel.splice(i,1);else{if(ST.sel.length>=6){toast('Máximo 6 etiquetas en el diseño.');return}ST.sel.push(t)}renderStoryChips();drawStory()});
@@ -16978,7 +17144,7 @@ function bind(){
     if(e.key==='Escape'){
       e.preventDefault();e.stopPropagation();
       if(top==='spDialog'){if(dlgResolve)dlgResolve({v:'cancel'});dlgResolve=null;closeLayer('spDialog')}
-      else if(top==='spLead')closeLayer('spLead');else if(top==='spShare')closeLayer('spShare');else if(top==='spSel')closeLayer('spSel');else if(top==='spStory')closeLayer('spStory');else if(top==='spInbox')closeLayer('spInbox');
+      else if(top==='spLead')closeLayer('spLead');else if(top==='spShare')closeLayer('spShare');else if(top==='spSel')closeLayer('spSel');else if(top==='spPeople')closeLayer('spPeople');else if(top==='spModF')closeLayer('spModF');else if(top==='spStory')closeLayer('spStory');else if(top==='spInbox')closeLayer('spInbox');
       else if(top==='spViewer'){if(tagPanelOpen())closeTagPanel();else closeViewer()}else if(top==='spPodium')closeLayer('spPodium');
       else if(top==='spGallery')closeGallery();else if(top==='spConfig'){A.editing=null;closeLayer('spConfig')}
       else if(top==='spUpload'){if(!A.upl.busy)closeLayer('spUpload')}else if(top==='spAdmin')closeLayer('spAdmin');
@@ -16997,6 +17163,17 @@ function handleAct(a,el,e){
     case 'selwa':selWhatsApp();break;
     case 'selcopy':copyText(selText()).then(function(){toast('✓ Lista copiada. Pegala en un mensaje.')});break;
     case 'selclear':selClear();break;
+    case 'seldl':selDownloadAll();break;
+    case 'sellinks':copyText(selLinksText()).then(function(){toast('✓ Links de descarga copiados. Pegalos en un mensaje.')});break;
+    case 'selwa2':selLinksWa();break;
+    case 'people':openPeople();break;
+    case 'pplclose':closeLayer('spPeople');break;
+    case 'mf':openModF();break;
+    case 'mfclose':closeLayer('spModF');break;
+    case 'mfapply':applyModF();break;
+    case 'mfclear':clearModF();break;
+    case 'uquick':quickPick(false);break;
+    case 'ucam':quickPick(true);break;
     case 'shclose':closeLayer('spShare');break;
     case 'shcopy':copyText(SH.msg).then(function(){toast('✓ Mensaje copiado. Pegalo en WhatsApp.')});break;
     case 'shwa':window.open('https://wa.me/?text='+encodeURIComponent(SH.msg),'_blank','noopener');break;
@@ -17043,7 +17220,7 @@ function handleAct(a,el,e){
 function stamp(){var n=$('v110Version');if(n)n.textContent=VERSION}
 function init(){
   ['input','search'].forEach(function(ev){document.addEventListener(ev,function(e){var t=e.target;if(t&&t.id==='albumSearchBox'){ALB=!!String(t.value||'').trim();applyAlb()}})});
-  detectOG();hardenAll();['spGallery','spAdmin','spConfig','spUpload','spLead','spInbox','spShare','spDialog','spStory'].forEach(function(id){var el=$(id);if(el&&window.MutationObserver)new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){if(n.matches&&n.matches('input,textarea,select'))hardenField(n);else hardenAll(n)}})})}).observe(el,{childList:true,subtree:true})});
+  detectOG();hardenAll();['spGallery','spAdmin','spConfig','spUpload','spLead','spInbox','spShare','spDialog','spStory','spPeople','spModF'].forEach(function(id){var el=$(id);if(el&&window.MutationObserver)new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){if(n.matches&&n.matches('input,textarea,select'))hardenField(n);else hardenAll(n)}})})}).observe(el,{childList:true,subtree:true})});
   $('spNotify').addEventListener('click',function(e){var n=this;if(e.target.closest('[data-nx]')){n.classList.remove('on');return}var id=n.dataset.gid;if(!id)return;n.classList.remove('on');openInbox(findAdm(id)||{id:id,name:n.dataset.name||''},n.dataset.tab||'tags')});
   secretField($('spuKey'),true);var pw=$('spcPass');if(pw){secretField(pw,false);pw.setAttribute('autocomplete','off');pw.setAttribute('data-lpignore','true');pw.setAttribute('data-1p-ignore','true');pw.setAttribute('data-form-type','other');pw.name='tomauno_code_'+Math.random().toString(36).slice(2)}
   $('splRole').innerHTML=LEAD_ROLES.map(function(r){return '<option value="'+r[0]+'">'+r[1]+'</option>'}).join('');
